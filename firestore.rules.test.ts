@@ -85,8 +85,8 @@ test('Firestore Rules — Dirty Dozen Payload Guard Verification', () => {
   assert.ok(listMatches.length === 7, 'All 7 collections must have explicit allow list rules');
   for (const line of listMatches) {
     assert.ok(
-      line.includes('existing().ownerId == request.auth.uid'),
-      `allow list must enforce existing().ownerId == request.auth.uid: ${line}`
+      line.includes('isAuthorizedWorkspace(existing().ownerId)'),
+      `allow list must enforce isAuthorizedWorkspace(existing().ownerId): ${line}`
     );
   }
 });

@@ -58,6 +58,7 @@ import {
   type User,
 } from './firebase';
 import {
+  SHARED_STORE_OWNER_ID,
   saveSettingsToCloud,
   saveProductToCloud,
   deleteProductFromCloud,
@@ -106,7 +107,7 @@ function formatCurrentTimeShort(): string {
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('CART');
 
-  // Pre-seed the 7-day store simulation on initial boot if no simulation seed exists yet
+  // Pre-seed the 7-day store simulation locally only as initial fallback before cloud sync
   const initialSim = useMemo(() => {
     try {
       const alreadySeeded = localStorage.getItem(STORAGE_KEYS.SIM_SEEDED);
@@ -114,16 +115,6 @@ export default function App() {
       if (!alreadySeeded && (!existingSales || existingSales === '[]')) {
         const sim = generateSevenDayStoreSimulation(new Date());
         localStorage.setItem(STORAGE_KEYS.SIM_SEEDED, 'true');
-        localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sim.sales));
-        localStorage.setItem(
-          STORAGE_KEYS.UTANG_PAYMENTS,
-          JSON.stringify(sim.utangPayments)
-        );
-        localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(sim.shifts));
-        localStorage.setItem(
-          STORAGE_KEYS.ADJUSTMENTS,
-          JSON.stringify(sim.adjustments)
-        );
         return sim;
       }
     } catch {
@@ -132,7 +123,7 @@ export default function App() {
     return null;
   }, []);
 
-  // Persistent State
+  // Persistent State (synced automatically with Firebase Cloud Firestore across all devices)
   const [products, setProducts] = useState<Product[]>(() =>
     loadFromStorage<Product[]>(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS)
   );
@@ -171,12 +162,11 @@ export default function App() {
     )
   );
 
-  // Cloud Auto-Save & Firebase Auth State
+  // Cloud Auto-Save State (Always Active Across All Devices)
   const [cloudUser, setCloudUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [cloudSyncState, setCloudSyncState] = useState<
     'LOCAL_ONLY' | 'SYNCING' | 'CLOUD_SAVED' | 'ERROR'
-  >('LOCAL_ONLY');
+  >('SYNCING');
   const [lastSavedTime, setLastSavedTime] = useState<string>(() =>
     formatCurrentTimeShort()
   );
@@ -225,26 +215,18 @@ export default function App() {
 
   const restoreFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Track Firebase Auth State
+  // Track optional Firebase Auth user
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       setCloudUser(user);
-      setIsAuthReady(true);
-      if (!user) {
-        setCloudSyncState('LOCAL_ONLY');
-      } else {
-        setCloudSyncState('CLOUD_SAVED');
-      }
     });
     return () => unsubAuth();
   }, []);
 
-  // Subscribe to real-time Firestore Cloud Auto-Save when authenticated
+  // Automatically subscribe to shared Firebase Cloud Firestore on EVERY device immediately
   useEffect(() => {
-    if (!isAuthReady || !cloudUser) return;
-
     setCloudSyncState('SYNCING');
-    const unsubCloud = subscribeToCloudStore(cloudUser.uid, {
+    const unsubCloud = subscribeToCloudStore(SHARED_STORE_OWNER_ID, {
       onSettings: (cloudSettings) => setSettings(cloudSettings),
       onProducts: (cloudProducts) => setProducts(cloudProducts),
       onSales: (cloudSales) => setSales(cloudSales),
@@ -256,32 +238,29 @@ export default function App() {
         setCloudSyncState('CLOUD_SAVED');
         setLastSavedTime(formatCurrentTimeShort());
       },
-      onEmptyCloudDetected: () => {
-        // Upload existing local data to cloud automatically on first sign-in
+      onEmptyCloudDetected: async () => {
         setCloudSyncState('SYNCING');
-        syncFullStoreStateToCloud(
-          cloudUser.uid,
-          latestStoreRef.current,
-          false
-        )
-          .then(() => {
-            setCloudSyncState('CLOUD_SAVED');
-            setLastSavedTime(formatCurrentTimeShort());
-          })
-          .catch(() => {
-            setCloudSyncState('ERROR');
-          });
+        try {
+          await syncFullStoreStateToCloud(
+            SHARED_STORE_OWNER_ID,
+            latestStoreRef.current,
+            false
+          );
+          setCloudSyncState('CLOUD_SAVED');
+          setLastSavedTime(formatCurrentTimeShort());
+        } catch {
+          setCloudSyncState('ERROR');
+        }
       },
     });
 
     return () => unsubCloud();
-  }, [isAuthReady, cloudUser]);
+  }, []);
 
   // Save to localStorage on change & update auto-save timestamp
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -290,7 +269,6 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -302,7 +280,6 @@ export default function App() {
         STORAGE_KEYS.UTANG_PAYMENTS,
         JSON.stringify(utangPayments)
       );
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -311,7 +288,6 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -323,7 +299,6 @@ export default function App() {
         STORAGE_KEYS.ADJUSTMENTS,
         JSON.stringify(adjustments)
       );
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -335,7 +310,6 @@ export default function App() {
         STORAGE_KEYS.PARKED_CARTS,
         JSON.stringify(parkedCarts)
       );
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
@@ -344,17 +318,15 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-      setLastSavedTime(formatCurrentTimeShort());
     } catch {
       // ignore
     }
   }, [settings]);
 
-  // Helper to run cloud write with status feedback when user is signed in
+  // Always auto-save every mutation directly to Firebase Cloud Firestore
   const triggerCloudSave = (promiseFactory: (uid: string) => Promise<void>) => {
-    if (!cloudUser) return;
     setCloudSyncState('SYNCING');
-    promiseFactory(cloudUser.uid)
+    promiseFactory(SHARED_STORE_OWNER_ID)
       .then(() => {
         setCloudSyncState('CLOUD_SAVED');
         setLastSavedTime(formatCurrentTimeShort());
@@ -366,50 +338,34 @@ export default function App() {
 
   const handleGoogleSignIn = async () => {
     try {
-      setCloudSyncState('SYNCING');
       const cred = await signInWithPopup(auth, googleProvider);
       if (cred.user) {
-        await syncFullStoreStateToCloud(
-          cred.user.uid,
-          latestStoreRef.current,
-          false
-        );
-        setCloudSyncState('CLOUD_SAVED');
-        setLastSavedTime(formatCurrentTimeShort());
-        showQuickNotice(
-          `Cloud Auto-Save active! Connected as ${cred.user.email}.`
-        );
+        showQuickNotice(`Connected Google account ${cred.user.email}.`);
       }
     } catch {
-      setCloudSyncState(cloudUser ? 'CLOUD_SAVED' : 'LOCAL_ONLY');
-      showQuickNotice(
-        'Google Sign-In popup was closed. Local Auto-Save remains active.'
-      );
+      // ignore
     }
   };
 
   const handleGoogleSignOut = async () => {
     try {
       await signOut(auth);
-      setCloudSyncState('LOCAL_ONLY');
-      showQuickNotice('Signed out of Cloud Auto-Save. Local Auto-Save remains active.');
     } catch {
       // ignore
     }
   };
 
   const handleManualCloudSync = async () => {
-    if (!cloudUser) return;
     setCloudSyncState('SYNCING');
     try {
       await syncFullStoreStateToCloud(
-        cloudUser.uid,
+        SHARED_STORE_OWNER_ID,
         latestStoreRef.current,
-        false
+        true
       );
       setCloudSyncState('CLOUD_SAVED');
       setLastSavedTime(formatCurrentTimeShort());
-      showQuickNotice('All POS records synced to Firebase Cloud!');
+      showQuickNotice('All POS records saved to Firebase Cloud!');
     } catch {
       setCloudSyncState('ERROR');
     }

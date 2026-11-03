@@ -195,60 +195,33 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <div className="flex items-center gap-2">
                 <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
                 <h3 className="text-sm font-bold text-slate-900">
-                  Free Cloud Auto-Save (Firebase Firestore + Offline Local Storage)
+                  Automatic Multi-Device Cloud Auto-Save (Always On)
                 </h3>
               </div>
-              {cloudUserEmail ? (
-                <p className="text-xs text-slate-700">
-                  Connected as <span className="font-semibold text-slate-900">{cloudUserEmail}</span> ·{' '}
-                  <span className="text-emerald-700 font-semibold">
-                    {cloudSyncState === 'SYNCING'
-                      ? 'Saving changes to cloud...'
-                      : `Auto-saved to cloud (${lastSavedTime || 'just now'})`}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-xs text-slate-600">
-                  All changes auto-save to this browser immediately ({lastSavedTime || 'active'}). Sign in with Google to sync and back up automatically across devices on free cloud storage.
-                </p>
-              )}
+              <p className="text-xs text-slate-700">
+                <span className="text-emerald-700 font-semibold">
+                  {cloudSyncState === 'SYNCING'
+                    ? 'Saving latest changes to Firebase Cloud...'
+                    : `Saved to Cloud (${lastSavedTime || 'active'})`}
+                </span>{' '}
+                · Every sale, product, Utang record, and shift automatically syncs across all your PCs, phones, and tablets.
+              </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {cloudUserEmail ? (
-                <>
-                  {onSyncCloudNow && (
-                    <button
-                      type="button"
-                      onClick={onSyncCloudNow}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Sync Cloud Now</span>
-                    </button>
-                  )}
-                  {onSignOutCloud && (
-                    <button
-                      type="button"
-                      onClick={onSignOutCloud}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  )}
-                </>
-              ) : (
-                onSignInCloud && (
-                  <button
-                    type="button"
-                    onClick={onSignInCloud}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-                  >
-                    <Cloud className="w-3.5 h-3.5" />
-                    <span>Sign in with Google for Cloud Auto-Save</span>
-                  </button>
-                )
+              {onSyncCloudNow && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSyncCloudNow();
+                    setStatusMessage('Synced all POS records to Firebase Cloud.');
+                    setTimeout(() => setStatusMessage(null), 3000);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Sync Cloud Now</span>
+                </button>
               )}
             </div>
           </div>

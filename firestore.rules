@@ -28,12 +28,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
+    function isAuthorizedWorkspace(ownerId) {
+      return ownerId == 'four_gifts_store_main'
+        || (isVerified() && ownerId == request.auth.uid);
+    }
+
     function isValidOwnerField(ownerId) {
       return ownerId is string
         && ownerId.size() >= 1
         && ownerId.size() <= 128
         && ownerId.matches('^[a-zA-Z0-9_\\-]+$')
-        && ownerId == request.auth.uid;
+        && isAuthorizedWorkspace(ownerId);
     }
 
     // Entity 1: PosSettings
@@ -220,87 +225,80 @@ service cloud.firestore {
 
     // Collection 1: /pos_settings/{settingId}
     match /pos_settings/{settingId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && isValidPosSettings(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && isValidPosSettings(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+      allow get: if isValidId(settingId) && isAuthorizedWorkspace(settingId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(settingId) && isAuthorizedWorkspace(settingId) && isValidPosSettings(incoming()) && incoming().ownerId == settingId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(settingId) && isAuthorizedWorkspace(settingId) && isValidPosSettings(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['storeName', 'subtitle', 'address', 'contactPhone', 'tinOrPermit', 'footerMessage', 'paperSize', 'autoPrint', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(settingId) && isAuthorizedWorkspace(settingId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 2: /pos_products/{productId}
     match /pos_products/{productId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(productId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(productId) && isValidPosProduct(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(productId) && isValidPosProduct(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action: Edit Product Details or Restock
+      allow get: if isValidId(productId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(productId) && isValidPosProduct(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(productId) && isValidPosProduct(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['barcode', 'name', 'category', 'costPrice', 'sellingPrice', 'stock', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(productId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(productId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 3: /pos_sales/{saleId}
     match /pos_sales/{saleId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(saleId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(saleId) && isValidPosSale(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(saleId) && isValidPosSale(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && existing().status != 'VOIDED' && (
-        // Action: Void Sale (Terminal Transition)
+      allow get: if isValidId(saleId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(saleId) && isValidPosSale(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(saleId) && isValidPosSale(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && existing().status != 'VOIDED' && (
         (incoming().status == 'VOIDED' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'voidedAt', 'updatedAt']))
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(saleId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(saleId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 4: /pos_utang_payments/{paymentId}
     match /pos_utang_payments/{paymentId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(paymentId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(paymentId) && isValidPosUtangPayment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(paymentId) && isValidPosUtangPayment(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action: Update payment note or reference
+      allow get: if isValidId(paymentId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(paymentId) && isValidPosUtangPayment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(paymentId) && isValidPosUtangPayment(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['gcashRef', 'note', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(paymentId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(paymentId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 5: /pos_shifts/{shiftId}
     match /pos_shifts/{shiftId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(shiftId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(shiftId) && isValidPosShift(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(shiftId) && isValidPosShift(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action 1: Update Opening Float
+      allow get: if isValidId(shiftId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(shiftId) && isValidPosShift(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(shiftId) && isValidPosShift(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['openingFloat', 'openedAt', 'updatedAt']) ||
-        // Action 2: Close Shift or Re-Count Drawer
         incoming().diff(existing()).affectedKeys().hasOnly(['openingFloat', 'openedAt', 'status', 'closingCountedCash', 'expectedCashAtClose', 'variance', 'closingNote', 'closedAt', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(shiftId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(shiftId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 6: /pos_adjustments/{adjustmentId}
     match /pos_adjustments/{adjustmentId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(adjustmentId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action: Update adjustment reason or amount
+      allow get: if isValidId(adjustmentId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['type', 'amount', 'reason', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(adjustmentId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(adjustmentId) && isAuthorizedWorkspace(existing().ownerId);
     }
 
     // Collection 7: /pos_parked_carts/{parkedId}
     match /pos_parked_carts/{parkedId} {
-      allow get: if isSignedIn() && isVerified() && isValidId(parkedId) && existing().ownerId == request.auth.uid;
-      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isVerified() && isValidId(parkedId) && isValidPosParkedCart(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
-      allow update: if isSignedIn() && isVerified() && isValidId(parkedId) && isValidPosParkedCart(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
-        // Action: Update parked cart items or note
+      allow get: if isValidId(parkedId) && isAuthorizedWorkspace(existing().ownerId);
+      allow list: if isAuthorizedWorkspace(existing().ownerId);
+      allow create: if isValidId(parkedId) && isValidPosParkedCart(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(parkedId) && isValidPosParkedCart(incoming()) && isAuthorizedWorkspace(existing().ownerId) && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
         incoming().diff(existing()).affectedKeys().hasOnly(['label', 'note', 'discount', 'items', 'updatedAt'])
       );
-      allow delete: if isSignedIn() && isVerified() && isValidId(parkedId) && existing().ownerId == request.auth.uid;
+      allow delete: if isValidId(parkedId) && isAuthorizedWorkspace(existing().ownerId);
     }
   }
 }

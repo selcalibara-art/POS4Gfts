@@ -27,6 +27,9 @@ import {
   ParkedCart,
   StoreSettings,
 } from '../types/pos';
+
+export const SHARED_STORE_OWNER_ID = 'four_gifts_store_main';
+
 function toLocalDayKey(date: Date): string {
   const d = Number.isNaN(date.getTime()) ? new Date() : date;
   const year = d.getFullYear();
@@ -495,63 +498,58 @@ export interface CloudStoreCallbacks {
   onAdjustments: (adjustments: CashDrawerAdjustment[]) => void;
   onParkedCarts: (parkedCarts: ParkedCart[]) => void;
   onSyncActivity: () => void;
-  onEmptyCloudDetected: () => void;
+  onEmptyCloudDetected: () => Promise<void> | void;
 }
 
 export function subscribeToCloudStore(
   uid: string,
   callbacks: CloudStoreCallbacks
 ): Unsubscribe {
-  let initialProductsChecked = false;
-  let initialSalesChecked = false;
-  let hasCloudProducts = false;
-  let hasCloudSales = false;
+  let unmounted = false;
+  const unsubs: Unsubscribe[] = [];
 
-  const checkInitialSeed = () => {
-    if (
-      initialProductsChecked &&
-      initialSalesChecked &&
-      !hasCloudProducts &&
-      !hasCloudSales
-    ) {
-      callbacks.onEmptyCloudDetected();
+  (async () => {
+    const settingsRef = doc(db, 'pos_settings', uid);
+    try {
+      const initialSettingsSnap = await getDoc(settingsRef);
+      if (unmounted) return;
+
+      if (!initialSettingsSnap.exists()) {
+        await callbacks.onEmptyCloudDetected();
+        if (unmounted) return;
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.GET, `pos_settings/${uid}`);
     }
-  };
 
-  const settingsRef = doc(db, 'pos_settings', uid);
-  const unsubSettings = onSnapshot(
-    settingsRef,
-    (snap) => {
-      if (snap.exists()) {
-        const d = snap.data();
-        callbacks.onSettings({
-          storeName: d.storeName || 'FOUR GIFTS STORE',
-          subtitle: d.subtitle || '',
-          address: d.address || '',
-          contactNumber: d.contactPhone || '',
-          footerMessage: d.footerMessage || '',
-          paperSize: d.paperSize === '80mm' ? '80mm' : '58mm',
-          autoPrint: Boolean(d.autoPrint),
-        });
-        callbacks.onSyncActivity();
-      }
-    },
-    (err) => handleFirestoreError(err, OperationType.GET, `pos_settings/${uid}`)
-  );
+    const unsubSettings = onSnapshot(
+      settingsRef,
+      (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          callbacks.onSettings({
+            storeName: d.storeName || 'FOUR GIFTS STORE',
+            subtitle: d.subtitle || '',
+            address: d.address || '',
+            contactNumber: d.contactPhone || '',
+            footerMessage: d.footerMessage || '',
+            paperSize: d.paperSize === '80mm' ? '80mm' : '58mm',
+            autoPrint: Boolean(d.autoPrint),
+          });
+          callbacks.onSyncActivity();
+        }
+      },
+      (err) => handleFirestoreError(err, OperationType.GET, `pos_settings/${uid}`)
+    );
+    unsubs.push(unsubSettings);
 
-  const qProducts = query(
-    collection(db, 'pos_products'),
-    where('ownerId', '==', uid)
-  );
-  const unsubProducts = onSnapshot(
-    qProducts,
-    (snap) => {
-      hasCloudProducts = !snap.empty;
-      if (!initialProductsChecked) {
-        initialProductsChecked = true;
-        checkInitialSeed();
-      }
-      if (!snap.empty) {
+    const qProducts = query(
+      collection(db, 'pos_products'),
+      where('ownerId', '==', uid)
+    );
+    const unsubProducts = onSnapshot(
+      qProducts,
+      (snap) => {
         const list: Product[] = snap.docs
           .map((docSnap) => {
             const d = docSnap.data();
@@ -570,24 +568,18 @@ export function subscribeToCloudStore(
           .sort((a, b) => a.barcode.localeCompare(b.barcode));
         callbacks.onProducts(list);
         callbacks.onSyncActivity();
-      }
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_products')
-  );
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_products')
+    );
+    unsubs.push(unsubProducts);
 
-  const qSales = query(
-    collection(db, 'pos_sales'),
-    where('ownerId', '==', uid)
-  );
-  const unsubSales = onSnapshot(
-    qSales,
-    (snap) => {
-      hasCloudSales = !snap.empty;
-      if (!initialSalesChecked) {
-        initialSalesChecked = true;
-        checkInitialSeed();
-      }
-      if (!snap.empty) {
+    const qSales = query(
+      collection(db, 'pos_sales'),
+      where('ownerId', '==', uid)
+    );
+    const unsubSales = onSnapshot(
+      qSales,
+      (snap) => {
         const list: SaleTransaction[] = snap.docs
           .map((docSnap) => {
             const d = docSnap.data();
@@ -658,19 +650,18 @@ export function subscribeToCloudStore(
           );
         callbacks.onSales(list);
         callbacks.onSyncActivity();
-      }
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_sales')
-  );
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_sales')
+    );
+    unsubs.push(unsubSales);
 
-  const qUtang = query(
-    collection(db, 'pos_utang_payments'),
-    where('ownerId', '==', uid)
-  );
-  const unsubUtang = onSnapshot(
-    qUtang,
-    (snap) => {
-      if (!snap.empty) {
+    const qUtang = query(
+      collection(db, 'pos_utang_payments'),
+      where('ownerId', '==', uid)
+    );
+    const unsubUtang = onSnapshot(
+      qUtang,
+      (snap) => {
         const list: UtangPaymentTransaction[] = snap.docs
           .map((docSnap) => {
             const d = docSnap.data();
@@ -693,19 +684,18 @@ export function subscribeToCloudStore(
           );
         callbacks.onUtangPayments(list);
         callbacks.onSyncActivity();
-      }
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_utang_payments')
-  );
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_utang_payments')
+    );
+    unsubs.push(unsubUtang);
 
-  const qShifts = query(
-    collection(db, 'pos_shifts'),
-    where('ownerId', '==', uid)
-  );
-  const unsubShifts = onSnapshot(
-    qShifts,
-    (snap) => {
-      if (!snap.empty) {
+    const qShifts = query(
+      collection(db, 'pos_shifts'),
+      where('ownerId', '==', uid)
+    );
+    const unsubShifts = onSnapshot(
+      qShifts,
+      (snap) => {
         const list: DailyShiftRecord[] = snap.docs
           .map((docSnap) => {
             const d = docSnap.data();
@@ -724,91 +714,89 @@ export function subscribeToCloudStore(
           .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
         callbacks.onShifts(list);
         callbacks.onSyncActivity();
-      }
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_shifts')
-  );
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_shifts')
+    );
+    unsubs.push(unsubShifts);
 
-  const qAdjustments = query(
-    collection(db, 'pos_adjustments'),
-    where('ownerId', '==', uid)
-  );
-  const unsubAdjustments = onSnapshot(
-    qAdjustments,
-    (snap) => {
-      const list: CashDrawerAdjustment[] = snap.docs
-        .map((docSnap) => {
-          const d = docSnap.data();
-          return {
-            id: d.id,
-            createdAt: d.timestamp,
-            type: d.type === 'CASH_IN' ? 'CASH_IN' : 'EXPENSE_OUT',
-            amount: Number(d.amount),
-            reason: d.reason,
-          };
-        })
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      callbacks.onAdjustments(list);
-      callbacks.onSyncActivity();
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_adjustments')
-  );
-
-  const qParked = query(
-    collection(db, 'pos_parked_carts'),
-    where('ownerId', '==', uid)
-  );
-  const unsubParked = onSnapshot(
-    qParked,
-    (snap) => {
-      const list: ParkedCart[] = snap.docs
-        .map((docSnap) => {
-          const d = docSnap.data();
-          const rawItems: CartItem[] = (d.items || []).map(
-            (it: Record<string, unknown>) => ({
-              productId: String(it.productId || 'p_item'),
-              barcode: String(it.barcode || '0000'),
-              name: String(it.name || 'Item'),
-              category: String(it.category || 'Gifts'),
-              unitPrice: Number(it.unitPrice ?? 0),
-              originalSellingPrice: Number(
-                it.originalSellingPrice ?? it.unitPrice ?? 0
-              ),
-              capitalPrice: Number(it.capitalPrice ?? it.costPrice ?? 0),
-              quantity: Number(it.quantity ?? 1),
-              currentStock: Number(it.currentStock ?? 0),
-            })
+    const qAdjustments = query(
+      collection(db, 'pos_adjustments'),
+      where('ownerId', '==', uid)
+    );
+    const unsubAdjustments = onSnapshot(
+      qAdjustments,
+      (snap) => {
+        const list: CashDrawerAdjustment[] = snap.docs
+          .map((docSnap) => {
+            const d = docSnap.data();
+            return {
+              id: d.id,
+              createdAt: d.timestamp,
+              type: d.type === 'CASH_IN' ? 'CASH_IN' : 'EXPENSE_OUT',
+              amount: Number(d.amount),
+              reason: d.reason,
+            };
+          })
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
-          return {
-            id: d.id,
-            label: d.label,
-            createdAt: d.parkedAt,
-            items: rawItems,
-            discount: Number(d.discount),
-            customerName: d.note || undefined,
-            note: d.note || undefined,
-          };
-        })
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      callbacks.onParkedCarts(list);
-      callbacks.onSyncActivity();
-    },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'pos_parked_carts')
-  );
+        callbacks.onAdjustments(list);
+        callbacks.onSyncActivity();
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_adjustments')
+    );
+    unsubs.push(unsubAdjustments);
+
+    const qParked = query(
+      collection(db, 'pos_parked_carts'),
+      where('ownerId', '==', uid)
+    );
+    const unsubParked = onSnapshot(
+      qParked,
+      (snap) => {
+        const list: ParkedCart[] = snap.docs
+          .map((docSnap) => {
+            const d = docSnap.data();
+            const rawItems: CartItem[] = (d.items || []).map(
+              (it: Record<string, unknown>) => ({
+                productId: String(it.productId || 'p_item'),
+                barcode: String(it.barcode || '0000'),
+                name: String(it.name || 'Item'),
+                category: String(it.category || 'Gifts'),
+                unitPrice: Number(it.unitPrice ?? 0),
+                originalSellingPrice: Number(
+                  it.originalSellingPrice ?? it.unitPrice ?? 0
+                ),
+                capitalPrice: Number(it.capitalPrice ?? it.costPrice ?? 0),
+                quantity: Number(it.quantity ?? 1),
+                currentStock: Number(it.currentStock ?? 0),
+              })
+            );
+            return {
+              id: d.id,
+              label: d.label,
+              createdAt: d.parkedAt,
+              items: rawItems,
+              discount: Number(d.discount),
+              customerName: d.note || undefined,
+              note: d.note || undefined,
+            };
+          })
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        callbacks.onParkedCarts(list);
+        callbacks.onSyncActivity();
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'pos_parked_carts')
+    );
+    unsubs.push(unsubParked);
+  })();
 
   return () => {
-    unsubSettings();
-    unsubProducts();
-    unsubSales();
-    unsubUtang();
-    unsubShifts();
-    unsubAdjustments();
-    unsubParked();
+    unmounted = true;
+    unsubs.forEach((fn) => fn());
   };
 }

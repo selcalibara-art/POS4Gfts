@@ -1,0 +1,87 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "Four Gifts Store POS" [ref=e5] [cursor=pointer]:
+      - /url: "#cart"
+    - navigation "Primary POS Navigation" [ref=e6]:
+      - button "Cart Page" [ref=e7]
+      - button "List of Products (1 Low)" [ref=e13]
+      - button "Utang Ledger (2)" [ref=e19]
+      - button "Transactions & Cash Drawer" [ref=e23]
+    - button "Receipt & Store Settings" [ref=e28]
+  - main [ref=e33]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: SKU / Barcode Insert
+            - generic [ref=e41]: "USB/Bluetooth Scanner Ready · Type SKU (`1001`–`1006`) or Product Name"
+          - generic [ref=e43]:
+            - textbox "SKU / Barcode Insert" [active] [ref=e45]:
+              - /placeholder: Scan barcode or type SKU / product name (e.g. 1001, Wrapper, Ribbon)...
+            - button "Add Item (Enter)" [ref=e46]
+          - generic [ref=e47]:
+            - generic [ref=e48]: "Quick Tap Items:"
+            - button "1001Metallic Hologram Gift Wrapper" [ref=e49]
+            - button "1002Satin Pull Ribbon Bow" [ref=e50]
+            - button "1003Kraft Gift Bag with Rope Handle" [ref=e51]
+            - button "1004Mini Pull-Back Diecast Toy Car" [ref=e52]
+            - button "1005Gel Ink Pen 0.5mm" [ref=e53]
+            - button "1006Greeting Card with Envelope" [ref=e54]
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - heading "Customer Cart List" [level=2] [ref=e61]
+              - generic [ref=e62]: · 0 pcs
+            - generic [ref=e63]:
+              - button "Hold / Park Cart" [disabled]
+              - button "Clear Cart" [disabled]
+          - generic [ref=e64]:
+            - paragraph [ref=e66]: Cart is empty — ready for next customer
+            - paragraph [ref=e67]: "Scan any item with your USB/Bluetooth barcode scanner, type a barcode (`1001`–`1006`) in the insert bar above, or tap a quick item button."
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: "Bulk / Haggled Discount (₱):"
+              - spinbutton "Bulk / Haggled Discount (₱):" [ref=e71]
+            - generic [ref=e73]:
+              - text: "Subtotal:"
+              - strong [ref=e74]: ₱0.00
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: Type of Payment
+          - generic [ref=e78]:
+            - button "Cash" [ref=e79]
+            - button "GCash" [ref=e80]
+            - button "Utang (Credit)" [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: Amount Tendered / Paid (₱)
+            - spinbutton "Amount Tendered / Paid (₱)" [ref=e85]
+          - generic [ref=e86]:
+            - generic [ref=e87]: "Quick Denomination Tap:"
+            - generic [ref=e88]:
+              - button "Exact" [ref=e89]
+              - button "+₱20" [ref=e90]
+              - button "+₱50" [ref=e91]
+              - button "+₱100" [ref=e92]
+              - button "+₱200" [ref=e93]
+              - button "+₱500" [ref=e94]
+              - button "+₱1000" [ref=e95]
+              - button "Clear" [ref=e96]
+        - generic [ref=e97]:
+          - generic [ref=e99]:
+            - generic [ref=e100]: Subtotal (0 items)
+            - generic [ref=e101]: ₱0.00
+          - generic [ref=e102]:
+            - generic [ref=e103]: Grand Total (₱)
+            - generic [ref=e104]: ₱0.00
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - generic [ref=e107]: Amount Paid (₱)
+              - generic [ref=e108]: ₱0.00
+            - generic [ref=e109]:
+              - generic [ref=e110]: Change (₱)
+              - generic [ref=e111]: ₱0.00
+          - generic [ref=e113] [cursor=pointer]:
+            - checkbox "Auto-Print Receipt" [checked] [ref=e114]
+            - generic [ref=e115]: Auto-Print Receipt
+          - button "Complete Sale & Print Receipt (F9 / Enter)" [disabled] [ref=e116]
