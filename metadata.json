@@ -1,0 +1,6 @@
+{
+  "name": "Four Gifts Store POS",
+  "description": "Offline-capable retail Point of Sale, inventory management, Utang (credit) ledger, and 58mm/80mm thermal receipt system for Four Gifts Store (PHP / ₱).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

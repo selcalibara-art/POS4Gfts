@@ -1,0 +1,306 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidOwnerField(ownerId) {
+      return ownerId is string
+        && ownerId.size() >= 1
+        && ownerId.size() <= 128
+        && ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && ownerId == request.auth.uid;
+    }
+
+    // Entity 1: PosSettings
+    function isValidPosSettings(data) {
+      return data.keys().hasAll([
+          'ownerId', 'storeName', 'subtitle', 'address', 'contactPhone',
+          'tinOrPermit', 'footerMessage', 'paperSize', 'autoPrint',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'storeName', 'subtitle', 'address', 'contactPhone',
+          'tinOrPermit', 'footerMessage', 'paperSize', 'autoPrint',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.storeName is string && data.storeName.size() >= 1 && data.storeName.size() <= 120
+        && data.subtitle is string && data.subtitle.size() <= 160
+        && data.address is string && data.address.size() <= 200
+        && data.contactPhone is string && data.contactPhone.size() <= 60
+        && data.tinOrPermit is string && data.tinOrPermit.size() <= 100
+        && data.footerMessage is string && data.footerMessage.size() <= 240
+        && data.paperSize is string && data.paperSize.size() <= 10 && (data.paperSize == '58mm' || data.paperSize == '80mm')
+        && data.autoPrint is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 2: PosProduct
+    function isValidPosProduct(data) {
+      return data.keys().hasAll([
+          'ownerId', 'id', 'barcode', 'name', 'category',
+          'costPrice', 'sellingPrice', 'stock', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'id', 'barcode', 'name', 'category',
+          'costPrice', 'sellingPrice', 'stock', 'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 100 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.barcode is string && data.barcode.size() >= 1 && data.barcode.size() <= 64
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 160
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 80
+        && data.costPrice is number && data.costPrice >= 0 && data.costPrice <= 10000000
+        && data.sellingPrice is number && data.sellingPrice >= 0 && data.sellingPrice <= 10000000
+        && data.stock is number && data.stock >= -100000 && data.stock <= 1000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 3: PosSale
+    function isValidPosSale(data) {
+      return data.keys().hasAll([
+          'ownerId', 'id', 'receiptNo', 'timestamp', 'items',
+          'subtotal', 'discount', 'total', 'totalProfit', 'totalItems',
+          'paymentType', 'amountTendered', 'change', 'utangAmount',
+          'customerName', 'gcashRef', 'dueDateNote', 'status', 'voidedAt',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'id', 'receiptNo', 'timestamp', 'items',
+          'subtotal', 'discount', 'total', 'totalProfit', 'totalItems',
+          'paymentType', 'amountTendered', 'change', 'utangAmount',
+          'customerName', 'gcashRef', 'dueDateNote', 'status', 'voidedAt',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 100 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.receiptNo is string && data.receiptNo.size() >= 1 && data.receiptNo.size() <= 64
+        && data.timestamp is string && data.timestamp.size() >= 1 && data.timestamp.size() <= 64
+        && data.items is list && data.items.size() >= 1 && data.items.size() <= 50 && data.items[0] is map
+        && data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 10000000
+        && data.discount is number && data.discount >= 0 && data.discount <= 10000000
+        && data.total is number && data.total >= 0 && data.total <= 10000000
+        && data.totalProfit is number && data.totalProfit >= -10000000 && data.totalProfit <= 10000000
+        && data.totalItems is number && data.totalItems >= 1 && data.totalItems <= 100000
+        && data.paymentType is string && data.paymentType.size() <= 32
+        && (data.paymentType == 'CASH' || data.paymentType == 'GCASH' || data.paymentType == 'UTANG' || data.paymentType == 'SPLIT_CASH_UTANG')
+        && data.amountTendered is number && data.amountTendered >= 0 && data.amountTendered <= 10000000
+        && data.change is number && data.change >= 0 && data.change <= 10000000
+        && data.utangAmount is number && data.utangAmount >= 0 && data.utangAmount <= 10000000
+        && data.customerName is string && data.customerName.size() <= 120
+        && data.gcashRef is string && data.gcashRef.size() <= 80
+        && data.dueDateNote is string && data.dueDateNote.size() <= 200
+        && data.status is string && data.status.size() <= 20 && (data.status == 'COMPLETED' || data.status == 'VOIDED')
+        && data.voidedAt is string && data.voidedAt.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 4: PosUtangPayment
+    function isValidPosUtangPayment(data) {
+      return data.keys().hasAll([
+          'ownerId', 'id', 'receiptNo', 'timestamp', 'customerName',
+          'paymentMethod', 'gcashRef', 'previousBalance', 'amountPaid',
+          'remainingBalance', 'note', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'id', 'receiptNo', 'timestamp', 'customerName',
+          'paymentMethod', 'gcashRef', 'previousBalance', 'amountPaid',
+          'remainingBalance', 'note', 'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 100 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.receiptNo is string && data.receiptNo.size() >= 1 && data.receiptNo.size() <= 64
+        && data.timestamp is string && data.timestamp.size() >= 1 && data.timestamp.size() <= 64
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120
+        && data.paymentMethod is string && data.paymentMethod.size() <= 16 && (data.paymentMethod == 'CASH' || data.paymentMethod == 'GCASH')
+        && data.gcashRef is string && data.gcashRef.size() <= 80
+        && data.previousBalance is number && data.previousBalance >= 0 && data.previousBalance <= 10000000
+        && data.amountPaid is number && data.amountPaid > 0 && data.amountPaid <= 10000000
+        && data.remainingBalance is number && data.remainingBalance >= 0 && data.remainingBalance <= 10000000
+        && data.note is string && data.note.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 5: PosShift
+    function isValidPosShift(data) {
+      return data.keys().hasAll([
+          'ownerId', 'dayKey', 'openingFloat', 'openedAt', 'status',
+          'closingCountedCash', 'expectedCashAtClose', 'variance',
+          'closingNote', 'closedAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'dayKey', 'openingFloat', 'openedAt', 'status',
+          'closingCountedCash', 'expectedCashAtClose', 'variance',
+          'closingNote', 'closedAt', 'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.dayKey is string && data.dayKey.size() == 10 && data.dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.openingFloat is number && data.openingFloat >= 0 && data.openingFloat <= 10000000
+        && data.openedAt is string && data.openedAt.size() >= 1 && data.openedAt.size() <= 64
+        && data.status is string && data.status.size() <= 16 && (data.status == 'OPEN' || data.status == 'CLOSED')
+        && data.closingCountedCash is number && data.closingCountedCash >= 0 && data.closingCountedCash <= 10000000
+        && data.expectedCashAtClose is number && data.expectedCashAtClose >= -10000000 && data.expectedCashAtClose <= 10000000
+        && data.variance is number && data.variance >= -10000000 && data.variance <= 10000000
+        && data.closingNote is string && data.closingNote.size() <= 200
+        && data.closedAt is string && data.closedAt.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 6: PosAdjustment
+    function isValidPosAdjustment(data) {
+      return data.keys().hasAll([
+          'ownerId', 'id', 'dayKey', 'timestamp', 'type',
+          'amount', 'reason', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'id', 'dayKey', 'timestamp', 'type',
+          'amount', 'reason', 'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 100 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.dayKey is string && data.dayKey.size() == 10 && data.dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.timestamp is string && data.timestamp.size() >= 1 && data.timestamp.size() <= 64
+        && data.type is string && data.type.size() <= 16 && (data.type == 'CASH_OUT' || data.type == 'CASH_IN')
+        && data.amount is number && data.amount > 0 && data.amount <= 10000000
+        && data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Entity 7: PosParkedCart
+    function isValidPosParkedCart(data) {
+      return data.keys().hasAll([
+          'ownerId', 'id', 'label', 'note', 'discount',
+          'parkedAt', 'items', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'id', 'label', 'note', 'discount',
+          'parkedAt', 'items', 'createdAt', 'updatedAt'
+        ])
+        && isValidOwnerField(data.ownerId)
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 100 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.label is string && data.label.size() >= 1 && data.label.size() <= 120
+        && data.note is string && data.note.size() <= 200
+        && data.discount is number && data.discount >= 0 && data.discount <= 10000000
+        && data.parkedAt is string && data.parkedAt.size() >= 1 && data.parkedAt.size() <= 64
+        && data.items is list && data.items.size() >= 1 && data.items.size() <= 50 && data.items[0] is map
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection 1: /pos_settings/{settingId}
+    match /pos_settings/{settingId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && isValidPosSettings(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && isValidPosSettings(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['storeName', 'subtitle', 'address', 'contactPhone', 'tinOrPermit', 'footerMessage', 'paperSize', 'autoPrint', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(settingId) && settingId == request.auth.uid && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 2: /pos_products/{productId}
+    match /pos_products/{productId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(productId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(productId) && isValidPosProduct(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(productId) && isValidPosProduct(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        // Action: Edit Product Details or Restock
+        incoming().diff(existing()).affectedKeys().hasOnly(['barcode', 'name', 'category', 'costPrice', 'sellingPrice', 'stock', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(productId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 3: /pos_sales/{saleId}
+    match /pos_sales/{saleId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(saleId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(saleId) && isValidPosSale(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(saleId) && isValidPosSale(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && existing().status != 'VOIDED' && (
+        // Action: Void Sale (Terminal Transition)
+        (incoming().status == 'VOIDED' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'voidedAt', 'updatedAt']))
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(saleId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 4: /pos_utang_payments/{paymentId}
+    match /pos_utang_payments/{paymentId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(paymentId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(paymentId) && isValidPosUtangPayment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(paymentId) && isValidPosUtangPayment(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        // Action: Update payment note or reference
+        incoming().diff(existing()).affectedKeys().hasOnly(['gcashRef', 'note', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(paymentId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 5: /pos_shifts/{shiftId}
+    match /pos_shifts/{shiftId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(shiftId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(shiftId) && isValidPosShift(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(shiftId) && isValidPosShift(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        // Action 1: Update Opening Float
+        incoming().diff(existing()).affectedKeys().hasOnly(['openingFloat', 'openedAt', 'updatedAt']) ||
+        // Action 2: Close Shift or Re-Count Drawer
+        incoming().diff(existing()).affectedKeys().hasOnly(['openingFloat', 'openedAt', 'status', 'closingCountedCash', 'expectedCashAtClose', 'variance', 'closingNote', 'closedAt', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(shiftId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 6: /pos_adjustments/{adjustmentId}
+    match /pos_adjustments/{adjustmentId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(adjustmentId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(adjustmentId) && isValidPosAdjustment(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().dayKey == existing().dayKey && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        // Action: Update adjustment reason or amount
+        incoming().diff(existing()).affectedKeys().hasOnly(['type', 'amount', 'reason', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(adjustmentId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 7: /pos_parked_carts/{parkedId}
+    match /pos_parked_carts/{parkedId} {
+      allow get: if isSignedIn() && isVerified() && isValidId(parkedId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && isVerified() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isVerified() && isValidId(parkedId) && isValidPosParkedCart(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isVerified() && isValidId(parkedId) && isValidPosParkedCart(incoming()) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && (
+        // Action: Update parked cart items or note
+        incoming().diff(existing()).affectedKeys().hasOnly(['label', 'note', 'discount', 'items', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isVerified() && isValidId(parkedId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

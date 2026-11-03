@@ -1,0 +1,640 @@
+{
+  "entities": {
+    "PosSettings": {
+      "title": "PosSettings",
+      "description": "Store header, receipt configuration, and thermal printer settings owned by a specific merchant user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "storeName": {
+          "type": "string",
+          "description": "Display name of the retail store.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Subtitle printed under store name on thermal receipts.",
+          "minLength": 0,
+          "maxLength": 160
+        },
+        "address": {
+          "type": "string",
+          "description": "Store physical address line.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "contactPhone": {
+          "type": "string",
+          "description": "Store contact phone number.",
+          "minLength": 0,
+          "maxLength": 60
+        },
+        "tinOrPermit": {
+          "type": "string",
+          "description": "Optional TIN or Barangay business permit string.",
+          "minLength": 0,
+          "maxLength": 100
+        },
+        "footerMessage": {
+          "type": "string",
+          "description": "Footer message printed on thermal receipts.",
+          "minLength": 0,
+          "maxLength": 240
+        },
+        "paperSize": {
+          "type": "string",
+          "description": "Thermal receipt width setting.",
+          "enum": ["58mm", "80mm"]
+        },
+        "autoPrint": {
+          "type": "boolean",
+          "description": "Whether checkout automatically triggers thermal receipt printing."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when settings document was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when settings document was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "storeName",
+        "subtitle",
+        "address",
+        "contactPhone",
+        "tinOrPermit",
+        "footerMessage",
+        "paperSize",
+        "autoPrint",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosProduct": {
+      "title": "PosProduct",
+      "description": "Retail inventory catalog item with barcode, cost price, selling price, and stock count.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "id": {
+          "type": "string",
+          "description": "Application product identifier.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "barcode": {
+          "type": "string",
+          "description": "SKU or barcode string.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Product display name.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category label.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "Unit cost price (PHP / puhunan)."
+        },
+        "sellingPrice": {
+          "type": "number",
+          "description": "Unit retail selling price (PHP)."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Current inventory stock count."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when product was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when product was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "id",
+        "barcode",
+        "name",
+        "category",
+        "costPrice",
+        "sellingPrice",
+        "stock",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosSale": {
+      "title": "PosSale",
+      "description": "Completed or voided POS sale transaction including payment breakdown and bounded cart items.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "id": {
+          "type": "string",
+          "description": "Application sale transaction ID.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "receiptNo": {
+          "type": "string",
+          "description": "Formatted receipt number.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp when the sale occurred.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "items": {
+          "type": "array",
+          "description": "Bounded array of line items (1 to 50 items per receipt)."
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Cart subtotal before discount (PHP)."
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount amount applied (PHP)."
+        },
+        "total": {
+          "type": "number",
+          "description": "Final grand total (PHP)."
+        },
+        "totalProfit": {
+          "type": "number",
+          "description": "Net item profit for this transaction (PHP)."
+        },
+        "totalItems": {
+          "type": "number",
+          "description": "Total quantity of items sold."
+        },
+        "paymentType": {
+          "type": "string",
+          "description": "Payment mode used for checkout.",
+          "enum": ["CASH", "GCASH", "UTANG", "SPLIT_CASH_UTANG"]
+        },
+        "amountTendered": {
+          "type": "number",
+          "description": "Amount paid upfront by customer (PHP)."
+        },
+        "change": {
+          "type": "number",
+          "description": "Cash change returned to customer (PHP)."
+        },
+        "utangAmount": {
+          "type": "number",
+          "description": "Balance charged to store credit / Utang (PHP)."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer name for Utang or empty string.",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "gcashRef": {
+          "type": "string",
+          "description": "GCash reference number or empty string.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "dueDateNote": {
+          "type": "string",
+          "description": "Optional Utang due date or note.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "description": "Transaction lifecycle status ('VOIDED' is terminal).",
+          "enum": ["COMPLETED", "VOIDED"]
+        },
+        "voidedAt": {
+          "type": "string",
+          "description": "ISO timestamp if voided, or empty string.",
+          "minLength": 0,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when sale record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when sale record was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "id",
+        "receiptNo",
+        "timestamp",
+        "items",
+        "subtotal",
+        "discount",
+        "total",
+        "totalProfit",
+        "totalItems",
+        "paymentType",
+        "amountTendered",
+        "change",
+        "utangAmount",
+        "customerName",
+        "gcashRef",
+        "dueDateNote",
+        "status",
+        "voidedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosUtangPayment": {
+      "title": "PosUtangPayment",
+      "description": "Customer debt repayment transaction recorded against the Utang ledger.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "id": {
+          "type": "string",
+          "description": "Application Utang payment ID.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "receiptNo": {
+          "type": "string",
+          "description": "Formatted Utang payment receipt number.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp when payment was collected.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer name whose Utang balance was paid.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Collection channel.",
+          "enum": ["CASH", "GCASH"]
+        },
+        "gcashRef": {
+          "type": "string",
+          "description": "Optional GCash reference number.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "previousBalance": {
+          "type": "number",
+          "description": "Customer balance prior to payment (PHP)."
+        },
+        "amountPaid": {
+          "type": "number",
+          "description": "Amount collected (PHP)."
+        },
+        "remainingBalance": {
+          "type": "number",
+          "description": "Remaining debt balance after payment (PHP)."
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional payment note.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when record was updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "id",
+        "receiptNo",
+        "timestamp",
+        "customerName",
+        "paymentMethod",
+        "gcashRef",
+        "previousBalance",
+        "amountPaid",
+        "remainingBalance",
+        "note",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosShift": {
+      "title": "PosShift",
+      "description": "Daily store shift record tracking morning opening cash float and closing Z-Reading cash count.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "dayKey": {
+          "type": "string",
+          "description": "Local YYYY-MM-DD date key.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "openingFloat": {
+          "type": "number",
+          "description": "Morning starting cash float (Panukli) in PHP."
+        },
+        "openedAt": {
+          "type": "string",
+          "description": "ISO timestamp when shift was opened.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "description": "Shift status.",
+          "enum": ["OPEN", "CLOSED"]
+        },
+        "closingCountedCash": {
+          "type": "number",
+          "description": "Physical cash counted at shift closing (PHP)."
+        },
+        "expectedCashAtClose": {
+          "type": "number",
+          "description": "Expected drawer cash at closing (PHP)."
+        },
+        "variance": {
+          "type": "number",
+          "description": "Cash variance (Counted minus Expected) in PHP."
+        },
+        "closingNote": {
+          "type": "string",
+          "description": "Optional cashier closing audit note.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "closedAt": {
+          "type": "string",
+          "description": "ISO timestamp when shift was closed, or empty string.",
+          "minLength": 0,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when shift document was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when shift document was updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "dayKey",
+        "openingFloat",
+        "openedAt",
+        "status",
+        "closingCountedCash",
+        "expectedCashAtClose",
+        "variance",
+        "closingNote",
+        "closedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosAdjustment": {
+      "title": "PosAdjustment",
+      "description": "Petty cash expense (CASH_OUT) or extra drawer cash addition (CASH_IN).",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "id": {
+          "type": "string",
+          "description": "Adjustment identifier.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "dayKey": {
+          "type": "string",
+          "description": "Local YYYY-MM-DD date key.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp when adjustment was logged.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "type": {
+          "type": "string",
+          "description": "Direction of cash drawer adjustment.",
+          "enum": ["CASH_OUT", "CASH_IN"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "Adjustment amount in PHP."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason or description for petty cash adjustment.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when adjustment was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when adjustment was updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "id",
+        "dayKey",
+        "timestamp",
+        "type",
+        "amount",
+        "reason",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PosParkedCart": {
+      "title": "PosParkedCart",
+      "description": "Temporarily held customer checkout cart.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the store owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "id": {
+          "type": "string",
+          "description": "Parked cart identifier.",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "label": {
+          "type": "string",
+          "description": "Customer or cart label.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional note for parked cart.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount amount on parked cart (PHP)."
+        },
+        "parkedAt": {
+          "type": "string",
+          "description": "ISO timestamp when cart was parked.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "items": {
+          "type": "array",
+          "description": "Bounded list of parked cart items (1 to 50 items)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when parked cart was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when parked cart was updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "id",
+        "label",
+        "note",
+        "discount",
+        "parkedAt",
+        "items",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/pos_settings/{settingId}": {
+      "schema": "PosSettings",
+      "description": "Per-user store and receipt configuration document where settingId equals the owner's UID."
+    },
+    "/pos_products/{productId}": {
+      "schema": "PosProduct",
+      "description": "Per-user product inventory catalog items."
+    },
+    "/pos_sales/{saleId}": {
+      "schema": "PosSale",
+      "description": "Per-user POS sales transactions."
+    },
+    "/pos_utang_payments/{paymentId}": {
+      "schema": "PosUtangPayment",
+      "description": "Per-user customer Utang payment receipts."
+    },
+    "/pos_shifts/{shiftId}": {
+      "schema": "PosShift",
+      "description": "Per-user daily shift opening float and closing cash count records."
+    },
+    "/pos_adjustments/{adjustmentId}": {
+      "schema": "PosAdjustment",
+      "description": "Per-user petty cash expenses and drawer cash adjustments."
+    },
+    "/pos_parked_carts/{parkedId}": {
+      "schema": "PosParkedCart",
+      "description": "Per-user parked customer carts."
+    }
+  }
+}
