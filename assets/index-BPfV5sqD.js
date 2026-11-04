@@ -53474,7 +53474,7 @@ function isUntouchedDefaultSimulation(state) {
 	const voidedIds = state.sales.filter((s) => s.voided).map((s) => s.id);
 	if (voidedIds.length !== 1 || voidedIds[0] !== "sim-sale-8") return false;
 	if (state.utangPayments.length !== 3) return false;
-	if (state.utangPayments.some((u) => !String(u.id).startsWith("sim-utang-pay-"))) return false;
+	if (state.utangPayments.some((u) => !String(u.id).startsWith("sim-utgpay-"))) return false;
 	if (state.adjustments.length !== 3) return false;
 	if (state.adjustments.some((a) => !String(a.id).startsWith("sim-adj-"))) return false;
 	return true;
