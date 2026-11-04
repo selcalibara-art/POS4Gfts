@@ -82,7 +82,7 @@ test('Firestore Rules — Dirty Dozen Payload Guard Verification', () => {
 
   // 11. Query Trust Enforcer on allow list
   const listMatches = rulesText.match(/allow list:[^\n]+/g) || [];
-  assert.ok(listMatches.length === 7, 'All 7 collections must have explicit allow list rules');
+  assert.ok(listMatches.length === 8, 'All 8 collections must have explicit allow list rules');
   for (const line of listMatches) {
     assert.ok(
       line.includes('isAuthorizedWorkspace(existing().ownerId)'),

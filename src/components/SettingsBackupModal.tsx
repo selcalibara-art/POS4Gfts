@@ -9,6 +9,9 @@ import {
   Printer,
   Cloud,
   RefreshCw,
+  ShieldCheck,
+  Smartphone,
+  Lock,
 } from 'lucide-react';
 import {
   Product,
@@ -16,7 +19,7 @@ import {
   StoreSettings,
   UtangPaymentTransaction,
 } from '../types/pos';
-import { CLOUD_STORAGE_KEYS } from '../services/cloudSync';
+import { CLOUD_STORAGE_KEYS, PosDeviceRecord } from '../services/cloudSync';
 
 interface SettingsBackupModalProps {
   isOpen: boolean;
@@ -40,6 +43,12 @@ interface SettingsBackupModalProps {
   onSignOutCloud?: () => void;
   onSyncCloudNow?: () => void;
   onPullCloudNow?: () => void;
+  currentDeviceId?: string;
+  registeredDevices?: PosDeviceRecord[];
+  onApproveDevice?: (device: PosDeviceRecord) => Promise<void>;
+  onRejectDevice?: (device: PosDeviceRecord) => Promise<void>;
+  onRemoveDevice?: (deviceId: string) => Promise<void>;
+  onLockCurrentDevice?: () => void;
 }
 
 export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
@@ -56,6 +65,12 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
   lastSavedTime,
   onSyncCloudNow,
   onPullCloudNow,
+  currentDeviceId,
+  registeredDevices = [],
+  onApproveDevice,
+  onRejectDevice,
+  onRemoveDevice,
+  onLockCurrentDevice,
 }) => {
   const [formState, setFormState] = useState<StoreSettings>(settings);
   const [gasWebhookUrl, setGasWebhookUrl] = useState<string>(() => {
@@ -253,6 +268,103 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Connected & Pending Devices (Password + Owner Confirmation Manager) */}
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-slate-800 shrink-0" />
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Device Access &amp; Owner Confirmation Gate
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  New devices require store password <code className="font-mono font-bold text-slate-900">/Calibara0911</code> + Owner Confirmation before opening the POS.
+                </p>
+              </div>
+              {onLockCurrentDevice && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onLockCurrentDevice();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Lock This Device</span>
+                </button>
+              )}
+            </div>
+
+            {registeredDevices.length > 0 && (
+              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                {registeredDevices.map((dev) => {
+                  const isThis = dev.id === currentDeviceId;
+                  return (
+                    <div
+                      key={dev.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Smartphone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span className="font-bold text-slate-900 truncate">
+                          {dev.deviceName}
+                        </span>
+                        {isThis && (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold shrink-0">
+                            This Device
+                          </span>
+                        )}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                            dev.status === 'APPROVED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : dev.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-900'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {dev.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {dev.status !== 'APPROVED' && onApproveDevice && (
+                          <button
+                            type="button"
+                            onClick={() => void onApproveDevice(dev)}
+                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded transition-colors"
+                          >
+                            Confirm &amp; Allow
+                          </button>
+                        )}
+                        {!isThis && dev.status === 'APPROVED' && onRejectDevice && (
+                          <button
+                            type="button"
+                            onClick={() => void onRejectDevice(dev)}
+                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold rounded transition-colors"
+                          >
+                            Revoke Access
+                          </button>
+                        )}
+                        {!isThis && dev.status === 'REJECTED' && onRemoveDevice && (
+                          <button
+                            type="button"
+                            onClick={() => void onRemoveDevice(dev.id)}
+                            className="px-2 py-1 text-slate-500 hover:text-slate-900 font-medium"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Store & Receipt Header Configuration */}

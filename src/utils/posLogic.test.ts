@@ -277,3 +277,23 @@ test('generateSevenDayStoreSimulation produces 7 full days of opening-to-closing
   assert.equal(todayMetrics.expenseOutAdjustments, 35);
   assert.equal(todayMetrics.expectedCashInDrawer, 1075); // 1000 + 110 - 35
 });
+
+test('isValidDeviceAccessPassword validates /Calibara0911 and Calibara0911 and rejects invalid passwords', async () => {
+  const { isValidDeviceAccessPassword, detectReadableDeviceName } = await import('./posLogic');
+  assert.equal(isValidDeviceAccessPassword('/Calibara0911'), true);
+  assert.equal(isValidDeviceAccessPassword('  /Calibara0911  '), true);
+  assert.equal(isValidDeviceAccessPassword('Calibara0911'), true);
+  assert.equal(isValidDeviceAccessPassword('calibara0911'), false);
+  assert.equal(isValidDeviceAccessPassword('wrongpass'), false);
+  assert.equal(isValidDeviceAccessPassword(''), false);
+
+  assert.equal(
+    detectReadableDeviceName('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'),
+    'Windows PC · Chrome'
+  );
+  assert.equal(
+    detectReadableDeviceName('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36'),
+    'Android Phone · Chrome'
+  );
+});
+

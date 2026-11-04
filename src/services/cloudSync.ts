@@ -29,7 +29,7 @@ import {
   ParkedCart,
   StoreSettings,
 } from '../types/pos';
-import { INITIAL_PRODUCTS } from '../utils/posLogic';
+import { INITIAL_PRODUCTS, detectReadableDeviceName } from '../utils/posLogic';
 
 export const SHARED_STORE_OWNER_ID = 'four_gifts_store_main';
 
@@ -38,6 +38,57 @@ export const CLOUD_STORAGE_KEYS = {
   LOCAL_CUSTOMIZED: 'fgs_pos_local_customized_v1',
   GAS_WEBHOOK_URL: 'fgs_pos_gas_webhook_url_v1',
 };
+
+export const DEVICE_STORAGE_KEYS = {
+  DEVICE_ID: 'fgs_pos_device_id_v1',
+  DEVICE_NAME: 'fgs_pos_device_name_v1',
+  DEVICE_APPROVED: 'fgs_pos_device_approved_v1',
+};
+
+export type DeviceAccessStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface PosDeviceRecord {
+  id: string;
+  deviceName: string;
+  userAgent: string;
+  status: DeviceAccessStatus;
+  requestedAt: string;
+  approvedBy: string;
+  updatedAt: string;
+}
+
+export function getOrCreateLocalDeviceIdentity(): {
+  deviceId: string;
+  deviceName: string;
+  userAgent: string;
+} {
+  const ua = typeof navigator !== 'undefined' ? String(navigator.userAgent || '').slice(0, 220) : '';
+  const defaultName = detectReadableDeviceName(ua);
+
+  let deviceId = '';
+  let deviceName = defaultName;
+  try {
+    deviceId = localStorage.getItem(DEVICE_STORAGE_KEYS.DEVICE_ID) || '';
+    if (!deviceId) {
+      deviceId = `dev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_ID, deviceId);
+    }
+    const savedName = localStorage.getItem(DEVICE_STORAGE_KEYS.DEVICE_NAME);
+    if (savedName && savedName.trim()) {
+      deviceName = savedName.trim();
+    } else {
+      localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_NAME, defaultName);
+    }
+  } catch {
+    deviceId = `dev_session_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  return {
+    deviceId: sanitizeSafeId(deviceId, 80),
+    deviceName: clampString(deviceName, 120, defaultName) || defaultName,
+    userAgent: clampString(ua, 240),
+  };
+}
 
 /**
  * Strips verbose parenthetical timezone suffixes (e.g.
@@ -1138,3 +1189,118 @@ export function subscribeToCloudPulse(
     }
   );
 }
+
+/**
+ * Device Security Gate Cloud Operations (`/pos_devices/{deviceId}`)
+ */
+function parseDeviceDoc(docSnap: { id: string; data: () => Record<string, unknown> }): PosDeviceRecord {
+  const d = docSnap.data();
+  const ts = d.updatedAt as { toDate?: () => Date } | undefined;
+  const rawStatus = String(d.status || 'PENDING');
+  const status: DeviceAccessStatus =
+    rawStatus === 'APPROVED' || rawStatus === 'REJECTED' ? rawStatus : 'PENDING';
+  return {
+    id: String(d.id || docSnap.id),
+    deviceName: String(d.deviceName || 'POS Device'),
+    userAgent: String(d.userAgent || ''),
+    status,
+    requestedAt: sanitizeLocaleDateString(String(d.requestedAt || '')),
+    approvedBy: String(d.approvedBy || ''),
+    updatedAt:
+      ts && typeof ts.toDate === 'function'
+        ? ts.toDate().toISOString()
+        : sanitizeLocaleDateString(String(d.requestedAt || '')),
+  };
+}
+
+export async function fetchAllDevicesFromCloud(uid: string): Promise<PosDeviceRecord[]> {
+  const q = query(collection(db, 'pos_devices'), where('ownerId', '==', uid));
+  const snap = await fetchDocsFresh(q);
+  return snap.docs
+    .map((d) => parseDeviceDoc({ id: d.id, data: () => d.data() as Record<string, unknown> }))
+    .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+}
+
+export async function upsertDeviceRecordToCloud(
+  uid: string,
+  device: {
+    id: string;
+    deviceName: string;
+    userAgent: string;
+    status: DeviceAccessStatus;
+    requestedAt: string;
+    approvedBy: string;
+  }
+): Promise<void> {
+  const safeId = sanitizeSafeId(device.id, 100);
+  const docId = makeCloudDocId(uid, safeId);
+  const path = `pos_devices/${docId}`;
+  const ref = doc(db, 'pos_devices', docId);
+  const editableFields = {
+    deviceName: clampString(device.deviceName, 120, 'POS Device') || 'POS Device',
+    userAgent: clampString(device.userAgent, 240),
+    status:
+      device.status === 'APPROVED' || device.status === 'REJECTED'
+        ? device.status
+        : ('PENDING' as const),
+    requestedAt:
+      clampString(
+        sanitizeLocaleDateString(device.requestedAt),
+        64,
+        new Date().toISOString()
+      ) || new Date().toISOString(),
+    approvedBy: clampString(device.approvedBy, 120),
+  };
+
+  try {
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      await updateDoc(ref, {
+        ...editableFields,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(ref, {
+        ownerId: uid,
+        id: safeId,
+        ...editableFields,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteDeviceFromCloud(uid: string, deviceId: string): Promise<void> {
+  const safeId = sanitizeSafeId(deviceId, 100);
+  const docId = makeCloudDocId(uid, safeId);
+  const path = `pos_devices/${docId}`;
+  const ref = doc(db, 'pos_devices', docId);
+  try {
+    await deleteDoc(ref);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export function subscribeToDevicesInCloud(
+  uid: string,
+  onDevicesChanged: (devices: PosDeviceRecord[]) => void
+): Unsubscribe {
+  const q = query(collection(db, 'pos_devices'), where('ownerId', '==', uid));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs
+        .map((d) => parseDeviceDoc({ id: d.id, data: () => d.data() as Record<string, unknown> }))
+        .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+      onDevicesChanged(list);
+    },
+    () => {
+      // ignore transient errors; fallback polling handles updates
+    }
+  );
+}
+

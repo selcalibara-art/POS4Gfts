@@ -1177,3 +1177,36 @@ export function generateSevenDayStoreSimulation(
     adjustments,
   };
 }
+
+/**
+ * Validates the store access password required for every new device.
+ * Accepts '/Calibara0911' (and 'Calibara0911' without the leading slash).
+ */
+export function isValidDeviceAccessPassword(input: string): boolean {
+  const cleaned = String(input || '').trim();
+  return cleaned === '/Calibara0911' || cleaned === 'Calibara0911';
+}
+
+/**
+ * Generates a human-readable device label from a User-Agent string
+ * so the owner can easily identify which PC, phone, or tablet is requesting access.
+ */
+export function detectReadableDeviceName(userAgent = ''): string {
+  const ua = String(userAgent || '');
+  let os = 'Device';
+  if (/Windows/i.test(ua)) os = 'Windows PC';
+  else if (/iPhone/i.test(ua)) os = 'iPhone';
+  else if (/iPad/i.test(ua)) os = 'iPad';
+  else if (/Android/i.test(ua)) os = 'Android Phone';
+  else if (/Macintosh|Mac OS X/i.test(ua)) os = 'Mac';
+  else if (/Linux/i.test(ua)) os = 'Linux PC';
+
+  let browser = 'Browser';
+  if (/Edg\//i.test(ua)) browser = 'Edge';
+  else if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//i.test(ua)) browser = 'Firefox';
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = 'Safari';
+
+  return `${os} · ${browser}`;
+}
+

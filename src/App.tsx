@@ -44,6 +44,10 @@ import { TransactionsReportPage } from './components/TransactionsReportPage';
 import { ReceiptModal } from './components/ReceiptModal';
 import { SettingsBackupModal } from './components/SettingsBackupModal';
 import {
+  DeviceSecurityGate,
+  PendingDeviceApprovalBanner,
+} from './components/DeviceSecurityGate';
+import {
   auth,
   googleProvider,
   signInWithPopup,
@@ -54,15 +58,27 @@ import {
 import {
   SHARED_STORE_OWNER_ID,
   CLOUD_STORAGE_KEYS,
+  DEVICE_STORAGE_KEYS,
   FullStoreState,
+  PosDeviceRecord,
+  getOrCreateLocalDeviceIdentity,
   createCanonicalStateSignature,
   isUntouchedDefaultSimulation,
   syncFullStoreStateToCloud,
   fetchStoreStateFromCloud,
   subscribeToCloudPulse,
+  fetchAllDevicesFromCloud,
+  upsertDeviceRecordToCloud,
+  deleteDeviceFromCloud,
+  subscribeToDevicesInCloud,
 } from './services/cloudSync';
 
 type NavTab = 'CART' | 'PRODUCTS' | 'UTANG' | 'REPORTS';
+type DeviceGateState =
+  | 'PASSWORD'
+  | 'PENDING_CONFIRMATION'
+  | 'APPROVED'
+  | 'REJECTED';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'fgs_pos_products_v1',
@@ -178,6 +194,32 @@ export default function App() {
     formatCurrentTimeShort()
   );
 
+  // Device Security Gate State (Password /Calibara0911 + Live Owner Confirmation)
+  const localDevice = useMemo(() => getOrCreateLocalDeviceIdentity(), []);
+  const [deviceAccessState, setDeviceAccessState] = useState<DeviceGateState>(
+    () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('autostart') === '1') {
+          localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED, 'true');
+          return 'APPROVED';
+        }
+        if (
+          localStorage.getItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED) === 'true'
+        ) {
+          return 'APPROVED';
+        }
+      } catch {
+        // ignore
+      }
+      return 'PASSWORD';
+    }
+  );
+  const [isDeviceSubmitting, setIsDeviceSubmitting] = useState<boolean>(false);
+  const [registeredDevices, setRegisteredDevices] = useState<PosDeviceRecord[]>(
+    []
+  );
+
   // Keep latest L1 state in a ref for atomic Write-Through & Reconciliation
   const latestStoreRef = useRef<FullStoreState>({
     settings,
@@ -237,6 +279,228 @@ export default function App() {
     });
     return () => unsubAuth();
   }, []);
+
+  // Reconcile incoming cloud device list against this device's identity
+  const applyCloudDevicesList = useCallback(
+    (devices: PosDeviceRecord[]) => {
+      setRegisteredDevices(devices);
+      const mine = devices.find((d) => d.id === localDevice.deviceId);
+      if (!mine) return;
+
+      if (mine.status === 'APPROVED') {
+        setDeviceAccessState((prev) => {
+          if (prev === 'PASSWORD') {
+            return 'PASSWORD';
+          }
+          try {
+            localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED, 'true');
+          } catch {
+            // ignore
+          }
+          if (prev !== 'APPROVED') {
+            showQuickNotice('Owner confirmed this device! POS unlocked.');
+          }
+          return 'APPROVED';
+        });
+      } else if (mine.status === 'REJECTED') {
+        try {
+          localStorage.removeItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED);
+        } catch {
+          // ignore
+        }
+        setDeviceAccessState((prev) =>
+          prev === 'PASSWORD' ? 'PASSWORD' : 'REJECTED'
+        );
+      }
+    },
+    [localDevice.deviceId, showQuickNotice]
+  );
+
+  // Subscribe to real-time device authorization list (`pos_devices`)
+  useEffect(() => {
+    const unsubDevices = subscribeToDevicesInCloud(
+      SHARED_STORE_OWNER_ID,
+      (devices) => {
+        applyCloudDevicesList(devices);
+      }
+    );
+
+    const pollMs = deviceAccessState === 'PENDING_CONFIRMATION' ? 3500 : 15000;
+    const interval = window.setInterval(async () => {
+      try {
+        const list = await fetchAllDevicesFromCloud(SHARED_STORE_OWNER_ID);
+        applyCloudDevicesList(list);
+      } catch {
+        // ignore transient poll errors
+      }
+    }, pollMs);
+
+    return () => {
+      unsubDevices();
+      window.clearInterval(interval);
+    };
+  }, [applyCloudDevicesList, deviceAccessState]);
+
+  // Step 1 Handler: User entered valid password (/Calibara0911) on new device
+  const handleSubmitPasswordRequest = async (deviceName: string) => {
+    setIsDeviceSubmitting(true);
+    try {
+      try {
+        localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_NAME, deviceName);
+      } catch {
+        // ignore
+      }
+
+      const existingDevices = await fetchAllDevicesFromCloud(
+        SHARED_STORE_OWNER_ID
+      );
+      setRegisteredDevices(existingDevices);
+
+      const approvedDevices = existingDevices.filter(
+        (d) => d.status === 'APPROVED'
+      );
+      const existingMine = existingDevices.find(
+        (d) => d.id === localDevice.deviceId
+      );
+
+      // If no approved device exists in the store yet (Primary Owner's first device)
+      // OR if this device was already approved previously, approve immediately:
+      if (
+        approvedDevices.length === 0 ||
+        existingMine?.status === 'APPROVED'
+      ) {
+        await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+          id: localDevice.deviceId,
+          deviceName,
+          userAgent: localDevice.userAgent,
+          status: 'APPROVED',
+          requestedAt: new Date().toISOString(),
+          approvedBy: 'Primary Store Owner Setup',
+        });
+        try {
+          localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED, 'true');
+        } catch {
+          // ignore
+        }
+        setDeviceAccessState('APPROVED');
+        showQuickNotice(
+          `Registered "${deviceName}" as Primary Owner Device!`
+        );
+      } else {
+        // 1+ approved devices already exist: require live Owner Confirmation (Step 2)
+        await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+          id: localDevice.deviceId,
+          deviceName,
+          userAgent: localDevice.userAgent,
+          status: 'PENDING',
+          requestedAt: new Date().toISOString(),
+          approvedBy: '',
+        });
+        setDeviceAccessState('PENDING_CONFIRMATION');
+      }
+    } catch {
+      // Fallback if offline: allow if password was verified
+      setDeviceAccessState('PENDING_CONFIRMATION');
+    } finally {
+      setIsDeviceSubmitting(false);
+    }
+  };
+
+  // Owner Direct Self-Confirm (when the owner is setting up the new device themselves)
+  const handleOwnerDirectApproveSelf = async (deviceName: string) => {
+    setIsDeviceSubmitting(true);
+    try {
+      await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+        id: localDevice.deviceId,
+        deviceName,
+        userAgent: localDevice.userAgent,
+        status: 'APPROVED',
+        requestedAt: new Date().toISOString(),
+        approvedBy: 'Store Owner Direct Confirmation',
+      });
+      try {
+        localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED, 'true');
+      } catch {
+        // ignore
+      }
+      setDeviceAccessState('APPROVED');
+      showQuickNotice(`Device "${deviceName}" confirmed by Store Owner!`);
+    } finally {
+      setIsDeviceSubmitting(false);
+    }
+  };
+
+  const handleOwnerGoogleApproveSelf = async (deviceName: string) => {
+    setIsDeviceSubmitting(true);
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      if (cred.user) {
+        await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+          id: localDevice.deviceId,
+          deviceName,
+          userAgent: localDevice.userAgent,
+          status: 'APPROVED',
+          requestedAt: new Date().toISOString(),
+          approvedBy: cred.user.email || 'Store Owner Google Account',
+        });
+        try {
+          localStorage.setItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED, 'true');
+        } catch {
+          // ignore
+        }
+        setDeviceAccessState('APPROVED');
+        showQuickNotice(`Confirmed with ${cred.user.email}!`);
+      }
+    } catch {
+      // ignore popup close
+    } finally {
+      setIsDeviceSubmitting(false);
+    }
+  };
+
+  const handleApproveDeviceFromOwner = async (target: PosDeviceRecord) => {
+    await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+      id: target.id,
+      deviceName: target.deviceName,
+      userAgent: target.userAgent,
+      status: 'APPROVED',
+      requestedAt: target.requestedAt,
+      approvedBy: localDevice.deviceName || cloudUser?.email || 'Store Owner',
+    });
+    const updated = await fetchAllDevicesFromCloud(SHARED_STORE_OWNER_ID);
+    setRegisteredDevices(updated);
+    showQuickNotice(`Confirmed & unlocked "${target.deviceName}"!`);
+  };
+
+  const handleRejectDeviceFromOwner = async (target: PosDeviceRecord) => {
+    await upsertDeviceRecordToCloud(SHARED_STORE_OWNER_ID, {
+      id: target.id,
+      deviceName: target.deviceName,
+      userAgent: target.userAgent,
+      status: 'REJECTED',
+      requestedAt: target.requestedAt,
+      approvedBy: localDevice.deviceName || cloudUser?.email || 'Store Owner',
+    });
+    const updated = await fetchAllDevicesFromCloud(SHARED_STORE_OWNER_ID);
+    setRegisteredDevices(updated);
+    showQuickNotice(`Blocked access for "${target.deviceName}".`);
+  };
+
+  const handleRemoveDeviceFromOwner = async (targetDeviceId: string) => {
+    await deleteDeviceFromCloud(SHARED_STORE_OWNER_ID, targetDeviceId);
+    const updated = await fetchAllDevicesFromCloud(SHARED_STORE_OWNER_ID);
+    setRegisteredDevices(updated);
+    showQuickNotice('Removed device record.');
+  };
+
+  const handleLockCurrentDevice = () => {
+    try {
+      localStorage.removeItem(DEVICE_STORAGE_KEYS.DEVICE_APPROVED);
+    } catch {
+      // ignore
+    }
+    setDeviceAccessState('PASSWORD');
+  };
 
   /**
    * 2. Write Pipeline: Optimistic UI (0ms L1 Commit) + Immediate Cloud Push (saveAllToCloud)
@@ -391,6 +655,8 @@ export default function App() {
   // Trigger 1 (Cold Boot Mount), Trigger 2 (20s Periodic Polling + Real-Time Pulse),
   // Trigger 3 (Window Focus & Visibility Change), Trigger 4 (Cross-Tab Storage Listener)
   useEffect(() => {
+    if (deviceAccessState !== 'APPROVED') return;
+
     // 1. Cold Boot Mount
     void syncWithCloud(true);
 
@@ -472,7 +738,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('storage', handleStorageEvent);
     };
-  }, [syncWithCloud]);
+  }, [deviceAccessState, syncWithCloud]);
 
   // Keep L1 localStorage synced on any state update
   useEffect(() => {
@@ -886,8 +1152,50 @@ export default function App() {
     );
   };
 
+  const pendingOtherDevices = useMemo(
+    () =>
+      registeredDevices.filter(
+        (d) => d.status === 'PENDING' && d.id !== localDevice.deviceId
+      ),
+    [registeredDevices, localDevice.deviceId]
+  );
+
+  // Render the New Device Security Gate if this device is not yet approved
+  if (deviceAccessState !== 'APPROVED') {
+    return (
+      <DeviceSecurityGate
+        storeName={settings.storeName}
+        deviceId={localDevice.deviceId}
+        initialDeviceName={localDevice.deviceName}
+        userAgent={localDevice.userAgent}
+        gateStep={deviceAccessState}
+        isSubmitting={isDeviceSubmitting}
+        onSubmitPasswordRequest={handleSubmitPasswordRequest}
+        onOwnerDirectApproveSelf={handleOwnerDirectApproveSelf}
+        onOwnerGoogleApproveSelf={handleOwnerGoogleApproveSelf}
+        onRetryCheckStatus={async () => {
+          setIsDeviceSubmitting(true);
+          try {
+            const list = await fetchAllDevicesFromCloud(SHARED_STORE_OWNER_ID);
+            applyCloudDevicesList(list);
+          } finally {
+            setIsDeviceSubmitting(false);
+          }
+        }}
+        onResetToPasswordStep={() => setDeviceAccessState('PASSWORD')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+      {/* Live Owner Confirmation Banner when a new device enters /Calibara0911 and awaits approval */}
+      <PendingDeviceApprovalBanner
+        pendingDevices={pendingOtherDevices}
+        onApproveDevice={handleApproveDeviceFromOwner}
+        onRejectDevice={handleRejectDeviceFromOwner}
+      />
+
       {/* Floating Non-Intrusive Auto-Sync Toast */}
       {bannerNotice && (
         <div
@@ -1116,6 +1424,12 @@ export default function App() {
         onSignOutCloud={handleGoogleSignOut}
         onSyncCloudNow={handleManualCloudSync}
         onPullCloudNow={handleManualCloudPull}
+        currentDeviceId={localDevice.deviceId}
+        registeredDevices={registeredDevices}
+        onApproveDevice={handleApproveDeviceFromOwner}
+        onRejectDevice={handleRejectDeviceFromOwner}
+        onRemoveDevice={handleRemoveDeviceFromOwner}
+        onLockCurrentDevice={handleLockCurrentDevice}
       />
     </div>
   );
