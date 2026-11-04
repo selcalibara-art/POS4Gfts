@@ -157,7 +157,7 @@ export function isUntouchedDefaultSimulation(state: FullStoreState): boolean {
   if (voidedIds.length !== 1 || voidedIds[0] !== 'sim-sale-8') return false;
 
   if (state.utangPayments.length !== 3) return false;
-  if (state.utangPayments.some((u) => !String(u.id).startsWith('sim-utang-pay-'))) return false;
+  if (state.utangPayments.some((u) => !String(u.id).startsWith('sim-utgpay-'))) return false;
 
   if (state.adjustments.length !== 3) return false;
   if (state.adjustments.some((a) => !String(a.id).startsWith('sim-adj-'))) return false;
