@@ -164,7 +164,6 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
     e.preventDefault();
     const amt = Math.max(0.01, parseFloat(adjAmountStr) || 0);
     if (!adjReason.trim()) return;
-    // Stamp adjustment on the currently viewed date so simulating any day works seamlessly
     const dateKey = targetDateFilter || todayStr;
     const now = new Date();
     const [y, m, d] = dateKey.split('-').map(Number);
@@ -258,10 +257,10 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       {/* Top Filter & Date Selection Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-slate-900">
-            Daily Cash Drawer, Shift Register & Profit Reconciliation
+          <h2 className="text-base font-bold text-[#181818]">
+            Daily Cash Drawer, Shift Register &amp; Profit Reconciliation
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-neutral-500 mt-0.5">
             Track store opening float (Panukli), sales, petty cash expenses, and closing Z-Reading cash count
           </p>
         </div>
@@ -271,7 +270,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
             aria-label="Select Shift Day to Inspect"
             value={selectedDateKey}
             onChange={(e) => setSelectedDateKey(e.target.value)}
-            className="px-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+            className="px-3.5 py-2 text-xs font-semibold bg-white border border-neutral-300 rounded-xl text-[#181818] focus:outline-none focus:ring-2 focus:ring-[#181818]"
           >
             {recentDayOptions.map((opt) => (
               <option key={opt.key} value={opt.key}>
@@ -284,7 +283,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
           <button
             type="button"
             onClick={() => onPrintZReading(buildZReportData())}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-[#181818] hover:bg-[#272727] text-white rounded-xl whitespace-nowrap"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Print Z-Reading Report</span>
@@ -294,33 +293,33 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
 
       {/* Store Opening-to-Closing Shift Register Bar */}
       {selectedDateKey !== 'ALL' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-6">
             <div>
-              <div className="text-[11px] font-medium text-slate-500">
+              <div className="text-xs font-medium text-neutral-500">
                 Morning Opening Float (Panukli)
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span
                   data-testid="shift-opening-float"
-                  className="font-mono text-base font-bold text-slate-900"
+                  className="font-mono text-base font-bold text-[#181818]"
                 >
                   {formatPHP(metrics.openingFloat)}
                 </span>
                 <button
                   type="button"
                   onClick={handleOpenFloatModal}
-                  className="text-xs font-semibold text-slate-600 hover:text-slate-900 underline"
+                  className="text-xs font-semibold text-neutral-600 hover:text-[#181818] underline"
                 >
                   Edit Float
                 </button>
               </div>
             </div>
 
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="h-8 w-px bg-neutral-200 hidden sm:block" />
 
             <div>
-              <div className="text-[11px] font-medium text-slate-500">
+              <div className="text-xs font-medium text-neutral-500">
                 Petty Cash Expenses / Cash In
               </div>
               <div className="font-mono text-sm font-bold mt-0.5">
@@ -335,15 +334,15 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
               </div>
             </div>
 
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="h-8 w-px bg-neutral-200 hidden sm:block" />
 
             <div>
-              <div className="text-[11px] font-medium text-slate-500">
+              <div className="text-xs font-medium text-neutral-500">
                 Shift Closing Status
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {typeof metrics.actualClosingCashCounted === 'number' ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>
                       Closed · Counted {formatPHP(metrics.actualClosingCashCounted)}{' '}
@@ -358,7 +357,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   </span>
                 ) : (
                   <span className="text-xs font-semibold text-amber-700">
-                    Shift Open — Pending Closing Cash Count
+                    Shift Open · Pending Closing Cash Count
                   </span>
                 )}
               </div>
@@ -369,7 +368,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
             <button
               type="button"
               onClick={() => setIsExpenseModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#181818] bg-[#F6F6F4] hover:bg-neutral-200/80 border border-neutral-300 rounded-xl whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>+ Log Petty Cash / Expense</span>
@@ -378,10 +377,10 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
             <button
               type="button"
               onClick={handleOpenClosingModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl whitespace-nowrap"
             >
               <Wallet className="w-3.5 h-3.5" />
-              <span>Close Shift & Count Drawer</span>
+              <span>Close Shift &amp; Count Drawer</span>
             </button>
           </div>
         </div>
@@ -390,18 +389,18 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       {/* 4 Financial Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Expected Cash in Drawer */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-neutral-600">
             <span>1. Expected Cash in Drawer (₱)</span>
             <Banknote className="w-4 h-4 text-emerald-700" />
           </div>
           <div
             data-testid="metric-expected-cash"
-            className="font-mono text-2xl font-bold text-slate-900"
+            className="font-mono text-2xl font-bold text-[#181818]"
           >
             {formatPHP(metrics.expectedCashInDrawer)}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-neutral-500">
             Float: {formatPHP(metrics.openingFloat)} · Cash Sales:{' '}
             {formatPHP(metrics.cashSalesToday)} · Utang Paid:{' '}
             {formatPHP(metrics.cashUtangCollectedToday)}
@@ -412,26 +411,26 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
         </div>
 
         {/* 2. GCash Collected Today */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-neutral-600">
             <span>2. GCash Collected (₱)</span>
             <Smartphone className="w-4 h-4 text-blue-600" />
           </div>
           <div
             data-testid="metric-gcash-collected"
-            className="font-mono text-2xl font-bold text-slate-900"
+            className="font-mono text-2xl font-bold text-[#181818]"
           >
             {formatPHP(metrics.gcashCollectedToday)}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-neutral-500">
             GCash Sales: {formatPHP(metrics.gcashSalesToday)} · Utang Paid
             (GCash): {formatPHP(metrics.gcashUtangCollectedToday)}
           </div>
         </div>
 
         {/* 3. New Utang Issued Today */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-neutral-600">
             <span>3. New Utang Issued (₱)</span>
             <BookOpen className="w-4 h-4 text-amber-600" />
           </div>
@@ -441,14 +440,14 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
           >
             {formatPHP(metrics.newUtangIssuedToday)}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-neutral-500">
             Uncollected credit issued during selected period
           </div>
         </div>
 
         {/* 4. Realized Net Profit */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-neutral-600">
             <span>4. Realized Net Profit (₱)</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
@@ -458,7 +457,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
           >
             {formatPHP(metrics.netProfitAfterExpenses)}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-neutral-500">
             Gross Sales: {formatPHP(metrics.grossSalesToday)} · Item Profit:{' '}
             {formatPHP(metrics.realizedNetProfit)}
           </div>
@@ -476,21 +475,21 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
 
       {/* Petty Cash / Store Expenses List for Selected Period (if any) */}
       {filteredAdjustments.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <div className="text-xs font-bold text-slate-900 mb-2">
-            Petty Cash & Drawer Adjustments ({filteredAdjustments.length})
+        <div className="bg-white border border-neutral-200/90 rounded-2xl p-4 sm:p-5">
+          <div className="text-xs font-semibold text-[#181818] mb-2.5">
+            Petty Cash &amp; Drawer Adjustments ({filteredAdjustments.length})
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {filteredAdjustments.map((adj) => (
               <div
                 key={adj.id}
-                className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2 text-xs"
+                className="p-3 bg-[#F6F6F4] border border-neutral-200 rounded-xl flex items-center justify-between gap-2 text-xs"
               >
                 <div className="min-w-0">
-                  <div className="font-semibold text-slate-900 truncate">
+                  <div className="font-semibold text-[#181818] truncate">
                     {adj.reason}
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-xs text-neutral-500">
                     {new Date(adj.createdAt).toLocaleString('en-PH', {
                       month: 'short',
                       day: '2-digit',
@@ -514,7 +513,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                     type="button"
                     aria-label={`Delete adjustment ${adj.reason}`}
                     onClick={() => onDeleteCashAdjustment(adj.id)}
-                    className="text-slate-400 hover:text-red-600"
+                    className="text-neutral-400 hover:text-red-600"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -526,26 +525,26 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       )}
 
       {/* Transaction History Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/60">
+      <div className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-3 bg-[#F6F6F4]/60">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">
+            <h3 className="text-sm font-bold text-[#181818]">
               Transaction History ({filteredSales.length})
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500 mt-0.5">
               Reprint any thermal receipt or void a returned sale to restore product stock
             </p>
           </div>
 
           <div className="relative min-w-[260px] sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Receipt #, Customer, or Item..."
               aria-label="Search transactions by Receipt #, Customer, or Item"
-              className="w-full pl-9 pr-3 py-2 text-xs font-medium bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="w-full pl-9 pr-3 py-2 text-xs font-medium bg-white border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
             />
           </div>
         </div>
@@ -553,9 +552,9 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500">
+              <tr className="border-b border-neutral-200 bg-[#F6F6F4]/70 text-xs font-semibold text-neutral-500">
                 <th className="py-3 px-4">Receipt No.</th>
-                <th className="py-3 px-3">Date & Time</th>
+                <th className="py-3 px-3">Date &amp; Time</th>
                 <th className="py-3 px-3">Items Sold</th>
                 <th className="py-3 px-3">Payment / Customer</th>
                 <th className="py-3 px-3 text-right">Total (₱)</th>
@@ -564,12 +563,12 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 text-sm">
+            <tbody className="divide-y divide-neutral-200/80 text-sm">
               {filteredSales.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
-                    className="py-12 px-4 text-center text-xs text-slate-500"
+                    className="py-12 px-4 text-center text-xs text-neutral-500"
                   >
                     No transactions recorded for this date filter. Switch to "All Recorded Sessions" or complete a sale on the Cart Page.
                   </td>
@@ -582,21 +581,21 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                       key={sale.id}
                       className={`transition-colors ${
                         sale.voided
-                          ? 'bg-slate-100/70 text-slate-400'
-                          : 'hover:bg-slate-50/80'
+                          ? 'bg-neutral-100/70 text-neutral-400'
+                          : 'hover:bg-[#F6F6F4]/60'
                       }`}
                     >
-                      <td className="py-3 px-4 font-mono text-xs font-bold text-slate-900">
+                      <td className="py-3 px-4 font-mono text-xs font-bold text-[#181818]">
                         <div className={sale.voided ? 'line-through' : ''}>
                           {sale.receiptNo}
                         </div>
                         {sale.voided && (
-                          <span className="text-[10px] font-sans font-bold text-red-600">
+                          <span className="text-xs font-sans font-semibold text-red-600">
                             VOIDED (Stock Restored)
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-xs text-slate-600 whitespace-nowrap">
+                      <td className="py-3 px-3 text-xs text-neutral-600 whitespace-nowrap">
                         {dt.toLocaleDateString('en-PH', {
                           month: 'short',
                           day: '2-digit',
@@ -606,28 +605,28 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                           minute: '2-digit',
                         })}
                       </td>
-                      <td className="py-3 px-3 text-xs text-slate-700 max-w-xs">
+                      <td className="py-3 px-3 text-xs text-neutral-700 max-w-xs">
                         <div className="truncate font-medium">
                           {sale.items
                             .map((i) => `${i.quantity}x ${i.name}`)
                             .join(', ')}
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-xs text-neutral-500">
                           {sale.totalItems} pcs total
                         </div>
                       </td>
                       <td className="py-3 px-3 text-xs">
-                        <div className="font-semibold text-slate-900">
+                        <div className="font-semibold text-[#181818]">
                           {sale.paymentType}
                           {sale.splitToUtang ? ' + UTANG SPLIT' : ''}
                         </div>
                         {sale.customerName && (
-                          <div className="text-slate-600">
+                          <div className="text-neutral-600">
                             Customer: {sale.customerName}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-[#181818]">
                         {formatPHP(sale.grandTotal)}
                       </td>
                       <td className="py-3 px-3 text-right font-mono text-xs">
@@ -646,7 +645,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                           <button
                             type="button"
                             onClick={() => onReprintSaleReceipt(sale)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[#181818] bg-[#F6F6F4] hover:bg-neutral-200 border border-neutral-300 rounded-lg"
                           >
                             <Printer className="w-3.5 h-3.5" />
                             <span>Reprint Receipt</span>
@@ -658,7 +657,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setConfirmVoidId(sale.id)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-md transition-colors"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-lg"
                                 >
                                   <RotateCcw className="w-3.5 h-3.5" />
                                   <span>Void / Return Sale</span>
@@ -671,14 +670,14 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                                       onVoidSale(sale.id);
                                       setConfirmVoidId(null);
                                     }}
-                                    className="px-2.5 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                                    className="px-2.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg"
                                   >
                                     Confirm Void
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setConfirmVoidId(null)}
-                                    className="px-2 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+                                    className="px-2 py-1.5 text-xs font-medium text-neutral-600 hover:text-[#181818]"
                                   >
                                     Cancel
                                   </button>
@@ -700,21 +699,21 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       {/* Modal 1: Edit Morning Opening Float (Panukli) */}
       {isFloatModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#181818]/65 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="float-modal-title"
         >
-          <div className="bg-white border border-slate-200 rounded-xl max-w-sm w-full p-5 shadow-xl">
+          <div className="bg-white border border-neutral-200 rounded-2xl max-w-sm w-full p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 id="float-modal-title" className="text-sm font-bold text-slate-900">
+              <h3 id="float-modal-title" className="text-sm font-bold text-[#181818]">
                 Set Morning Opening Cash Float (Panukli)
               </h3>
               <button
                 type="button"
                 onClick={() => setIsFloatModalOpen(false)}
                 aria-label="Close Float Modal"
-                className="text-slate-400 hover:text-slate-800"
+                className="text-neutral-400 hover:text-[#181818]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -723,7 +722,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
               <div>
                 <label
                   htmlFor="opening-float-input"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
                 >
                   Starting Cash / Coins in Drawer (₱)
                 </label>
@@ -735,20 +734,20 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   required
                   value={openingFloatStr}
                   onChange={(e) => setOpeningFloatStr(e.target.value)}
-                  className="w-full px-3 py-2 font-mono text-base font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2 font-mono text-base font-bold border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsFloatModalOpen(false)}
-                  className="px-3 py-2 text-xs font-semibold text-slate-600"
+                  className="px-3.5 py-2 text-xs font-semibold text-neutral-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg"
+                  className="px-4 py-2 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl"
                 >
                   Save Opening Float
                 </button>
@@ -761,21 +760,21 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       {/* Modal 2: Log Petty Cash Expense / Cash In-Out */}
       {isExpenseModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#181818]/65 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="expense-modal-title"
         >
-          <div className="bg-white border border-slate-200 rounded-xl max-w-md w-full p-5 shadow-xl">
+          <div className="bg-white border border-neutral-200 rounded-2xl max-w-md w-full p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 id="expense-modal-title" className="text-sm font-bold text-slate-900">
+              <h3 id="expense-modal-title" className="text-sm font-bold text-[#181818]">
                 Log Petty Cash Expense or Drawer Cash-In
               </h3>
               <button
                 type="button"
                 onClick={() => setIsExpenseModalOpen(false)}
                 aria-label="Close Petty Cash Modal"
-                className="text-slate-400 hover:text-slate-800"
+                className="text-neutral-400 hover:text-[#181818]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -785,10 +784,10 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setAdjType('EXPENSE_OUT')}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold border ${
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold border ${
                     adjType === 'EXPENSE_OUT'
                       ? 'bg-red-600 text-white border-red-600'
-                      : 'bg-white text-slate-700 border-slate-300'
+                      : 'bg-white text-neutral-700 border-neutral-300'
                   }`}
                 >
                   Cash Out (Store Expense)
@@ -796,10 +795,10 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setAdjType('CASH_IN')}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold border ${
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold border ${
                     adjType === 'CASH_IN'
                       ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-slate-700 border-slate-300'
+                      : 'bg-white text-neutral-700 border-neutral-300'
                   }`}
                 >
                   Cash In (Add Change)
@@ -809,7 +808,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
               <div>
                 <label
                   htmlFor="adj-amount-input"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
                 >
                   Amount (₱) *
                 </label>
@@ -822,14 +821,14 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   value={adjAmountStr}
                   onChange={(e) => setAdjAmountStr(e.target.value)}
                   placeholder="e.g. 50.00"
-                  className="w-full px-3 py-2 font-mono text-base font-bold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2 font-mono text-base font-bold border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="adj-reason-input"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
                 >
                   Reason / Description *
                 </label>
@@ -840,7 +839,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   value={adjReason}
                   onChange={(e) => setAdjReason(e.target.value)}
                   placeholder="e.g. Plastic sando bags, tricycle delivery, thermal roll..."
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2 text-xs border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
@@ -848,13 +847,13 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsExpenseModalOpen(false)}
-                  className="px-3 py-2 text-xs font-semibold text-slate-600"
+                  className="px-3.5 py-2 text-xs font-semibold text-neutral-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg"
+                  className="px-4 py-2 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl"
                 >
                   Save Drawer Entry
                 </button>
@@ -867,49 +866,49 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       {/* Modal 3: Close Shift & Count Physical Cash Drawer */}
       {isClosingModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#181818]/65 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="closing-modal-title"
         >
-          <div className="bg-white border border-slate-200 rounded-xl max-w-md w-full p-5 shadow-xl">
+          <div className="bg-white border border-neutral-200 rounded-2xl max-w-md w-full p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 id="closing-modal-title" className="text-sm font-bold text-slate-900">
-                Close Shift & Reconcile Physical Cash Drawer
+              <h3 id="closing-modal-title" className="text-sm font-bold text-[#181818]">
+                Close Shift &amp; Reconcile Physical Cash Drawer
               </h3>
               <button
                 type="button"
                 onClick={() => setIsClosingModalOpen(false)}
                 aria-label="Close Shift Modal"
-                className="text-slate-400 hover:text-slate-800"
+                className="text-neutral-400 hover:text-[#181818]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveClosingAndPrintZ} className="space-y-4">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 text-xs">
+              <div className="p-3.5 bg-[#F6F6F4] border border-neutral-200 rounded-xl space-y-1.5 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Opening Float (Panukli):</span>
+                  <span className="text-neutral-600">Opening Float (Panukli):</span>
                   <span className="font-mono font-semibold">
                     {formatPHP(metrics.openingFloat)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">
-                    + Cash Sales & Cash Utang Collected:
+                  <span className="text-neutral-600">
+                    + Cash Sales &amp; Cash Utang Collected:
                   </span>
                   <span className="font-mono font-semibold">
                     +{formatPHP(metrics.netCashFromSalesAndUtang)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">- Petty Cash Expenses:</span>
+                  <span className="text-neutral-600">- Petty Cash Expenses:</span>
                   <span className="font-mono font-semibold text-red-600">
                     -{formatPHP(metrics.expenseOutAdjustments)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-1 border-t border-slate-200 font-bold text-slate-900 text-sm">
+                <div className="flex justify-between pt-1.5 border-t border-neutral-200 font-bold text-[#181818] text-sm">
                   <span>Expected Cash in Drawer:</span>
                   <span className="font-mono">
                     {formatPHP(metrics.expectedCashInDrawer)}
@@ -920,7 +919,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
               <div>
                 <label
                   htmlFor="closing-cash-counted-input"
-                  className="block text-xs font-bold text-slate-800 mb-1"
+                  className="block text-xs font-semibold text-neutral-800 mb-1.5"
                 >
                   Actual Physical Cash Counted in Box (₱) *
                 </label>
@@ -932,14 +931,14 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   required
                   value={closingCountStr}
                   onChange={(e) => setClosingCountStr(e.target.value)}
-                  className="w-full px-3.5 py-2.5 font-mono text-lg font-bold text-right border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2.5 font-mono text-lg font-bold text-right border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="closing-note-input"
-                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
                 >
                   Closing Note (Optional)
                 </label>
@@ -949,24 +948,24 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                   value={closingNote}
                   onChange={(e) => setClosingNote(e.target.value)}
                   placeholder="e.g. Left ₱1,000 float for tomorrow morning"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2 text-xs border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+              <div className="flex justify-end gap-2 pt-2 border-t border-neutral-200">
                 <button
                   type="button"
                   onClick={() => setIsClosingModalOpen(false)}
-                  className="px-3 py-2 text-xs font-semibold text-slate-600"
+                  className="px-3.5 py-2 text-xs font-semibold text-neutral-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Close Shift & Print Z-Reading</span>
+                  <span>Close Shift &amp; Print Z-Reading</span>
                 </button>
               </div>
             </form>

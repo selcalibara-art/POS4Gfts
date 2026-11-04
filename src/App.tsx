@@ -1188,7 +1188,15 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-[#F6F6F4] text-[#181818]">
+      {/* Accessible Skip-to-Content Link for Keyboard Navigation */}
+      <a
+        href="#main-pos-workspace"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#181818] focus:text-white focus:text-xs focus:font-semibold focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Live Owner Confirmation Banner when a new device enters /Calibara0911 and awaits approval */}
       <PendingDeviceApprovalBanner
         pendingDevices={pendingOtherDevices}
@@ -1201,7 +1209,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="no-print fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3.5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-lg border border-slate-700"
+          className="no-print fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#181818] text-white text-xs font-semibold rounded-xl shadow-lg border border-neutral-800"
         >
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span>{bannerNotice}</span>
@@ -1209,7 +1217,7 @@ export default function App() {
       )}
 
       {/* Top Navigation Bar (Strict 3-Zone Contract: Brand — 4 Nav Links — 1 Primary Action) */}
-      <header className="no-print bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-2.5 gap-x-8 sticky top-0 z-30">
+      <header className="no-print bg-white border-b border-neutral-200/90 px-4 sm:px-6 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-2.5 gap-x-8 sticky top-0 z-30">
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#cart"
@@ -1217,7 +1225,7 @@ export default function App() {
             e.preventDefault();
             setActiveTab('CART');
           }}
-          className="text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0"
+          className="text-lg font-bold tracking-tight text-[#181818] whitespace-nowrap shrink-0"
         >
           Four Gifts Store POS
         </a>
@@ -1225,15 +1233,16 @@ export default function App() {
         {/* Zone 2: 4 concise single-line navigation links */}
         <nav
           aria-label="Primary POS Navigation"
-          className="order-3 lg:order-none w-full lg:w-auto flex items-center gap-5 sm:gap-6 text-xs sm:text-sm font-semibold overflow-x-auto pt-1 lg:pt-0 border-t lg:border-t-0 border-slate-100"
+          className="order-3 lg:order-none w-full lg:w-auto flex items-center gap-5 sm:gap-6 text-xs sm:text-sm font-semibold overflow-x-auto pt-1.5 lg:pt-0 border-t lg:border-t-0 border-neutral-100"
         >
           <button
             type="button"
+            aria-current={activeTab === 'CART' ? 'page' : undefined}
             onClick={() => setActiveTab('CART')}
-            className={`inline-flex items-center gap-1.5 py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1.5 py-1.5 border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'CART'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
+                ? 'border-[#181818] text-[#181818]'
+                : 'border-transparent text-neutral-500 hover:text-[#181818]'
             }`}
           >
             <ShoppingCart className="w-4 h-4" />
@@ -1244,11 +1253,12 @@ export default function App() {
 
           <button
             type="button"
+            aria-current={activeTab === 'PRODUCTS' ? 'page' : undefined}
             onClick={() => setActiveTab('PRODUCTS')}
-            className={`inline-flex items-center gap-1.5 py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1.5 py-1.5 border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'PRODUCTS'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
+                ? 'border-[#181818] text-[#181818]'
+                : 'border-transparent text-neutral-500 hover:text-[#181818]'
             }`}
           >
             <Package className="w-4 h-4" />
@@ -1260,11 +1270,12 @@ export default function App() {
 
           <button
             type="button"
+            aria-current={activeTab === 'UTANG' ? 'page' : undefined}
             onClick={() => setActiveTab('UTANG')}
-            className={`inline-flex items-center gap-1.5 py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1.5 py-1.5 border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'UTANG'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
+                ? 'border-[#181818] text-[#181818]'
+                : 'border-transparent text-neutral-500 hover:text-[#181818]'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -1276,11 +1287,12 @@ export default function App() {
 
           <button
             type="button"
+            aria-current={activeTab === 'REPORTS' ? 'page' : undefined}
             onClick={() => setActiveTab('REPORTS')}
-            className={`inline-flex items-center gap-1.5 py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1.5 py-1.5 border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'REPORTS'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
+                ? 'border-[#181818] text-[#181818]'
+                : 'border-transparent text-neutral-500 hover:text-[#181818]'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -1293,7 +1305,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsSettingsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#181818] hover:bg-[#272727] rounded-lg whitespace-nowrap shrink-0"
           >
             <Settings className="w-3.5 h-3.5" />
             <span>Receipt &amp; Store Settings</span>
@@ -1302,7 +1314,10 @@ export default function App() {
       </header>
 
       {/* Main Content Viewport */}
-      <main className="no-print flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5">
+      <main
+        id="main-pos-workspace"
+        className="no-print flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6"
+      >
         {activeTab === 'CART' && (
           <CartPage
             products={products}

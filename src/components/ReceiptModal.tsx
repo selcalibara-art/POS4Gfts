@@ -492,17 +492,17 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#181818]/65 p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="receipt-modal-title"
     >
-      <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-xl">
+      <div className="bg-white border border-neutral-200 rounded-2xl max-w-xl w-full overflow-hidden shadow-xl">
         {/* Top Modal Header (Hidden when printing) */}
-        <div className="no-print flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50">
+        <div className="no-print flex items-center justify-between px-5 py-4 border-b border-neutral-200 bg-[#F6F6F4]/70">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <h2 id="receipt-modal-title" className="text-base font-bold text-slate-900">
+            <h2 id="receipt-modal-title" className="text-base font-bold text-[#181818]">
               {receiptData.kind === 'SALE'
                 ? 'Thermal Receipt Preview'
                 : receiptData.kind === 'UTANG_PAYMENT'
@@ -512,14 +512,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {onUpdatePaperSize && (
-              <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-medium">
+              <div className="flex items-center bg-[#F6F6F4] border border-neutral-200 p-0.5 rounded-xl text-xs font-medium">
                 <button
                   type="button"
                   onClick={() => onUpdatePaperSize('58mm')}
-                  className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap ${
                     settings.paperSize === '58mm'
-                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#181818] shadow-xs font-semibold'
+                      : 'text-neutral-600 hover:text-[#181818]'
                   }`}
                 >
                   58mm
@@ -527,10 +527,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpdatePaperSize('80mm')}
-                  className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg whitespace-nowrap ${
                     settings.paperSize === '80mm'
-                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#181818] shadow-xs font-semibold'
+                      : 'text-neutral-600 hover:text-[#181818]'
                   }`}
                 >
                   80mm
@@ -541,7 +541,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close Receipt Modal"
-              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-200/60 transition-colors"
+              className="p-1.5 text-neutral-500 hover:text-[#181818] rounded-lg hover:bg-neutral-200/60"
             >
               <X className="w-5 h-5" />
             </button>
@@ -549,18 +549,18 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         </div>
 
         {/* Receipt Paper Container */}
-        <div className="bg-slate-100 py-6 px-4 max-h-[65vh] overflow-y-auto flex justify-center">
-          <div className="bg-white border border-slate-300 shadow-xs">
+        <div className="bg-[#F6F6F4] py-6 px-4 max-h-[65vh] overflow-y-auto flex justify-center">
+          <div className="bg-white border border-neutral-300 shadow-xs">
             {renderReceiptContent()}
           </div>
         </div>
 
         {/* Receipt Modal Action Controls (Hidden when printing) */}
-        <div className="no-print px-5 py-4 bg-white border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="no-print px-5 py-4 bg-white border-t border-neutral-200 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <button
             type="button"
             onClick={handlePrintPrimary}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl whitespace-nowrap"
           >
             <Printer className="w-4 h-4 shrink-0" />
             <span>Print Receipt (Enter)</span>
@@ -569,7 +569,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <button
             type="button"
             onClick={handlePrintStoreCopy}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#F6F6F4] hover:bg-neutral-200 text-[#181818] border border-neutral-300 text-xs font-semibold rounded-xl whitespace-nowrap"
           >
             <Copy className="w-4 h-4 shrink-0" />
             <span>Print 2nd Copy (Store)</span>
@@ -578,7 +578,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl whitespace-nowrap"
           >
             <span>New Sale / Close (Esc)</span>
           </button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  ShieldCheck,
+  Fingerprint,
   Lock,
   Eye,
   EyeOff,
@@ -79,19 +79,19 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-4 text-slate-900">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="min-h-screen bg-[#181818] flex flex-col justify-center items-center p-4 sm:p-6 text-[#181818]">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-neutral-800 overflow-hidden shadow-2xl">
         {/* Top Security Header */}
-        <div className="bg-slate-950 text-white px-6 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        <div className="bg-[#1F1F1F] text-white px-6 py-5 border-b border-neutral-800">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <Fingerprint className="w-5 h-5 text-emerald-400" />
             </div>
-            <div>
-              <h1 className="text-base font-bold tracking-tight text-white">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-tight text-white truncate">
                 {storeName || 'Four Gifts Store POS'}
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-neutral-400 mt-0.5">
                 New Device Security Gate · Password &amp; Owner Confirmation
               </p>
             </div>
@@ -101,17 +101,17 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
         {/* Step 1: Password Gate */}
         {gateStep === 'PASSWORD' && (
           <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Step 1 of 2: Unrecognized Device</span>
+            <div className="p-4 rounded-xl bg-[#F6F6F4] border border-neutral-200 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-[#181818] flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-neutral-600" />
+                  <span>Step 1 of 2 · Unrecognized Device</span>
                 </span>
-                <span className="text-[11px] font-mono text-slate-500">
-                  {deviceId.slice(0, 16)}
+                <span className="text-xs font-mono text-neutral-500">
+                  {deviceId.slice(0, 14)}
                 </span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-neutral-600 leading-relaxed">
                 Every new device opening this POS requires the store password and owner confirmation before accessing store records.
               </p>
             </div>
@@ -119,7 +119,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
             {errorMsg && (
               <div
                 role="alert"
-                className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700"
+                className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700"
               >
                 <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span>{errorMsg}</span>
@@ -129,7 +129,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
             <div>
               <label
                 htmlFor="device-label-input"
-                className="block text-xs font-bold text-slate-700 mb-1"
+                className="block text-xs font-semibold text-neutral-700 mb-1.5"
               >
                 Device Name / Label
               </label>
@@ -141,14 +141,14 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
                 value={deviceName}
                 onChange={(e) => setDeviceName(e.target.value)}
                 placeholder="e.g., Owner PC, Cashier Phone, Counter Tablet"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                className="w-full px-3.5 py-2.5 text-sm font-medium bg-[#F6F6F4] border border-neutral-300 rounded-xl text-[#181818] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#181818]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="device-password-input"
-                className="block text-xs font-bold text-slate-700 mb-1"
+                className="block text-xs font-semibold text-neutral-700 mb-1.5"
               >
                 Store Access Password
               </label>
@@ -161,13 +161,13 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter store access password"
-                  className="w-full pl-3.5 pr-10 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full pl-3.5 pr-10 py-2.5 text-sm font-medium bg-[#F6F6F4] border border-neutral-300 rounded-xl text-[#181818] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-slate-800"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-neutral-500 hover:text-[#181818] rounded-lg"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -181,11 +181,13 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-[#181818] hover:bg-[#272727] disabled:opacity-60 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#181818] focus-visible:ring-offset-2"
             >
               <Lock className="w-4 h-4" />
               <span>
-                {isSubmitting ? 'Verifying & Requesting Access...' : 'Verify Password & Request Confirmation'}
+                {isSubmitting
+                  ? 'Verifying & Requesting Access...'
+                  : 'Verify Password & Request Confirmation'}
               </span>
             </button>
           </form>
@@ -195,29 +197,29 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
         {gateStep === 'PENDING_CONFIRMATION' && (
           <div className="p-6 space-y-4">
             <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
-              <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+              <div className="flex items-center gap-2 text-amber-950 font-semibold text-sm">
                 <Clock className="w-4 h-4 text-amber-600 animate-pulse shrink-0" />
-                <span>Step 2 of 2: Waiting for Owner Confirmation</span>
+                <span>Step 2 of 2 · Waiting for Owner Confirmation</span>
               </div>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                Password verified! A live confirmation alert has been sent to your approved owner device. Click{' '}
-                <strong className="font-bold">&ldquo;Confirm &amp; Allow Device&rdquo;</strong> on your primary PC or phone to unlock this screen immediately.
+              <p className="text-xs text-amber-900 leading-relaxed">
+                Password verified. A live confirmation request is now visible on your approved owner device. Select{' '}
+                <strong className="font-semibold">&ldquo;Confirm &amp; Allow Device&rdquo;</strong> on your primary PC or phone to unlock this register immediately.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Device Name:</span>
-                <span className="font-bold text-slate-900">{deviceName}</span>
+            <div className="p-4 rounded-xl bg-[#F6F6F4] border border-neutral-200 text-xs space-y-2">
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-500 font-medium">Device Name</span>
+                <span className="font-semibold text-[#181818]">{deviceName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Device ID:</span>
-                <span className="font-mono text-slate-700">{deviceId}</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-neutral-500 font-medium">Device ID</span>
+                <span className="font-mono text-neutral-700">{deviceId}</span>
               </div>
               {userAgent && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-slate-500 font-medium shrink-0">Browser:</span>
-                  <span className="text-slate-600 truncate text-right">{userAgent}</span>
+                  <span className="text-neutral-500 font-medium shrink-0">Browser</span>
+                  <span className="text-neutral-600 truncate text-right">{userAgent}</span>
                 </div>
               )}
             </div>
@@ -227,7 +229,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
                 type="button"
                 onClick={onRetryCheckStatus}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 px-3 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Check Confirmation Status Now</span>
@@ -235,36 +237,36 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
               <button
                 type="button"
                 onClick={onResetToPasswordStep}
-                className="py-2.5 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold rounded-xl transition-colors"
+                className="py-2.5 px-3.5 bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-300 text-xs font-semibold rounded-xl"
               >
                 Back
               </button>
             </div>
 
-            {/* Owner Self-Confirm Fallback (in case the owner is opening this device themselves) */}
-            <div className="pt-2 border-t border-slate-200">
+            {/* Owner Self-Confirm Fallback (when the owner is opening this device themselves) */}
+            <div className="pt-2 border-t border-neutral-200">
               <button
                 type="button"
                 onClick={() => setShowOwnerOverride((prev) => !prev)}
-                className="w-full text-left text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center justify-between py-1"
+                className="w-full text-left text-xs font-semibold text-neutral-600 hover:text-[#181818] flex items-center justify-between py-1"
               >
                 <span className="flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-slate-500" />
+                  <KeyRound className="w-3.5 h-3.5 text-neutral-500" />
                   <span>Are you the Store Owner opening this device yourself?</span>
                 </span>
-                <span className="text-[11px] underline">
+                <span className="text-xs underline">
                   {showOwnerOverride ? 'Hide' : 'Confirm Here'}
                 </span>
               </button>
 
               {showOwnerOverride && (
-                <div className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <p className="text-xs text-slate-600">
-                    If your other approved PC/phone is not nearby, you can confirm this device directly as the store owner:
+                <div className="mt-2.5 p-4 rounded-xl bg-[#F6F6F4] border border-neutral-200 space-y-3">
+                  <p className="text-xs text-neutral-600 leading-relaxed">
+                    If your other approved PC or phone is not nearby, confirm this device directly as the store owner:
                   </p>
 
                   {ownerOverrideError && (
-                    <div className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                    <div className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                       {ownerOverrideError}
                     </div>
                   )}
@@ -272,7 +274,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
                   <form onSubmit={handleOwnerPassOverride} className="space-y-2">
                     <label
                       htmlFor="owner-override-password-input"
-                      className="block text-[11px] font-bold text-slate-700"
+                      className="block text-xs font-semibold text-neutral-700"
                     >
                       Re-enter Owner Password to Confirm This Device
                     </label>
@@ -283,12 +285,12 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
                         value={ownerConfirmPass}
                         onChange={(e) => setOwnerConfirmPass(e.target.value)}
                         placeholder="Owner password"
-                        className="flex-1 px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white"
+                        className="flex-1 px-3 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#181818] bg-white"
                       />
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg whitespace-nowrap"
                       >
                         Confirm Device
                       </button>
@@ -297,9 +299,11 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => onOwnerGoogleApproveSelf(deviceName.trim() || initialDeviceName)}
+                    onClick={() =>
+                      onOwnerGoogleApproveSelf(deviceName.trim() || initialDeviceName)
+                    }
                     disabled={isSubmitting}
-                    className="w-full py-2 px-3 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors"
+                    className="w-full py-2 px-3 bg-white hover:bg-neutral-100 text-[#181818] border border-neutral-300 text-xs font-semibold rounded-lg"
                   >
                     Or Confirm with Owner Google Account
                   </button>
@@ -313,7 +317,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
         {gateStep === 'REJECTED' && (
           <div className="p-6 space-y-4">
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 space-y-2">
-              <div className="flex items-center gap-2 text-red-900 font-bold text-sm">
+              <div className="flex items-center gap-2 text-red-900 font-semibold text-sm">
                 <XCircle className="w-5 h-5 text-red-600 shrink-0" />
                 <span>Device Access Denied by Store Owner</span>
               </div>
@@ -325,7 +329,7 @@ export const DeviceSecurityGate: React.FC<DeviceSecurityGateProps> = ({
             <button
               type="button"
               onClick={onResetToPasswordStep}
-              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors"
+              className="w-full py-2.5 px-4 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl"
             >
               Return to Password Screen &amp; Request Again
             </button>
@@ -351,31 +355,33 @@ export const PendingDeviceApprovalBanner: React.FC<
     <div
       role="region"
       aria-label="New Device Access Requests"
-      className="no-print bg-amber-500 text-slate-950 border-b border-amber-600 px-4 sm:px-6 py-3 shadow-md"
+      className="no-print bg-[#181818] text-white border-b border-neutral-800 px-4 sm:px-6 py-3"
     >
       <div className="max-w-[1440px] mx-auto flex flex-col gap-2.5">
         {pendingDevices.map((dev) => (
           <div
             key={dev.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur rounded-xl px-4 py-2.5 border border-amber-700/20 shadow-sm"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#272727] rounded-xl px-4 py-3 border border-neutral-700"
           >
-            <div className="flex items-start sm:items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-                <Smartphone className="w-4 h-4 text-amber-800" />
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                <Smartphone className="w-4 h-4 text-amber-400" />
               </div>
               <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-200 text-amber-950">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold text-amber-400">
                     New Device Confirmation Needed
                   </span>
-                  <span className="text-sm font-bold text-slate-900">
+                  <span className="text-neutral-500">·</span>
+                  <span className="text-sm font-semibold text-white">
                     {dev.deviceName}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-500">
-                    ({dev.id.slice(0, 14)})
+                  <span className="text-neutral-500">·</span>
+                  <span className="font-mono text-neutral-400">
+                    {dev.id.slice(0, 14)}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-neutral-300 mt-0.5">
                   Entered valid store password · Waiting for your confirmation to access Four Gifts Store POS.
                 </p>
               </div>
@@ -385,7 +391,7 @@ export const PendingDeviceApprovalBanner: React.FC<
               <button
                 type="button"
                 onClick={() => onApproveDevice(dev)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg whitespace-nowrap"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Confirm &amp; Allow Device</span>
@@ -393,7 +399,7 @@ export const PendingDeviceApprovalBanner: React.FC<
               <button
                 type="button"
                 onClick={() => onRejectDevice(dev)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-lg whitespace-nowrap"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Deny / Block</span>

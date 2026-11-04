@@ -1,9 +1,25 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #181818;
+    background-color: #F6F6F4;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   .font-mono,
@@ -12,6 +28,37 @@
   .tabular-nums {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Tactile button & interactive states per Elaya Design System (B7 / B9) */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    transition-property: color, background-color, border-color, transform, opacity, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  button:not(:disabled):active {
+    transform: scale(0.98) translateY(1px);
+  }
+
+  input,
+  select,
+  textarea {
+    transition-property: border-color, background-color, box-shadow;
+    transition-duration: 250ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
