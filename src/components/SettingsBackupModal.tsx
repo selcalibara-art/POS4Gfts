@@ -9,7 +9,6 @@ import {
   Printer,
   Cloud,
   RefreshCw,
-  LogOut,
 } from 'lucide-react';
 import {
   Product,
@@ -17,6 +16,7 @@ import {
   StoreSettings,
   UtangPaymentTransaction,
 } from '../types/pos';
+import { CLOUD_STORAGE_KEYS } from '../services/cloudSync';
 
 interface SettingsBackupModalProps {
   isOpen: boolean;
@@ -39,6 +39,7 @@ interface SettingsBackupModalProps {
   onSignInCloud?: () => void;
   onSignOutCloud?: () => void;
   onSyncCloudNow?: () => void;
+  onPullCloudNow?: () => void;
 }
 
 export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
@@ -51,14 +52,19 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
   utangPayments,
   onRestoreBackup,
   onResetSampleData,
-  cloudUserEmail,
-  cloudSyncState = 'LOCAL_ONLY',
+  cloudSyncState = 'CLOUD_SAVED',
   lastSavedTime,
-  onSignInCloud,
-  onSignOutCloud,
   onSyncCloudNow,
+  onPullCloudNow,
 }) => {
   const [formState, setFormState] = useState<StoreSettings>(settings);
+  const [gasWebhookUrl, setGasWebhookUrl] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CLOUD_STORAGE_KEYS.GAS_WEBHOOK_URL) || '';
+    } catch {
+      return '';
+    }
+  });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -67,8 +73,13 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      localStorage.setItem(CLOUD_STORAGE_KEYS.GAS_WEBHOOK_URL, gasWebhookUrl.trim());
+    } catch {
+      // ignore storage errors
+    }
     onSaveSettings(formState);
-    setStatusMessage('Store & thermal printer settings auto-saved.');
+    setStatusMessage('Store & Cloud Auto-Save settings saved and pushed to Cloud.');
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -147,7 +158,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
         if (parsed.settings) {
           setFormState(parsed.settings);
         }
-        setStatusMessage('Backup restored and auto-saved!');
+        setStatusMessage('Backup restored and auto-saved to Cloud!');
       } catch {
         setStatusMessage('Failed to parse JSON backup file.');
       }
@@ -189,40 +200,58 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
             </div>
           )}
 
-          {/* Free Cloud Auto-Save Card */}
-          <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
-                <h3 className="text-sm font-bold text-slate-900">
-                  Automatic Multi-Device Cloud Auto-Save (Always On)
-                </h3>
+          {/* Dual-Tier L1 + L2 Cloud Auto-Save Card */}
+          <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Dual-Tier L1 + L2 Cloud Auto-Save (Always On)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-700">
+                  <span className="text-emerald-700 font-semibold">
+                    {cloudSyncState === 'SYNCING'
+                      ? 'Syncing with Cloud Store...'
+                      : cloudSyncState === 'ERROR'
+                      ? 'Retrying Cloud Sync automatically...'
+                      : `Synced to Cloud (${lastSavedTime || 'active'})`}
+                  </span>{' '}
+                  · Instant L1 Local Cache + Automatic L2 Cloud Push &amp; 4-Trigger Reconciliation across all PCs, phones, and tablets.
+                </p>
               </div>
-              <p className="text-xs text-slate-700">
-                <span className="text-emerald-700 font-semibold">
-                  {cloudSyncState === 'SYNCING'
-                    ? 'Saving latest changes to Firebase Cloud...'
-                    : `Saved to Cloud (${lastSavedTime || 'active'})`}
-                </span>{' '}
-                · Every sale, product, Utang record, and shift automatically syncs across all your PCs, phones, and tablets.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {onSyncCloudNow && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSyncCloudNow();
-                    setStatusMessage('Synced all POS records to Firebase Cloud.');
-                    setTimeout(() => setStatusMessage(null), 3000);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Sync Cloud Now</span>
-                </button>
-              )}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {onSyncCloudNow && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSyncCloudNow();
+                      setStatusMessage('Pushed this device state to Cloud Store.');
+                      setTimeout(() => setStatusMessage(null), 3000);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Sync Cloud Now</span>
+                  </button>
+                )}
+                {onPullCloudNow && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPullCloudNow();
+                      setStatusMessage('Pulled latest records from Cloud Store.');
+                      setTimeout(() => setStatusMessage(null), 3000);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-emerald-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Pull from Cloud</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -323,6 +352,23 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               />
             </div>
 
+            <div>
+              <label
+                htmlFor="gas-webhook-input"
+                className="block text-xs font-semibold text-slate-700 mb-1"
+              >
+                Optional Google Apps Script Web App URL (Secondary Google Sheet L2 Mirror)
+              </label>
+              <input
+                id="gas-webhook-input"
+                type="url"
+                placeholder="https://script.google.com/macros/s/.../exec (optional — Firebase Cloud is already active by default)"
+                value={gasWebhookUrl}
+                onChange={(e) => setGasWebhookUrl(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+              />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
                 <span className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -376,7 +422,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                 type="submit"
                 className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
               >
-                Save Store & Printer Settings
+                Save Store &amp; Printer Settings
               </button>
             </div>
           </form>
@@ -387,7 +433,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
           <div className="space-y-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Offline Data Backup & Restore
+                Offline Data Backup &amp; Restore
               </h3>
               <p className="text-xs text-slate-600 mt-0.5">
                 Export all products, sales history, and Utang ledger records to a file or restore from a previous backup.

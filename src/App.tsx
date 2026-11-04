@@ -3,19 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Download,
-  Upload,
   Settings,
   ShoppingCart,
   Package,
   BookOpen,
   BarChart3,
-  CalendarRange,
-  Cloud,
-  RefreshCw,
-  LogOut,
   CheckCircle2,
 } from 'lucide-react';
 import {
@@ -59,18 +53,13 @@ import {
 } from './firebase';
 import {
   SHARED_STORE_OWNER_ID,
-  saveSettingsToCloud,
-  saveProductToCloud,
-  deleteProductFromCloud,
-  saveSaleToCloud,
-  saveUtangPaymentToCloud,
-  saveShiftToCloud,
-  saveAdjustmentToCloud,
-  deleteAdjustmentFromCloud,
-  saveParkedCartToCloud,
-  deleteParkedCartFromCloud,
+  CLOUD_STORAGE_KEYS,
+  FullStoreState,
+  createCanonicalStateSignature,
+  isUntouchedDefaultSimulation,
   syncFullStoreStateToCloud,
-  subscribeToCloudStore,
+  fetchStoreStateFromCloud,
+  subscribeToCloudPulse,
 } from './services/cloudSync';
 
 type NavTab = 'CART' | 'PRODUCTS' | 'UTANG' | 'REPORTS';
@@ -94,6 +83,24 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function saveToStorage(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function commitL1CacheSynchronously(state: FullStoreState): void {
+  saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
+  saveToStorage(STORAGE_KEYS.PRODUCTS, state.products);
+  saveToStorage(STORAGE_KEYS.SALES, state.sales);
+  saveToStorage(STORAGE_KEYS.UTANG_PAYMENTS, state.utangPayments);
+  saveToStorage(STORAGE_KEYS.SHIFTS, state.shifts);
+  saveToStorage(STORAGE_KEYS.ADJUSTMENTS, state.adjustments);
+  saveToStorage(STORAGE_KEYS.PARKED_CARTS, state.parkedCarts);
 }
 
 function formatCurrentTimeShort(): string {
@@ -123,7 +130,7 @@ export default function App() {
     return null;
   }, []);
 
-  // Persistent State (synced automatically with Firebase Cloud Firestore across all devices)
+  // 1. L1 Local Cache State (Optimistic 0ms Latency)
   const [products, setProducts] = useState<Product[]>(() =>
     loadFromStorage<Product[]>(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS)
   );
@@ -162,7 +169,7 @@ export default function App() {
     )
   );
 
-  // Cloud Auto-Save State (Always Active Across All Devices)
+  // Cloud Auto-Save Status
   const [cloudUser, setCloudUser] = useState<User | null>(null);
   const [cloudSyncState, setCloudSyncState] = useState<
     'LOCAL_ONLY' | 'SYNCING' | 'CLOUD_SAVED' | 'ERROR'
@@ -171,8 +178,8 @@ export default function App() {
     formatCurrentTimeShort()
   );
 
-  // Keep latest state in a ref for initial cloud upload when empty cloud DB is detected
-  const latestStoreRef = useRef({
+  // Keep latest L1 state in a ref for atomic Write-Through & Reconciliation
+  const latestStoreRef = useRef<FullStoreState>({
     settings,
     products,
     sales,
@@ -201,19 +208,27 @@ export default function App() {
     parkedCarts,
   ]);
 
+  // Track whether a local mutation is currently pushing to prevent background poll from clobbering in-flight write
+  const isPushingRef = useRef<boolean>(false);
+
   // Active Checkout Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [focusBarcodeTrigger, setFocusBarcodeTrigger] = useState<number>(0);
 
-  // Modals
+  // Modals & Floating Toast
   const [activeReceipt, setActiveReceipt] =
     useState<ActiveReceiptModal | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] =
     useState<boolean>(false);
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
 
-  const restoreFileInputRef = useRef<HTMLInputElement | null>(null);
+  const showQuickNotice = useCallback((msg: string) => {
+    setBannerNotice(msg);
+    setTimeout(() => {
+      setBannerNotice((prev) => (prev === msg ? null : prev));
+    }, 3500);
+  }, []);
 
   // Track optional Firebase Auth user
   useEffect(() => {
@@ -223,118 +238,270 @@ export default function App() {
     return () => unsubAuth();
   }, []);
 
-  // Automatically subscribe to shared Firebase Cloud Firestore on EVERY device immediately
-  useEffect(() => {
-    setCloudSyncState('SYNCING');
-    const unsubCloud = subscribeToCloudStore(SHARED_STORE_OWNER_ID, {
-      onSettings: (cloudSettings) => setSettings(cloudSettings),
-      onProducts: (cloudProducts) => setProducts(cloudProducts),
-      onSales: (cloudSales) => setSales(cloudSales),
-      onUtangPayments: (cloudPayments) => setUtangPayments(cloudPayments),
-      onShifts: (cloudShifts) => setShifts(cloudShifts),
-      onAdjustments: (cloudAdjustments) => setAdjustments(cloudAdjustments),
-      onParkedCarts: (cloudParked) => setParkedCarts(cloudParked),
-      onSyncActivity: () => {
+  /**
+   * 2. Write Pipeline: Optimistic UI (0ms L1 Commit) + Immediate Cloud Push (saveAllToCloud)
+   */
+  const saveAllToCloud = useCallback(
+    async (nextPartial: Partial<FullStoreState>) => {
+      const nextState: FullStoreState = {
+        ...latestStoreRef.current,
+        ...nextPartial,
+      };
+      latestStoreRef.current = nextState;
+
+      // Synchronous L1 Commit (0ms latency)
+      if (nextPartial.settings !== undefined) setSettings(nextPartial.settings);
+      if (nextPartial.products !== undefined) setProducts(nextPartial.products);
+      if (nextPartial.sales !== undefined) setSales(nextPartial.sales);
+      if (nextPartial.utangPayments !== undefined)
+        setUtangPayments(nextPartial.utangPayments);
+      if (nextPartial.shifts !== undefined) setShifts(nextPartial.shifts);
+      if (nextPartial.adjustments !== undefined)
+        setAdjustments(nextPartial.adjustments);
+      if (nextPartial.parkedCarts !== undefined)
+        setParkedCarts(nextPartial.parkedCarts);
+
+      commitL1CacheSynchronously(nextState);
+      try {
+        localStorage.setItem(CLOUD_STORAGE_KEYS.LOCAL_CUSTOMIZED, 'true');
+      } catch {
+        // ignore
+      }
+
+      // Immediate L2 Cloud Push
+      isPushingRef.current = true;
+      setCloudSyncState('SYNCING');
+      try {
+        await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, nextState, true);
         setCloudSyncState('CLOUD_SAVED');
         setLastSavedTime(formatCurrentTimeShort());
-      },
-      onEmptyCloudDetected: async () => {
+      } catch {
+        setCloudSyncState('ERROR');
+      } finally {
+        isPushingRef.current = false;
+      }
+    },
+    []
+  );
+
+  /**
+   * 3. Read & Reconciliation Pipeline (syncWithCloud)
+   * Implements:
+   * - Empty-Overwrite Guard (pushes local state UP if remote cloud is empty)
+   * - Unpushed Local Customization Guard (if local PC has customized data while remote only has default sample simulation, pushes local PC state UP)
+   * - Deep-Equality Diffing (JSON.stringify canonical comparison)
+   */
+  const syncWithCloud = useCallback(
+    async (silent = true) => {
+      if (isPushingRef.current) return;
+      if (!silent) {
         setCloudSyncState('SYNCING');
-        try {
+      }
+
+      try {
+        const remote = await fetchStoreStateFromCloud(SHARED_STORE_OWNER_ID);
+        if (isPushingRef.current) return;
+
+        const currentLocal = latestStoreRef.current;
+
+        // Guard 1: Empty-Overwrite Guard
+        if (
+          remote.isEmpty ||
+          (remote.state.products.length === 0 &&
+            remote.state.sales.length === 0 &&
+            (currentLocal.products.length > 0 || currentLocal.sales.length > 0))
+        ) {
           await syncFullStoreStateToCloud(
             SHARED_STORE_OWNER_ID,
-            latestStoreRef.current,
-            false
+            currentLocal,
+            true
           );
           setCloudSyncState('CLOUD_SAVED');
           setLastSavedTime(formatCurrentTimeShort());
-        } catch {
-          setCloudSyncState('ERROR');
+          return;
         }
-      },
+
+        // Guard 2: Unpushed Local Customization Guard
+        // If this PC already has user-modified products/sales in localStorage while the cloud still holds the untouched default simulation, push this PC's state UP!
+        const localIsCustomized = !isUntouchedDefaultSimulation(currentLocal);
+        const remoteIsUntouchedDefault = isUntouchedDefaultSimulation(
+          remote.state
+        );
+        if (localIsCustomized && remoteIsUntouchedDefault) {
+          await syncFullStoreStateToCloud(
+            SHARED_STORE_OWNER_ID,
+            currentLocal,
+            true
+          );
+          setCloudSyncState('CLOUD_SAVED');
+          setLastSavedTime(formatCurrentTimeShort());
+          return;
+        }
+
+        // Deep-Equality Diffing (JSON.stringify canonical comparison)
+        const localSig = createCanonicalStateSignature(currentLocal);
+        const remoteSig = createCanonicalStateSignature(remote.state);
+
+        if (localSig !== remoteSig) {
+          // Preserve local product notes if barcode matches
+          const localNoteById = new Map(
+            currentLocal.products.map((p) => [p.id, p.note || ''])
+          );
+          const mergedProducts = remote.state.products.map((rp) => ({
+            ...rp,
+            note: rp.note || localNoteById.get(rp.id) || '',
+          }));
+
+          const normalizedRemote: FullStoreState = {
+            ...remote.state,
+            products: mergedProducts,
+          };
+
+          latestStoreRef.current = normalizedRemote;
+          setSettings(normalizedRemote.settings);
+          setProducts(normalizedRemote.products);
+          setSales(normalizedRemote.sales);
+          setUtangPayments(normalizedRemote.utangPayments);
+          setShifts(normalizedRemote.shifts);
+          setAdjustments(normalizedRemote.adjustments);
+          setParkedCarts(normalizedRemote.parkedCarts);
+          commitL1CacheSynchronously(normalizedRemote);
+
+          try {
+            localStorage.setItem(
+              CLOUD_STORAGE_KEYS.LAST_SYNC,
+              new Date().toISOString()
+            );
+          } catch {
+            // ignore
+          }
+
+          showQuickNotice('Cloud updated automatically');
+        }
+
+        setCloudSyncState('CLOUD_SAVED');
+        setLastSavedTime(formatCurrentTimeShort());
+      } catch {
+        setCloudSyncState('ERROR');
+      }
+    },
+    [showQuickNotice]
+  );
+
+  // Trigger 1 (Cold Boot Mount), Trigger 2 (20s Periodic Polling + Real-Time Pulse),
+  // Trigger 3 (Window Focus & Visibility Change), Trigger 4 (Cross-Tab Storage Listener)
+  useEffect(() => {
+    // 1. Cold Boot Mount
+    void syncWithCloud(true);
+
+    // 2a. Real-Time Cloud Pulse Listener (<1s cross-device notification)
+    const unsubPulse = subscribeToCloudPulse(SHARED_STORE_OWNER_ID, () => {
+      void syncWithCloud(true);
     });
 
-    return () => unsubCloud();
-  }, []);
+    // 2b. Periodic Polling Loop (every 20 seconds while tab is open)
+    const pollInterval = window.setInterval(() => {
+      void syncWithCloud(true);
+    }, 20000);
 
-  // Save to localStorage on change & update auto-save timestamp
+    // 3. Window Focus & Visibility Change Listener
+    const handleFocus = () => {
+      void syncWithCloud(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void syncWithCloud(true);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 4. Cross-Tab Storage Listener (instantaneous sync across tabs on the same PC/device)
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === STORAGE_KEYS.PRODUCTS && e.newValue) {
+        try {
+          setProducts(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.SALES && e.newValue) {
+        try {
+          setSales(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.UTANG_PAYMENTS && e.newValue) {
+        try {
+          setUtangPayments(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.SHIFTS && e.newValue) {
+        try {
+          setShifts(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.ADJUSTMENTS && e.newValue) {
+        try {
+          setAdjustments(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.PARKED_CARTS && e.newValue) {
+        try {
+          setParkedCarts(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      } else if (e.key === STORAGE_KEYS.SETTINGS && e.newValue) {
+        try {
+          setSettings(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      unsubPulse();
+      window.clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
+  }, [syncWithCloud]);
+
+  // Keep L1 localStorage synced on any state update
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.PRODUCTS, products);
   }, [products]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.SALES, sales);
   }, [sales]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.UTANG_PAYMENTS,
-        JSON.stringify(utangPayments)
-      );
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.UTANG_PAYMENTS, utangPayments);
   }, [utangPayments]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.SHIFTS, shifts);
   }, [shifts]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.ADJUSTMENTS,
-        JSON.stringify(adjustments)
-      );
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.ADJUSTMENTS, adjustments);
   }, [adjustments]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.PARKED_CARTS,
-        JSON.stringify(parkedCarts)
-      );
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.PARKED_CARTS, parkedCarts);
   }, [parkedCarts]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-    } catch {
-      // ignore
-    }
+    saveToStorage(STORAGE_KEYS.SETTINGS, settings);
   }, [settings]);
-
-  // Always auto-save every mutation directly to Firebase Cloud Firestore
-  const triggerCloudSave = (promiseFactory: (uid: string) => Promise<void>) => {
-    setCloudSyncState('SYNCING');
-    promiseFactory(SHARED_STORE_OWNER_ID)
-      .then(() => {
-        setCloudSyncState('CLOUD_SAVED');
-        setLastSavedTime(formatCurrentTimeShort());
-      })
-      .catch(() => {
-        setCloudSyncState('ERROR');
-      });
-  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -356,19 +523,13 @@ export default function App() {
   };
 
   const handleManualCloudSync = async () => {
-    setCloudSyncState('SYNCING');
-    try {
-      await syncFullStoreStateToCloud(
-        SHARED_STORE_OWNER_ID,
-        latestStoreRef.current,
-        true
-      );
-      setCloudSyncState('CLOUD_SAVED');
-      setLastSavedTime(formatCurrentTimeShort());
-      showQuickNotice('All POS records saved to Firebase Cloud!');
-    } catch {
-      setCloudSyncState('ERROR');
-    }
+    await saveAllToCloud({});
+    showQuickNotice('All POS records pushed to Cloud Store!');
+  };
+
+  const handleManualCloudPull = async () => {
+    await syncWithCloud(false);
+    showQuickNotice('Pulled latest records from Cloud Store!');
   };
 
   const customerSummaries = useMemo(
@@ -385,41 +546,6 @@ export default function App() {
     () => products.filter((p) => p.stock <= 5).length,
     [products]
   );
-
-  const showQuickNotice = (msg: string) => {
-    setBannerNotice(msg);
-    setTimeout(() => {
-      setBannerNotice((prev) => (prev === msg ? null : prev));
-    }, 3800);
-  };
-
-  // Load 7-Day Store Simulation Handler
-  const handleRunSevenDaySimulation = () => {
-    const sim = generateSevenDayStoreSimulation(new Date());
-    setProducts(sim.products);
-    setSales(sim.sales);
-    setUtangPayments(sim.utangPayments);
-    setShifts(sim.shifts);
-    setAdjustments(sim.adjustments);
-    triggerCloudSave((uid) =>
-      syncFullStoreStateToCloud(
-        uid,
-        {
-          settings,
-          products: sim.products,
-          sales: sim.sales,
-          utangPayments: sim.utangPayments,
-          shifts: sim.shifts,
-          adjustments: sim.adjustments,
-          parkedCarts,
-        },
-        true
-      )
-    );
-    showQuickNotice(
-      'Loaded 7-Day Store Simulation (Opening Floats, Sales, Utang, Expenses & Z-Readings).'
-    );
-  };
 
   // Cart Handlers
   const handleAddProductToCart = (product: Product) => {
@@ -498,8 +624,8 @@ export default function App() {
       discount,
       customerName: customerLabel,
     };
-    setParkedCarts((prev) => [...prev, newParked]);
-    triggerCloudSave((uid) => saveParkedCartToCloud(uid, newParked));
+    const nextParked = [...parkedCarts, newParked];
+    void saveAllToCloud({ parkedCarts: nextParked });
     setCart([]);
     setDiscount(0);
     showQuickNotice(`Parked cart "${newParked.label}". Ready for next customer.`);
@@ -511,17 +637,17 @@ export default function App() {
     if (!target) return;
     setCart(target.items);
     setDiscount(target.discount);
-    setParkedCarts((prev) => prev.filter((p) => p.id !== parkedId));
-    triggerCloudSave((uid) => deleteParkedCartFromCloud(uid, parkedId));
+    const nextParked = parkedCarts.filter((p) => p.id !== parkedId);
+    void saveAllToCloud({ parkedCarts: nextParked });
     showQuickNotice(`Resumed parked cart "${target.label}".`);
   };
 
   const handleDeleteParkedCart = (parkedId: string) => {
-    setParkedCarts((prev) => prev.filter((p) => p.id !== parkedId));
-    triggerCloudSave((uid) => deleteParkedCartFromCloud(uid, parkedId));
+    const nextParked = parkedCarts.filter((p) => p.id !== parkedId);
+    void saveAllToCloud({ parkedCarts: nextParked });
   };
 
-  // Complete Sale & Deduct Stock
+  // Complete Sale & Deduct Stock (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleCompleteSale = (payload: {
     paymentType: PaymentType;
     amountTendered: number;
@@ -581,28 +707,20 @@ export default function App() {
       voided: false,
     };
 
-    // Deduct product stock quantities
-    const updatedProductsList: Product[] = [];
-    setProducts((prevProducts) =>
-      prevProducts.map((prod) => {
-        const soldItem = cart.find((c) => c.productId === prod.id);
-        if (!soldItem) return prod;
-        const nextProd: Product = {
-          ...prod,
-          stock: prod.stock - soldItem.quantity,
-          updatedAt: new Date().toISOString(),
-        };
-        updatedProductsList.push(nextProd);
-        return nextProd;
-      })
-    );
+    const nextProducts = products.map((prod) => {
+      const soldItem = cart.find((c) => c.productId === prod.id);
+      if (!soldItem) return prod;
+      return {
+        ...prod,
+        stock: prod.stock - soldItem.quantity,
+        updatedAt: new Date().toISOString(),
+      };
+    });
 
-    setSales((prevSales) => [newSale, ...prevSales]);
-    triggerCloudSave(async (uid) => {
-      await saveSaleToCloud(uid, newSale);
-      await Promise.all(
-        updatedProductsList.map((prod) => saveProductToCloud(uid, prod))
-      );
+    const nextSales = [newSale, ...sales];
+    void saveAllToCloud({
+      products: nextProducts,
+      sales: nextSales,
     });
 
     setCart([]);
@@ -616,15 +734,13 @@ export default function App() {
     }
   };
 
-  // Inventory Handlers
+  // Inventory Handlers (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleSaveProduct = (savedProduct: Product) => {
-    setProducts((prev) => {
-      const exists = prev.some((p) => p.id === savedProduct.id);
-      if (exists) {
-        return prev.map((p) => (p.id === savedProduct.id ? savedProduct : p));
-      }
-      return [savedProduct, ...prev];
-    });
+    const exists = products.some((p) => p.id === savedProduct.id);
+    const nextProducts = exists
+      ? products.map((p) => (p.id === savedProduct.id ? savedProduct : p))
+      : [savedProduct, ...products];
+
     setCart((prev) =>
       prev.map((item) =>
         item.productId === savedProduct.id
@@ -639,37 +755,33 @@ export default function App() {
           : item
       )
     );
-    triggerCloudSave((uid) => saveProductToCloud(uid, savedProduct));
-    showQuickNotice(`Auto-saved product "${savedProduct.name}".`);
+
+    void saveAllToCloud({ products: nextProducts });
+    showQuickNotice(`Auto-saved product "${savedProduct.name}" to Cloud.`);
   };
 
   const handleDeleteProduct = (productId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    const nextProducts = products.filter((p) => p.id !== productId);
     setCart((prev) => prev.filter((i) => i.productId !== productId));
-    triggerCloudSave((uid) => deleteProductFromCloud(uid, productId));
+    void saveAllToCloud({ products: nextProducts });
+    showQuickNotice('Deleted product and updated Cloud Store.');
   };
 
   const handleRestockProduct = (productId: string, addQty: number) => {
-    let restockedProd: Product | null = null;
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== productId) return p;
-        restockedProd = {
-          ...p,
-          stock: p.stock + addQty,
-          updatedAt: new Date().toISOString(),
-        };
-        return restockedProd;
-      })
+    const nextProducts = products.map((p) =>
+      p.id === productId
+        ? {
+            ...p,
+            stock: p.stock + addQty,
+            updatedAt: new Date().toISOString(),
+          }
+        : p
     );
-    if (restockedProd) {
-      const targetProd = restockedProd;
-      triggerCloudSave((uid) => saveProductToCloud(uid, targetProd));
-    }
-    showQuickNotice(`Added +${addQty} stock (auto-saved).`);
+    void saveAllToCloud({ products: nextProducts });
+    showQuickNotice(`Added +${addQty} stock (auto-saved to Cloud).`);
   };
 
-  // Utang Payment Handler
+  // Utang Payment Handler (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleRecordUtangPayment = (payload: {
     customerName: string;
     previousBalance: number;
@@ -696,8 +808,8 @@ export default function App() {
       note: payload.note,
     };
 
-    setUtangPayments((prev) => [newPayment, ...prev]);
-    triggerCloudSave((uid) => saveUtangPaymentToCloud(uid, newPayment));
+    const nextUtangPayments = [newPayment, ...utangPayments];
+    void saveAllToCloud({ utangPayments: nextUtangPayments });
     setActiveReceipt({ kind: 'UTANG_PAYMENT', payment: newPayment });
 
     if (settings.autoPrint) {
@@ -707,16 +819,14 @@ export default function App() {
     }
   };
 
-  // Shift & Cash Drawer Adjustment Handlers
+  // Shift & Cash Drawer Adjustment Handlers (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleUpdateShiftRecord = (record: DailyShiftRecord) => {
-    setShifts((prev) => {
-      const exists = prev.some((s) => s.dateKey === record.dateKey);
-      if (exists) {
-        return prev.map((s) => (s.dateKey === record.dateKey ? record : s));
-      }
-      return [...prev, record];
-    });
-    triggerCloudSave((uid) => saveShiftToCloud(uid, record));
+    const exists = shifts.some((s) => s.dateKey === record.dateKey);
+    const nextShifts = exists
+      ? shifts.map((s) => (s.dateKey === record.dateKey ? record : s))
+      : [...shifts, record];
+
+    void saveAllToCloud({ shifts: nextShifts });
     showQuickNotice(`Auto-saved shift cash drawer record for ${record.dateKey}.`);
   };
 
@@ -725,14 +835,14 @@ export default function App() {
       ...adj,
       id: `adj-${Date.now()}`,
     };
-    setAdjustments((prev) => [newAdj, ...prev]);
-    triggerCloudSave((uid) => saveAdjustmentToCloud(uid, newAdj));
+    const nextAdjustments = [newAdj, ...adjustments];
+    void saveAllToCloud({ adjustments: nextAdjustments });
     showQuickNotice(`Auto-saved drawer entry: ${adj.reason}`);
   };
 
   const handleDeleteCashAdjustment = (adjId: string) => {
-    setAdjustments((prev) => prev.filter((a) => a.id !== adjId));
-    triggerCloudSave((uid) => deleteAdjustmentFromCloud(uid, adjId));
+    const nextAdjustments = adjustments.filter((a) => a.id !== adjId);
+    void saveAllToCloud({ adjustments: nextAdjustments });
   };
 
   const handlePrintZReading = (zReport: ZReadingReportData) => {
@@ -744,27 +854,20 @@ export default function App() {
     }
   };
 
-  // Void Sale & Restore Stock Handler
+  // Void Sale & Restore Stock Handler (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleVoidSale = (saleId: string) => {
     const targetSale = sales.find((s) => s.id === saleId);
     if (!targetSale || targetSale.voided) return;
 
-    const restoredProducts: Product[] = [];
-    setProducts((prevProducts) =>
-      prevProducts.map((prod) => {
-        const itemInSale = targetSale.items.find(
-          (i) => i.productId === prod.id
-        );
-        if (!itemInSale) return prod;
-        const updatedProd: Product = {
-          ...prod,
-          stock: prod.stock + itemInSale.quantity,
-          updatedAt: new Date().toISOString(),
-        };
-        restoredProducts.push(updatedProd);
-        return updatedProd;
-      })
-    );
+    const nextProducts = products.map((prod) => {
+      const itemInSale = targetSale.items.find((i) => i.productId === prod.id);
+      if (!itemInSale) return prod;
+      return {
+        ...prod,
+        stock: prod.stock + itemInSale.quantity,
+        updatedAt: new Date().toISOString(),
+      };
+    });
 
     const voidedSale: SaleTransaction = {
       ...targetSale,
@@ -772,15 +875,10 @@ export default function App() {
       voidedAt: new Date().toISOString(),
     };
 
-    setSales((prevSales) =>
-      prevSales.map((s) => (s.id === saleId ? voidedSale : s))
-    );
-
-    triggerCloudSave(async (uid) => {
-      await saveSaleToCloud(uid, voidedSale);
-      await Promise.all(
-        restoredProducts.map((p) => saveProductToCloud(uid, p))
-      );
+    const nextSales = sales.map((s) => (s.id === saleId ? voidedSale : s));
+    void saveAllToCloud({
+      products: nextProducts,
+      sales: nextSales,
     });
 
     showQuickNotice(
@@ -788,89 +886,20 @@ export default function App() {
     );
   };
 
-  // One-click Header Export & Restore Handlers
-  const handleQuickExportBackup = () => {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      app: 'Four Gifts Store POS',
-      settings,
-      products,
-      sales,
-      utangPayments,
-      shifts,
-      adjustments,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `four-gifts-store-pos-backup-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showQuickNotice('Exported full POS backup (.json).');
-  };
-
-  const handleQuickRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result));
-        if (Array.isArray(parsed.products)) {
-          const nextProducts = parsed.products;
-          const nextSales = Array.isArray(parsed.sales) ? parsed.sales : [];
-          const nextUtang = Array.isArray(parsed.utangPayments)
-            ? parsed.utangPayments
-            : [];
-          const nextShifts = Array.isArray(parsed.shifts)
-            ? parsed.shifts
-            : shifts;
-          const nextAdjustments = Array.isArray(parsed.adjustments)
-            ? parsed.adjustments
-            : adjustments;
-          const nextSettings = parsed.settings || settings;
-
-          setProducts(nextProducts);
-          setSales(nextSales);
-          setUtangPayments(nextUtang);
-          setShifts(nextShifts);
-          setAdjustments(nextAdjustments);
-          setSettings(nextSettings);
-
-          triggerCloudSave((uid) =>
-            syncFullStoreStateToCloud(
-              uid,
-              {
-                settings: nextSettings,
-                products: nextProducts,
-                sales: nextSales,
-                utangPayments: nextUtang,
-                shifts: nextShifts,
-                adjustments: nextAdjustments,
-                parkedCarts,
-              },
-              true
-            )
-          );
-          showQuickNotice('Backup restored and auto-saved!');
-        } else {
-          showQuickNotice('Invalid backup file format.');
-        }
-      } catch {
-        showQuickNotice('Could not read JSON backup file.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+      {/* Floating Non-Intrusive Auto-Sync Toast */}
+      {bannerNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="no-print fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3.5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-lg border border-slate-700"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>{bannerNotice}</span>
+        </div>
+      )}
+
       {/* Top Navigation Bar (Strict 3-Zone Contract: Brand — 4 Nav Links — 1 Primary Action) */}
       <header className="no-print bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-2.5 gap-x-8 sticky top-0 z-30">
         {/* Zone 1: Single text element wordmark */}
@@ -947,7 +976,7 @@ export default function App() {
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Transactions & Cash Drawer</span>
+            <span>Transactions &amp; Cash Drawer</span>
           </button>
         </nav>
 
@@ -959,7 +988,7 @@ export default function App() {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0"
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>Receipt & Store Settings</span>
+            <span>Receipt &amp; Store Settings</span>
           </button>
         </div>
       </header>
@@ -976,8 +1005,7 @@ export default function App() {
             autoPrint={settings.autoPrint}
             onToggleAutoPrint={(checked) => {
               const next = { ...settings, autoPrint: checked };
-              setSettings(next);
-              triggerCloudSave((uid) => saveSettingsToCloud(uid, next));
+              void saveAllToCloud({ settings: next });
             }}
             onAddProductToCart={handleAddProductToCart}
             onUpdateCartQuantity={handleUpdateCartQuantity}
@@ -1045,8 +1073,7 @@ export default function App() {
         }}
         onUpdatePaperSize={(paperSize: PaperSize) => {
           const next = { ...settings, paperSize };
-          setSettings(next);
-          triggerCloudSave((uid) => saveSettingsToCloud(uid, next));
+          void saveAllToCloud({ settings: next });
         }}
       />
 
@@ -1056,58 +1083,31 @@ export default function App() {
         onClose={() => setIsSettingsModalOpen(false)}
         settings={settings}
         onSaveSettings={(newSettings) => {
-          setSettings(newSettings);
-          triggerCloudSave((uid) => saveSettingsToCloud(uid, newSettings));
+          void saveAllToCloud({ settings: newSettings });
         }}
         products={products}
         sales={sales}
         utangPayments={utangPayments}
         onRestoreBackup={(data) => {
           const nextSettings = data.settings || settings;
-          setProducts(data.products);
-          setSales(data.sales);
-          setUtangPayments(data.utangPayments);
-          if (data.settings) setSettings(data.settings);
-          triggerCloudSave((uid) =>
-            syncFullStoreStateToCloud(
-              uid,
-              {
-                settings: nextSettings,
-                products: data.products,
-                sales: data.sales,
-                utangPayments: data.utangPayments,
-                shifts,
-                adjustments,
-                parkedCarts,
-              },
-              true
-            )
-          );
+          void saveAllToCloud({
+            settings: nextSettings,
+            products: data.products,
+            sales: data.sales,
+            utangPayments: data.utangPayments,
+          });
         }}
         onResetSampleData={() => {
-          setProducts(INITIAL_PRODUCTS);
-          setSales([]);
-          setUtangPayments([]);
-          setShifts([]);
-          setAdjustments([]);
-          setParkedCarts([]);
           setCart([]);
           setDiscount(0);
-          triggerCloudSave((uid) =>
-            syncFullStoreStateToCloud(
-              uid,
-              {
-                settings,
-                products: INITIAL_PRODUCTS,
-                sales: [],
-                utangPayments: [],
-                shifts: [],
-                adjustments: [],
-                parkedCarts: [],
-              },
-              true
-            )
-          );
+          void saveAllToCloud({
+            products: INITIAL_PRODUCTS,
+            sales: [],
+            utangPayments: [],
+            shifts: [],
+            adjustments: [],
+            parkedCarts: [],
+          });
         }}
         cloudUserEmail={cloudUser?.email}
         cloudSyncState={cloudSyncState}
@@ -1115,6 +1115,7 @@ export default function App() {
         onSignInCloud={handleGoogleSignIn}
         onSignOutCloud={handleGoogleSignOut}
         onSyncCloudNow={handleManualCloudSync}
+        onPullCloudNow={handleManualCloudPull}
       />
     </div>
   );
