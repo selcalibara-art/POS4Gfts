@@ -16826,359 +16826,6 @@ var ReceiptModal = ({ receiptData, settings, onClose, onUpdatePaperSize }) => {
 		})
 	});
 };
-// src/components/SettingsBackupModal.tsx
-var SettingsBackupModal = ({ isOpen, onClose, settings, onSaveSettings, products, sales, utangPayments, onRestoreBackup, onResetSampleData, cloudUserEmail, cloudSyncState = "LOCAL_ONLY", lastSavedTime, onSignInCloud, onSignOutCloud, onSyncCloudNow }) => {
-	const [formState, setFormState] = (0, import_react.useState)(settings);
-	const [statusMessage, setStatusMessage] = (0, import_react.useState)(null);
-	const [confirmReset, setConfirmReset] = (0, import_react.useState)(false);
-	const fileInputRef = (0, import_react.useRef)(null);
-	if (!isOpen) return null;
-	const handleSave = (e) => {
-		e.preventDefault();
-		onSaveSettings(formState);
-		setStatusMessage("Store & thermal printer settings auto-saved.");
-		setTimeout(() => setStatusMessage(null), 3e3);
-	};
-	const handleExportJSON = () => {
-		const payload = {
-			exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-			app: "Four Gifts Store POS",
-			settings: formState,
-			products,
-			sales,
-			utangPayments
-		};
-		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `four-gifts-store-backup-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.json`;
-		a.click();
-		URL.revokeObjectURL(url);
-		setStatusMessage("JSON backup downloaded.");
-	};
-	const handleExportCSV = () => {
-		const headers = [
-			"Barcode",
-			"Product Name",
-			"Category",
-			"Capital Price (PHP)",
-			"Selling Price (PHP)",
-			"Unit Profit (PHP)",
-			"Current Stock",
-			"Note"
-		];
-		const rows = products.map((p) => [
-			`"${p.barcode.replace(/"/g, "\"\"")}"`,
-			`"${p.name.replace(/"/g, "\"\"")}"`,
-			`"${p.category.replace(/"/g, "\"\"")}"`,
-			p.capitalPrice.toFixed(2),
-			p.sellingPrice.toFixed(2),
-			(p.sellingPrice - p.capitalPrice).toFixed(2),
-			String(p.stock),
-			`"${(p.note || "").replace(/"/g, "\"\"")}"`
-		]);
-		const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `four-gifts-inventory-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.csv`;
-		a.click();
-		URL.revokeObjectURL(url);
-		setStatusMessage("Inventory CSV exported.");
-	};
-	const handleImportFile = (e) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			try {
-				const parsed = JSON.parse(String(reader.result));
-				if (!Array.isArray(parsed.products)) {
-					setStatusMessage("Invalid backup file: missing products list.");
-					return;
-				}
-				onRestoreBackup({
-					products: parsed.products,
-					sales: Array.isArray(parsed.sales) ? parsed.sales : [],
-					utangPayments: Array.isArray(parsed.utangPayments) ? parsed.utangPayments : [],
-					settings: parsed.settings
-				});
-				if (parsed.settings) setFormState(parsed.settings);
-				setStatusMessage("Backup restored and auto-saved!");
-			} catch {
-				setStatusMessage("Failed to parse JSON backup file.");
-			}
-		};
-		reader.readAsText(file);
-		e.target.value = "";
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		className: "no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto",
-		role: "dialog",
-		"aria-modal": "true",
-		"aria-labelledby": "settings-modal-title",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "bg-white border border-slate-200 rounded-xl max-w-2xl w-full overflow-hidden shadow-xl",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2.5",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { className: "w-5 h-5 text-slate-700" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-						id: "settings-modal-title",
-						className: "text-base font-bold text-slate-900",
-						children: "Receipt, Thermal Printer & Cloud Auto-Save Settings"
-					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-					type: "button",
-					onClick: onClose,
-					"aria-label": "Close Settings Modal",
-					className: "p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-200/60 transition-colors",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X$1, { className: "w-5 h-5" })
-				})]
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "p-6 max-h-[80vh] overflow-y-auto space-y-6",
-				children: [
-					statusMessage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-medium text-emerald-800",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "w-4 h-4 shrink-0 text-emerald-600" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: statusMessage })]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "space-y-1",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Cloud, { className: "w-4 h-4 text-emerald-700 shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
-									className: "text-sm font-bold text-slate-900",
-									children: "Automatic Multi-Device Cloud Auto-Save (Always On)"
-								})]
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-								className: "text-xs text-slate-700",
-								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-emerald-700 font-semibold",
-										children: cloudSyncState === "SYNCING" ? "Saving latest changes to Firebase Cloud..." : `Saved to Cloud (${lastSavedTime || "active"})`
-									}),
-									" ",
-									"· Every sale, product, Utang record, and shift automatically syncs across all your PCs, phones, and tablets."
-								]
-							})]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							className: "flex items-center gap-2 shrink-0",
-							children: onSyncCloudNow && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-								type: "button",
-								onClick: () => {
-									onSyncCloudNow();
-									setStatusMessage("Synced all POS records to Firebase Cloud.");
-									setTimeout(() => setStatusMessage(null), 3e3);
-								},
-								className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Sync Cloud Now" })]
-							})
-						})]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
-						onSubmit: handleSave,
-						className: "space-y-4",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-									htmlFor: "store-name-input",
-									className: "block text-xs font-semibold text-slate-700 mb-1",
-									children: "Store Header Name"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									id: "store-name-input",
-									type: "text",
-									required: true,
-									value: formState.storeName,
-									onChange: (e) => setFormState({
-										...formState,
-										storeName: e.target.value
-									}),
-									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-									htmlFor: "store-contact-input",
-									className: "block text-xs font-semibold text-slate-700 mb-1",
-									children: "Contact / Phone #"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									id: "store-contact-input",
-									type: "text",
-									value: formState.contactNumber,
-									onChange: (e) => setFormState({
-										...formState,
-										contactNumber: e.target.value
-									}),
-									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-								})] })]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-									htmlFor: "store-subtitle-input",
-									className: "block text-xs font-semibold text-slate-700 mb-1",
-									children: "Store Tagline / Subtitle"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									id: "store-subtitle-input",
-									type: "text",
-									value: formState.subtitle,
-									onChange: (e) => setFormState({
-										...formState,
-										subtitle: e.target.value
-									}),
-									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-									htmlFor: "store-address-input",
-									className: "block text-xs font-semibold text-slate-700 mb-1",
-									children: "Store Address"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									id: "store-address-input",
-									type: "text",
-									value: formState.address,
-									onChange: (e) => setFormState({
-										...formState,
-										address: e.target.value
-									}),
-									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-								})] })]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-								htmlFor: "store-footer-input",
-								className: "block text-xs font-semibold text-slate-700 mb-1",
-								children: "Receipt Footer Message"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-								id: "store-footer-input",
-								type: "text",
-								value: formState.footerMessage,
-								onChange: (e) => setFormState({
-									...formState,
-									footerMessage: e.target.value
-								}),
-								className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-							})] }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									className: "block text-xs font-semibold text-slate-700 mb-1.5",
-									children: "Thermal Printer Paper Width"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "flex items-center gap-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										type: "button",
-										onClick: () => setFormState({
-											...formState,
-											paperSize: "58mm"
-										}),
-										className: `flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-colors ${formState.paperSize === "58mm" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`,
-										children: "58mm Roll (Standard Mini)"
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										type: "button",
-										onClick: () => setFormState({
-											...formState,
-											paperSize: "80mm"
-										}),
-										className: `flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-colors ${formState.paperSize === "80mm" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`,
-										children: "80mm Roll (Wide Desktop)"
-									})]
-								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-									className: "flex items-end pb-1",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
-										className: "flex items-center gap-2.5 cursor-pointer select-none",
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-											type: "checkbox",
-											checked: formState.autoPrint,
-											onChange: (e) => setFormState({
-												...formState,
-												autoPrint: e.target.checked
-											}),
-											className: "w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-											className: "text-xs font-semibold text-slate-800",
-											children: "Auto-trigger browser print dialog after checkout"
-										})]
-									})
-								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								className: "flex justify-end pt-2",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "submit",
-									className: "px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors",
-									children: "Save Store & Printer Settings"
-								})
-							})
-						]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("hr", { className: "border-slate-200" }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-3",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
-							className: "text-sm font-bold text-slate-900",
-							children: "Offline Data Backup & Restore"
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "text-xs text-slate-600 mt-0.5",
-							children: "Export all products, sales history, and Utang ledger records to a file or restore from a previous backup."
-						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex flex-wrap items-center gap-2.5",
-							children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: handleExportJSON,
-									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Export Backup (.json)" })]
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: handleExportCSV,
-									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FileSpreadsheet, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Export Inventory (.csv)" })]
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									ref: fileInputRef,
-									type: "file",
-									accept: ".json,application/json",
-									onChange: handleImportFile,
-									className: "hidden"
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: () => fileInputRef.current?.click(),
-									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Restore Backup (.json)" })]
-								}),
-								!confirmReset ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-									type: "button",
-									onClick: () => setConfirmReset(true),
-									className: "inline-flex items-center gap-1.5 px-3 py-2 text-red-700 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ml-auto",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Reset Sample Data" })]
-								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "flex items-center gap-2 ml-auto",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										type: "button",
-										onClick: () => {
-											onResetSampleData();
-											setConfirmReset(false);
-											setStatusMessage("Reset to initial 6 sample products.");
-										},
-										className: "px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
-										children: "Confirm Reset"
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										type: "button",
-										onClick: () => setConfirmReset(false),
-										className: "px-2.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900",
-										children: "Cancel"
-									})]
-								})
-							]
-						})]
-					})
-				]
-			})]
-		})
-	});
-};
 // node_modules/@firebase/util/dist/postinstall.mjs
 /**
 * @license
@@ -19753,6919 +19400,6 @@ function registerCoreComponents(variant) {
 * limitations under the License.
 */
 registerCoreComponents("");
-// node_modules/firebase/app/dist/esm/index.esm.js
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-registerVersion("firebase", "13.2.0", "app");
-// node_modules/@firebase/auth/dist/esm/index-Bz2J43nW.js
-/**
-* @license
-* Copyright 2021 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _prodErrorMap() {
-	return { ["dependent-sdk-initialized-before-auth"]: "Another Firebase SDK was initialized and is trying to use Auth before Auth is initialized. Please be sure to call `initializeAuth` or `getAuth` before starting any other Firebase SDK." };
-}
-/**
-* A minimal error map with all verbose error messages stripped.
-*
-* See discussion at {@link AuthErrorMap}
-*
-* @public
-*/
-var prodErrorMap = _prodErrorMap;
-var _DEFAULT_AUTH_ERROR_FACTORY = new ErrorFactory("auth", "Firebase", _prodErrorMap());
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var logClient = new Logger("@firebase/auth");
-function _logWarn(msg, ...args) {
-	if (logClient.logLevel <= LogLevel.WARN) logClient.warn(`Auth (${SDK_VERSION}): ${msg}`, ...args);
-}
-function _logError(msg, ...args) {
-	if (logClient.logLevel <= LogLevel.ERROR) logClient.error(`Auth (${SDK_VERSION}): ${msg}`, ...args);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _fail(authOrCode, ...rest) {
-	throw createErrorInternal(authOrCode, ...rest);
-}
-function _createError(authOrCode, ...rest) {
-	return createErrorInternal(authOrCode, ...rest);
-}
-function _errorWithCustomMessage(auth, code, message) {
-	return new ErrorFactory("auth", "Firebase", {
-		...prodErrorMap(),
-		[code]: message
-	}).create(code, { appName: auth.name });
-}
-function _serverAppCurrentUserOperationNotSupportedError(auth) {
-	return _errorWithCustomMessage(auth, "operation-not-supported-in-this-environment", "Operations that alter the current user are not supported in conjunction with FirebaseServerApp");
-}
-function _assertInstanceOf(auth, object, instance) {
-	const constructorInstance = instance;
-	if (!(object instanceof constructorInstance)) {
-		if (constructorInstance.name !== object.constructor.name) _fail(auth, "argument-error");
-		throw _errorWithCustomMessage(auth, "argument-error", `Type of ${object.constructor.name} does not match expected instance.Did you pass a reference from a different Auth SDK?`);
-	}
-}
-function createErrorInternal(authOrCode, ...rest) {
-	if (typeof authOrCode !== "string") {
-		const code = rest[0];
-		const fullParams = [...rest.slice(1)];
-		if (fullParams[0]) fullParams[0].appName = authOrCode.name;
-		return authOrCode._errorFactory.create(code, ...fullParams);
-	}
-	return _DEFAULT_AUTH_ERROR_FACTORY.create(authOrCode, ...rest);
-}
-function _assert(assertion, authOrCode, ...rest) {
-	if (!assertion) throw createErrorInternal(authOrCode, ...rest);
-}
-/**
-* Unconditionally fails, throwing an internal error with the given message.
-*
-* @param failure type of failure encountered
-* @throws Error
-*/
-function debugFail(failure) {
-	const message = `INTERNAL ASSERTION FAILED: ` + failure;
-	_logError(message);
-	throw new Error(message);
-}
-/**
-* Fails if the given assertion condition is false, throwing an Error with the
-* given message if it did.
-*
-* @param assertion
-* @param message
-*/
-function debugAssert(assertion, message) {
-	if (!assertion) debugFail(message);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _getCurrentUrl() {
-	return typeof self !== "undefined" && self.location?.href || "";
-}
-function _isHttpOrHttps() {
-	return _getCurrentScheme() === "http:" || _getCurrentScheme() === "https:";
-}
-function _getCurrentScheme() {
-	return typeof self !== "undefined" && self.location?.protocol || null;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Determine whether the browser is working online
-*/
-function _isOnline() {
-	if (typeof navigator !== "undefined" && navigator && "onLine" in navigator && typeof navigator.onLine === "boolean" && (_isHttpOrHttps() || isBrowserExtension() || "connection" in navigator)) return navigator.onLine;
-	return true;
-}
-function _getUserLanguage() {
-	if (typeof navigator === "undefined") return null;
-	const navigatorLanguage = navigator;
-	return navigatorLanguage.languages && navigatorLanguage.languages[0] || navigatorLanguage.language || null;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* A structure to help pick between a range of long and short delay durations
-* depending on the current environment. In general, the long delay is used for
-* mobile environments whereas short delays are used for desktop environments.
-*/
-var Delay = class {
-	constructor(shortDelay, longDelay) {
-		this.shortDelay = shortDelay;
-		this.longDelay = longDelay;
-		debugAssert(longDelay > shortDelay, "Short delay should be less than long delay!");
-		this.isMobile = isMobileCordova() || isReactNative();
-	}
-	get() {
-		if (!_isOnline()) return Math.min(5e3, this.shortDelay);
-		return this.isMobile ? this.longDelay : this.shortDelay;
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _emulatorUrl(config, path) {
-	debugAssert(config.emulator, "Emulator should always be set here");
-	const { url } = config.emulator;
-	if (!path) return url;
-	return `${url}${path.startsWith("/") ? path.slice(1) : path}`;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var FetchProvider = class {
-	static initialize(fetchImpl, headersImpl, responseImpl) {
-		this.fetchImpl = fetchImpl;
-		if (headersImpl) this.headersImpl = headersImpl;
-		if (responseImpl) this.responseImpl = responseImpl;
-	}
-	static fetch() {
-		if (this.fetchImpl) return this.fetchImpl;
-		if (typeof self !== "undefined" && "fetch" in self) return self.fetch;
-		if (typeof globalThis !== "undefined" && globalThis.fetch) return globalThis.fetch;
-		if (typeof fetch !== "undefined") return fetch;
-		debugFail("Could not find fetch implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
-	}
-	static headers() {
-		if (this.headersImpl) return this.headersImpl;
-		if (typeof self !== "undefined" && "Headers" in self) return self.Headers;
-		if (typeof globalThis !== "undefined" && globalThis.Headers) return globalThis.Headers;
-		if (typeof Headers !== "undefined") return Headers;
-		debugFail("Could not find Headers implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
-	}
-	static response() {
-		if (this.responseImpl) return this.responseImpl;
-		if (typeof self !== "undefined" && "Response" in self) return self.Response;
-		if (typeof globalThis !== "undefined" && globalThis.Response) return globalThis.Response;
-		if (typeof Response !== "undefined") return Response;
-		debugFail("Could not find Response implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Map from errors returned by the server to errors to developer visible errors
-*/
-var SERVER_ERROR_MAP = {
-	["CREDENTIAL_MISMATCH"]: "custom-token-mismatch",
-	["MISSING_CUSTOM_TOKEN"]: "internal-error",
-	["INVALID_IDENTIFIER"]: "invalid-email",
-	["MISSING_CONTINUE_URI"]: "internal-error",
-	["INVALID_PASSWORD"]: "wrong-password",
-	["MISSING_PASSWORD"]: "missing-password",
-	["INVALID_LOGIN_CREDENTIALS"]: "invalid-credential",
-	["EMAIL_EXISTS"]: "email-already-in-use",
-	["PASSWORD_LOGIN_DISABLED"]: "operation-not-allowed",
-	["INVALID_IDP_RESPONSE"]: "invalid-credential",
-	["INVALID_PENDING_TOKEN"]: "invalid-credential",
-	["FEDERATED_USER_ID_ALREADY_LINKED"]: "credential-already-in-use",
-	["MISSING_REQ_TYPE"]: "internal-error",
-	["EMAIL_NOT_FOUND"]: "user-not-found",
-	["RESET_PASSWORD_EXCEED_LIMIT"]: "too-many-requests",
-	["EXPIRED_OOB_CODE"]: "expired-action-code",
-	["INVALID_OOB_CODE"]: "invalid-action-code",
-	["MISSING_OOB_CODE"]: "internal-error",
-	["CREDENTIAL_TOO_OLD_LOGIN_AGAIN"]: "requires-recent-login",
-	["INVALID_ID_TOKEN"]: "invalid-user-token",
-	["TOKEN_EXPIRED"]: "user-token-expired",
-	["USER_NOT_FOUND"]: "user-token-expired",
-	["TOO_MANY_ATTEMPTS_TRY_LATER"]: "too-many-requests",
-	["PASSWORD_DOES_NOT_MEET_REQUIREMENTS"]: "password-does-not-meet-requirements",
-	["INVALID_CODE"]: "invalid-verification-code",
-	["INVALID_SESSION_INFO"]: "invalid-verification-id",
-	["INVALID_TEMPORARY_PROOF"]: "invalid-credential",
-	["MISSING_SESSION_INFO"]: "missing-verification-id",
-	["SESSION_EXPIRED"]: "code-expired",
-	["MISSING_ANDROID_PACKAGE_NAME"]: "missing-android-pkg-name",
-	["UNAUTHORIZED_DOMAIN"]: "unauthorized-continue-uri",
-	["INVALID_OAUTH_CLIENT_ID"]: "invalid-oauth-client-id",
-	["ADMIN_ONLY_OPERATION"]: "admin-restricted-operation",
-	["INVALID_MFA_PENDING_CREDENTIAL"]: "invalid-multi-factor-session",
-	["MFA_ENROLLMENT_NOT_FOUND"]: "multi-factor-info-not-found",
-	["MISSING_MFA_ENROLLMENT_ID"]: "missing-multi-factor-info",
-	["MISSING_MFA_PENDING_CREDENTIAL"]: "missing-multi-factor-session",
-	["SECOND_FACTOR_EXISTS"]: "second-factor-already-in-use",
-	["SECOND_FACTOR_LIMIT_EXCEEDED"]: "maximum-second-factor-count-exceeded",
-	["BLOCKING_FUNCTION_ERROR_RESPONSE"]: "internal-error",
-	["RECAPTCHA_NOT_ENABLED"]: "recaptcha-not-enabled",
-	["MISSING_RECAPTCHA_TOKEN"]: "missing-recaptcha-token",
-	["INVALID_RECAPTCHA_TOKEN"]: "invalid-recaptcha-token",
-	["INVALID_RECAPTCHA_ACTION"]: "invalid-recaptcha-action",
-	["MISSING_CLIENT_TYPE"]: "missing-client-type",
-	["MISSING_RECAPTCHA_VERSION"]: "missing-recaptcha-version",
-	["INVALID_RECAPTCHA_VERSION"]: "invalid-recaptcha-version",
-	["INVALID_REQ_TYPE"]: "invalid-req-type"
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var CookieAuthProxiedEndpoints = [
-	"/v1/accounts:signInWithCustomToken",
-	"/v1/accounts:signInWithEmailLink",
-	"/v1/accounts:signInWithIdp",
-	"/v1/accounts:signInWithPassword",
-	"/v1/accounts:signInWithPhoneNumber",
-	"/v1/token"
-];
-var DEFAULT_API_TIMEOUT_MS = new Delay(3e4, 6e4);
-function _addTidIfNecessary(auth, request) {
-	if (auth.tenantId && !request.tenantId) return {
-		...request,
-		tenantId: auth.tenantId
-	};
-	return request;
-}
-async function _performApiRequest(auth, method, path, request, customErrorMap = {}) {
-	return _performFetchWithErrorHandling(auth, customErrorMap, async () => {
-		let body = {};
-		let params = {};
-		if (request) {
-			if (method === "GET") params = request;
-			else body = { body: JSON.stringify(request) };
-		}
-		const query = querystring({
-			...params,
-			key: auth.config.apiKey
-		}).slice(1);
-		const headers = await auth._getAdditionalHeaders();
-		headers["Content-Type"] = "application/json";
-		if (auth.languageCode) headers["X-Firebase-Locale"] = auth.languageCode;
-		const fetchArgs = {
-			method,
-			headers,
-			...body
-		};
-		if (!isCloudflareWorker()) fetchArgs.referrerPolicy = "strict-origin-when-cross-origin";
-		if (auth.emulatorConfig && isCloudWorkstation(auth.emulatorConfig.host)) fetchArgs.credentials = "include";
-		return FetchProvider.fetch()(await _getFinalTarget(auth, auth.config.apiHost, path, query), fetchArgs);
-	});
-}
-async function _performFetchWithErrorHandling(auth, customErrorMap, fetchFn) {
-	auth._canInitEmulator = false;
-	const errorMap = {
-		...SERVER_ERROR_MAP,
-		...customErrorMap
-	};
-	try {
-		const networkTimeout = new NetworkTimeout(auth);
-		const response = await Promise.race([fetchFn(), networkTimeout.promise]);
-		networkTimeout.clearNetworkTimeout();
-		const json = await response.json();
-		if ("needConfirmation" in json) throw _makeTaggedError(auth, "account-exists-with-different-credential", json);
-		if (response.ok && !("errorMessage" in json)) return json;
-		else {
-			const [serverErrorCode, serverErrorMessage] = (response.ok ? json.errorMessage : json.error.message).split(" : ");
-			if (serverErrorCode === "FEDERATED_USER_ID_ALREADY_LINKED") throw _makeTaggedError(auth, "credential-already-in-use", json);
-			else if (serverErrorCode === "EMAIL_EXISTS") throw _makeTaggedError(auth, "email-already-in-use", json);
-			else if (serverErrorCode === "USER_DISABLED") throw _makeTaggedError(auth, "user-disabled", json);
-			const authError = errorMap[serverErrorCode] || serverErrorCode.toLowerCase().replace(/[_\s]+/g, "-");
-			if (serverErrorMessage) throw _errorWithCustomMessage(auth, authError, serverErrorMessage);
-			else _fail(auth, authError);
-		}
-	} catch (e) {
-		if (e instanceof FirebaseError) throw e;
-		_fail(auth, "network-request-failed", { "message": String(e) });
-	}
-}
-async function _performSignInRequest(auth, method, path, request, customErrorMap = {}) {
-	const serverResponse = await _performApiRequest(auth, method, path, request, customErrorMap);
-	if ("mfaPendingCredential" in serverResponse) _fail(auth, "multi-factor-auth-required", { _serverResponse: serverResponse });
-	return serverResponse;
-}
-async function _getFinalTarget(auth, host, path, query) {
-	const base = `${host}${path}?${query}`;
-	const authInternal = auth;
-	const finalTarget = authInternal.config.emulator ? _emulatorUrl(auth.config, base) : `${auth.config.apiScheme}://${base}`;
-	if (CookieAuthProxiedEndpoints.includes(path)) {
-		await authInternal._persistenceManagerAvailable;
-		if (authInternal._getPersistenceType() === "COOKIE") return authInternal._getPersistence()._getFinalTarget(finalTarget).toString();
-	}
-	return finalTarget;
-}
-function _parseEnforcementState(enforcementStateStr) {
-	switch (enforcementStateStr) {
-		case "ENFORCE": return "ENFORCE";
-		case "AUDIT": return "AUDIT";
-		case "OFF": return "OFF";
-		default: return "ENFORCEMENT_STATE_UNSPECIFIED";
-	}
-}
-var NetworkTimeout = class {
-	clearNetworkTimeout() {
-		clearTimeout(this.timer);
-	}
-	constructor(auth) {
-		this.auth = auth;
-		this.timer = null;
-		this.promise = new Promise((_, reject) => {
-			this.timer = setTimeout(() => {
-				return reject(_createError(this.auth, "network-request-failed"));
-			}, DEFAULT_API_TIMEOUT_MS.get());
-		});
-	}
-};
-function _makeTaggedError(auth, code, response) {
-	const errorParams = { appName: auth.name };
-	if (response.email) errorParams.email = response.email;
-	if (response.phoneNumber) errorParams.phoneNumber = response.phoneNumber;
-	const error = _createError(auth, code, errorParams);
-	error.customData._tokenResponse = response;
-	return error;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function isEnterprise(grecaptcha) {
-	return grecaptcha !== void 0 && grecaptcha.enterprise !== void 0;
-}
-var RecaptchaConfig = class {
-	constructor(response) {
-		/**
-		* The reCAPTCHA site key.
-		*/
-		this.siteKey = "";
-		/**
-		* The list of providers and their enablement status for reCAPTCHA Enterprise.
-		*/
-		this.recaptchaEnforcementState = [];
-		if (response.recaptchaKey === void 0) throw new Error("recaptchaKey undefined");
-		this.siteKey = response.recaptchaKey.split("/")[3];
-		this.recaptchaEnforcementState = response.recaptchaEnforcementState;
-	}
-	/**
-	* Returns the reCAPTCHA Enterprise enforcement state for the given provider.
-	*
-	* @param providerStr - The provider whose enforcement state is to be returned.
-	* @returns The reCAPTCHA Enterprise enforcement state for the given provider.
-	*/
-	getProviderEnforcementState(providerStr) {
-		if (!this.recaptchaEnforcementState || this.recaptchaEnforcementState.length === 0) return null;
-		for (const recaptchaEnforcementState of this.recaptchaEnforcementState) if (recaptchaEnforcementState.provider && recaptchaEnforcementState.provider === providerStr) return _parseEnforcementState(recaptchaEnforcementState.enforcementState);
-		return null;
-	}
-	/**
-	* Returns true if the reCAPTCHA Enterprise enforcement state for the provider is set to ENFORCE or AUDIT.
-	*
-	* @param providerStr - The provider whose enablement state is to be returned.
-	* @returns Whether or not reCAPTCHA Enterprise protection is enabled for the given provider.
-	*/
-	isProviderEnabled(providerStr) {
-		return this.getProviderEnforcementState(providerStr) === "ENFORCE" || this.getProviderEnforcementState(providerStr) === "AUDIT";
-	}
-	/**
-	* Returns true if reCAPTCHA Enterprise protection is enabled in at least one provider, otherwise
-	* returns false.
-	*
-	* @returns Whether or not reCAPTCHA Enterprise protection is enabled for at least one provider.
-	*/
-	isAnyProviderEnabled() {
-		return this.isProviderEnabled("EMAIL_PASSWORD_PROVIDER") || this.isProviderEnabled("PHONE_PROVIDER");
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function getRecaptchaConfig(auth, request) {
-	return _performApiRequest(auth, "GET", "/v2/recaptchaConfig", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function deleteAccount(auth, request) {
-	return _performApiRequest(auth, "POST", "/v1/accounts:delete", request);
-}
-async function getAccountInfo(auth, request) {
-	return _performApiRequest(auth, "POST", "/v1/accounts:lookup", request);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function utcTimestampToDateString(utcTimestamp) {
-	if (!utcTimestamp) return;
-	try {
-		const date = new Date(Number(utcTimestamp));
-		if (!isNaN(date.getTime())) return date.toUTCString();
-	} catch (e) {}
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Returns a deserialized JSON Web Token (JWT) used to identify the user to a Firebase service.
-*
-* @remarks
-* Returns the current token if it has not expired or if it will not expire in the next five
-* minutes. Otherwise, this will refresh the token and return a new one.
-*
-* @param user - The user.
-* @param forceRefresh - Force refresh regardless of token expiration.
-*
-* @public
-*/
-async function getIdTokenResult(user, forceRefresh = false) {
-	const userInternal = getModularInstance(user);
-	const token = await userInternal.getIdToken(forceRefresh);
-	const claims = _parseToken(token);
-	_assert(claims && claims.exp && claims.auth_time && claims.iat, userInternal.auth, "internal-error");
-	const firebase = typeof claims.firebase === "object" ? claims.firebase : void 0;
-	const signInProvider = firebase?.["sign_in_provider"];
-	return {
-		claims,
-		token,
-		authTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.auth_time)),
-		issuedAtTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.iat)),
-		expirationTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.exp)),
-		signInProvider: signInProvider || null,
-		signInSecondFactor: firebase?.["sign_in_second_factor"] || null
-	};
-}
-function secondsStringToMilliseconds(seconds) {
-	return Number(seconds) * 1e3;
-}
-function _parseToken(token) {
-	const [algorithm, payload, signature] = token.split(".");
-	if (algorithm === void 0 || payload === void 0 || signature === void 0) {
-		_logError("JWT malformed, contained fewer than 3 sections");
-		return null;
-	}
-	try {
-		const decoded = base64Decode(payload);
-		if (!decoded) {
-			_logError("Failed to decode base64 JWT payload");
-			return null;
-		}
-		return JSON.parse(decoded);
-	} catch (e) {
-		_logError("Caught error parsing JWT payload as JSON", e?.toString());
-		return null;
-	}
-}
-/**
-* Extract expiresIn TTL from a token by subtracting the expiration from the issuance.
-*/
-function _tokenExpiresIn(token) {
-	const parsedToken = _parseToken(token);
-	_assert(parsedToken, "internal-error");
-	_assert(typeof parsedToken.exp !== "undefined", "internal-error");
-	_assert(typeof parsedToken.iat !== "undefined", "internal-error");
-	return Number(parsedToken.exp) - Number(parsedToken.iat);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _logoutIfInvalidated(user, promise, bypassAuthState = false) {
-	if (bypassAuthState) return promise;
-	try {
-		return await promise;
-	} catch (e) {
-		if (_isUserInvalidated(e)) {
-			if (user.auth.currentUser === user) await user.auth.signOut();
-		}
-		throw e;
-	}
-}
-function _isUserInvalidated(error) {
-	if (error instanceof FirebaseError) return error.code === `auth/user-disabled` || error.code === `auth/user-token-expired`;
-	return false;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var ProactiveRefresh = class {
-	constructor(user) {
-		this.user = user;
-		this.isRunning = false;
-		this.timerId = null;
-		this.errorBackoff = 3e4;
-	}
-	_start() {
-		if (this.isRunning) return;
-		this.isRunning = true;
-		this.schedule();
-	}
-	_stop() {
-		if (!this.isRunning) return;
-		this.isRunning = false;
-		if (this.timerId !== null) clearTimeout(this.timerId);
-	}
-	getInterval(wasError) {
-		if (wasError) {
-			const interval = this.errorBackoff;
-			this.errorBackoff = Math.min(this.errorBackoff * 2, 96e4);
-			return interval;
-		} else {
-			this.errorBackoff = 3e4;
-			const interval = (this.user.stsTokenManager.expirationTime ?? 0) - Date.now() - 3e5;
-			return Math.max(0, interval);
-		}
-	}
-	schedule(wasError = false) {
-		if (!this.isRunning) return;
-		const interval = this.getInterval(wasError);
-		this.timerId = setTimeout(async () => {
-			await this.iteration();
-		}, interval);
-	}
-	async iteration() {
-		try {
-			await this.user.getIdToken(true);
-		} catch (e) {
-			if (e?.code === `auth/network-request-failed`) this.schedule(true);
-			return;
-		}
-		this.schedule();
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var UserMetadata = class {
-	constructor(createdAt, lastLoginAt) {
-		this.createdAt = createdAt;
-		this.lastLoginAt = lastLoginAt;
-		this._initializeTime();
-	}
-	_initializeTime() {
-		this.lastSignInTime = utcTimestampToDateString(this.lastLoginAt);
-		this.creationTime = utcTimestampToDateString(this.createdAt);
-	}
-	_copy(metadata) {
-		this.createdAt = metadata.createdAt;
-		this.lastLoginAt = metadata.lastLoginAt;
-		this._initializeTime();
-	}
-	toJSON() {
-		return {
-			createdAt: this.createdAt,
-			lastLoginAt: this.lastLoginAt
-		};
-	}
-};
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _reloadWithoutSaving(user) {
-	const auth = user.auth;
-	const response = await _logoutIfInvalidated(user, getAccountInfo(auth, { idToken: await user.getIdToken() }));
-	_assert(response?.users.length, auth, "internal-error");
-	const coreAccount = response.users[0];
-	user._notifyReloadListener(coreAccount);
-	const newProviderData = coreAccount.providerUserInfo?.length ? extractProviderData(coreAccount.providerUserInfo) : [];
-	const providerData = mergeProviderData(user.providerData, newProviderData);
-	const oldIsAnonymous = user.isAnonymous;
-	const newIsAnonymous = !(user.email && coreAccount.passwordHash) && !providerData?.length;
-	const isAnonymous = !oldIsAnonymous ? false : newIsAnonymous;
-	const updates = {
-		uid: coreAccount.localId,
-		displayName: coreAccount.displayName || null,
-		photoURL: coreAccount.photoUrl || null,
-		email: coreAccount.email || null,
-		emailVerified: coreAccount.emailVerified || false,
-		phoneNumber: coreAccount.phoneNumber || null,
-		tenantId: coreAccount.tenantId || null,
-		providerData,
-		metadata: new UserMetadata(coreAccount.createdAt, coreAccount.lastLoginAt),
-		isAnonymous
-	};
-	Object.assign(user, updates);
-}
-/**
-* Reloads user account data, if signed in.
-*
-* @param user - The user.
-*
-* @public
-*/
-async function reload(user) {
-	const userInternal = getModularInstance(user);
-	await _reloadWithoutSaving(userInternal);
-	await userInternal.auth._persistUserIfCurrent(userInternal);
-	userInternal.auth._notifyListenersIfCurrent(userInternal);
-}
-function mergeProviderData(original, newData) {
-	return [...original.filter((o) => !newData.some((n) => n.providerId === o.providerId)), ...newData];
-}
-function extractProviderData(providers) {
-	return providers.map(({ providerId, ...provider }) => {
-		return {
-			providerId,
-			uid: provider.rawId || "",
-			displayName: provider.displayName || null,
-			email: provider.email || null,
-			phoneNumber: provider.phoneNumber || null,
-			photoURL: provider.photoUrl || null
-		};
-	});
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function requestStsToken(auth, refreshToken) {
-	const response = await _performFetchWithErrorHandling(auth, {}, async () => {
-		const body = querystring({
-			"grant_type": "refresh_token",
-			"refresh_token": refreshToken
-		}).slice(1);
-		const { tokenApiHost, apiKey } = auth.config;
-		const url = await _getFinalTarget(auth, tokenApiHost, "/v1/token", `key=${apiKey}`);
-		const headers = await auth._getAdditionalHeaders();
-		headers["Content-Type"] = "application/x-www-form-urlencoded";
-		const options = {
-			method: "POST",
-			headers,
-			body
-		};
-		if (auth.emulatorConfig && isCloudWorkstation(auth.emulatorConfig.host)) options.credentials = "include";
-		return FetchProvider.fetch()(url, options);
-	});
-	return {
-		accessToken: response.access_token,
-		expiresIn: response.expires_in,
-		refreshToken: response.refresh_token
-	};
-}
-async function revokeToken(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts:revokeToken", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* We need to mark this class as internal explicitly to exclude it in the public typings, because
-* it references AuthInternal which has a circular dependency with UserInternal.
-*
-* @internal
-*/
-var StsTokenManager = class StsTokenManager {
-	constructor() {
-		this.refreshToken = null;
-		this.accessToken = null;
-		this.expirationTime = null;
-	}
-	get isExpired() {
-		return !this.expirationTime || Date.now() > this.expirationTime - 3e5;
-	}
-	updateFromServerResponse(response) {
-		_assert(response.idToken, "internal-error");
-		_assert(typeof response.idToken !== "undefined", "internal-error");
-		_assert(typeof response.refreshToken !== "undefined", "internal-error");
-		const expiresIn = "expiresIn" in response && typeof response.expiresIn !== "undefined" ? Number(response.expiresIn) : _tokenExpiresIn(response.idToken);
-		this.updateTokensAndExpiration(response.idToken, response.refreshToken, expiresIn);
-	}
-	updateFromIdToken(idToken) {
-		_assert(idToken.length !== 0, "internal-error");
-		const expiresIn = _tokenExpiresIn(idToken);
-		this.updateTokensAndExpiration(idToken, null, expiresIn);
-	}
-	async getToken(auth, forceRefresh = false) {
-		if (!forceRefresh && this.accessToken && !this.isExpired) return this.accessToken;
-		_assert(this.refreshToken, auth, "user-token-expired");
-		if (this.refreshToken) {
-			await this.refresh(auth, this.refreshToken);
-			return this.accessToken;
-		}
-		return null;
-	}
-	clearRefreshToken() {
-		this.refreshToken = null;
-	}
-	async refresh(auth, oldToken) {
-		const { accessToken, refreshToken, expiresIn } = await requestStsToken(auth, oldToken);
-		this.updateTokensAndExpiration(accessToken, refreshToken, Number(expiresIn));
-	}
-	updateTokensAndExpiration(accessToken, refreshToken, expiresInSec) {
-		this.refreshToken = refreshToken || null;
-		this.accessToken = accessToken || null;
-		this.expirationTime = Date.now() + expiresInSec * 1e3;
-	}
-	static fromJSON(appName, object) {
-		const { refreshToken, accessToken, expirationTime } = object;
-		const manager = new StsTokenManager();
-		if (refreshToken) {
-			_assert(typeof refreshToken === "string", "internal-error", { appName });
-			manager.refreshToken = refreshToken;
-		}
-		if (accessToken) {
-			_assert(typeof accessToken === "string", "internal-error", { appName });
-			manager.accessToken = accessToken;
-		}
-		if (expirationTime) {
-			_assert(typeof expirationTime === "number", "internal-error", { appName });
-			manager.expirationTime = expirationTime;
-		}
-		return manager;
-	}
-	toJSON() {
-		return {
-			refreshToken: this.refreshToken,
-			accessToken: this.accessToken,
-			expirationTime: this.expirationTime
-		};
-	}
-	_assign(stsTokenManager) {
-		this.accessToken = stsTokenManager.accessToken;
-		this.refreshToken = stsTokenManager.refreshToken;
-		this.expirationTime = stsTokenManager.expirationTime;
-	}
-	_clone() {
-		return Object.assign(new StsTokenManager(), this.toJSON());
-	}
-	_performRefresh() {
-		return debugFail("not implemented");
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function assertStringOrUndefined(assertion, appName) {
-	_assert(typeof assertion === "string" || typeof assertion === "undefined", "internal-error", { appName });
-}
-var UserImpl = class UserImpl {
-	constructor({ uid, auth, stsTokenManager, ...opt }) {
-		this.providerId = "firebase";
-		this.proactiveRefresh = new ProactiveRefresh(this);
-		this.reloadUserInfo = null;
-		this.reloadListener = null;
-		this.uid = uid;
-		this.auth = auth;
-		this.stsTokenManager = stsTokenManager;
-		this.accessToken = stsTokenManager.accessToken;
-		this.displayName = opt.displayName || null;
-		this.email = opt.email || null;
-		this.emailVerified = opt.emailVerified || false;
-		this.phoneNumber = opt.phoneNumber || null;
-		this.photoURL = opt.photoURL || null;
-		this.isAnonymous = opt.isAnonymous || false;
-		this.tenantId = opt.tenantId || null;
-		this.providerData = opt.providerData ? [...opt.providerData] : [];
-		this.metadata = new UserMetadata(opt.createdAt || void 0, opt.lastLoginAt || void 0);
-	}
-	async getIdToken(forceRefresh) {
-		const accessToken = await _logoutIfInvalidated(this, this.stsTokenManager.getToken(this.auth, forceRefresh));
-		_assert(accessToken, this.auth, "internal-error");
-		if (this.accessToken !== accessToken) {
-			this.accessToken = accessToken;
-			await this.auth._persistUserIfCurrent(this);
-			this.auth._notifyListenersIfCurrent(this);
-		}
-		return accessToken;
-	}
-	getIdTokenResult(forceRefresh) {
-		return getIdTokenResult(this, forceRefresh);
-	}
-	reload() {
-		return reload(this);
-	}
-	_assign(user) {
-		if (this === user) return;
-		_assert(this.uid === user.uid, this.auth, "internal-error");
-		this.displayName = user.displayName;
-		this.photoURL = user.photoURL;
-		this.email = user.email;
-		this.emailVerified = user.emailVerified;
-		this.phoneNumber = user.phoneNumber;
-		this.isAnonymous = user.isAnonymous;
-		this.tenantId = user.tenantId;
-		this.providerData = user.providerData.map((userInfo) => ({ ...userInfo }));
-		this.metadata._copy(user.metadata);
-		this.stsTokenManager._assign(user.stsTokenManager);
-	}
-	_clone(auth) {
-		const newUser = new UserImpl({
-			...this,
-			auth,
-			stsTokenManager: this.stsTokenManager._clone()
-		});
-		newUser.metadata._copy(this.metadata);
-		return newUser;
-	}
-	_onReload(callback) {
-		_assert(!this.reloadListener, this.auth, "internal-error");
-		this.reloadListener = callback;
-		if (this.reloadUserInfo) {
-			this._notifyReloadListener(this.reloadUserInfo);
-			this.reloadUserInfo = null;
-		}
-	}
-	_notifyReloadListener(userInfo) {
-		if (this.reloadListener) this.reloadListener(userInfo);
-		else this.reloadUserInfo = userInfo;
-	}
-	_startProactiveRefresh() {
-		this.proactiveRefresh._start();
-	}
-	_stopProactiveRefresh() {
-		this.proactiveRefresh._stop();
-	}
-	async _updateTokensIfNecessary(response, reload = false) {
-		let tokensRefreshed = false;
-		if (response.idToken && response.idToken !== this.stsTokenManager.accessToken) {
-			this.stsTokenManager.updateFromServerResponse(response);
-			tokensRefreshed = true;
-		}
-		if (reload) await _reloadWithoutSaving(this);
-		await this.auth._persistUserIfCurrent(this);
-		if (tokensRefreshed) this.auth._notifyListenersIfCurrent(this);
-	}
-	async delete() {
-		if (_isFirebaseServerApp(this.auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this.auth));
-		const idToken = await this.getIdToken();
-		await _logoutIfInvalidated(this, deleteAccount(this.auth, { idToken }));
-		this.stsTokenManager.clearRefreshToken();
-		return this.auth.signOut();
-	}
-	toJSON() {
-		return {
-			uid: this.uid,
-			email: this.email || void 0,
-			emailVerified: this.emailVerified,
-			displayName: this.displayName || void 0,
-			isAnonymous: this.isAnonymous,
-			photoURL: this.photoURL || void 0,
-			phoneNumber: this.phoneNumber || void 0,
-			tenantId: this.tenantId || void 0,
-			providerData: this.providerData.map((userInfo) => ({ ...userInfo })),
-			stsTokenManager: this.stsTokenManager.toJSON(),
-			_redirectEventId: this._redirectEventId,
-			...this.metadata.toJSON(),
-			apiKey: this.auth.config.apiKey,
-			appName: this.auth.name
-		};
-	}
-	get refreshToken() {
-		return this.stsTokenManager.refreshToken || "";
-	}
-	static _fromJSON(auth, object) {
-		const displayName = object.displayName ?? void 0;
-		const email = object.email ?? void 0;
-		const phoneNumber = object.phoneNumber ?? void 0;
-		const photoURL = object.photoURL ?? void 0;
-		const tenantId = object.tenantId ?? void 0;
-		const _redirectEventId = object._redirectEventId ?? void 0;
-		const createdAt = object.createdAt ?? void 0;
-		const lastLoginAt = object.lastLoginAt ?? void 0;
-		const { uid, emailVerified, isAnonymous, providerData, stsTokenManager: plainObjectTokenManager } = object;
-		_assert(uid && plainObjectTokenManager, auth, "internal-error");
-		const stsTokenManager = StsTokenManager.fromJSON(this.name, plainObjectTokenManager);
-		_assert(typeof uid === "string", auth, "internal-error");
-		assertStringOrUndefined(displayName, auth.name);
-		assertStringOrUndefined(email, auth.name);
-		_assert(typeof emailVerified === "boolean", auth, "internal-error");
-		_assert(typeof isAnonymous === "boolean", auth, "internal-error");
-		assertStringOrUndefined(phoneNumber, auth.name);
-		assertStringOrUndefined(photoURL, auth.name);
-		assertStringOrUndefined(tenantId, auth.name);
-		assertStringOrUndefined(_redirectEventId, auth.name);
-		assertStringOrUndefined(createdAt, auth.name);
-		assertStringOrUndefined(lastLoginAt, auth.name);
-		const user = new UserImpl({
-			uid,
-			auth,
-			email,
-			emailVerified,
-			displayName,
-			isAnonymous,
-			photoURL,
-			phoneNumber,
-			tenantId,
-			stsTokenManager,
-			createdAt,
-			lastLoginAt
-		});
-		if (providerData && Array.isArray(providerData)) user.providerData = providerData.map((userInfo) => ({ ...userInfo }));
-		if (_redirectEventId) user._redirectEventId = _redirectEventId;
-		return user;
-	}
-	/**
-	* Initialize a User from an idToken server response
-	* @param auth
-	* @param idTokenResponse
-	*/
-	static async _fromIdTokenResponse(auth, idTokenResponse, isAnonymous = false) {
-		const stsTokenManager = new StsTokenManager();
-		stsTokenManager.updateFromServerResponse(idTokenResponse);
-		const user = new UserImpl({
-			uid: idTokenResponse.localId,
-			auth,
-			stsTokenManager,
-			isAnonymous
-		});
-		await _reloadWithoutSaving(user);
-		return user;
-	}
-	/**
-	* Initialize a User from an idToken server response
-	* @param auth
-	* @param idTokenResponse
-	*/
-	static async _fromGetAccountInfoResponse(auth, response, idToken) {
-		const coreAccount = response.users[0];
-		_assert(coreAccount.localId !== void 0, "internal-error");
-		const providerData = coreAccount.providerUserInfo !== void 0 ? extractProviderData(coreAccount.providerUserInfo) : [];
-		const isAnonymous = !(coreAccount.email && coreAccount.passwordHash) && !providerData?.length;
-		const stsTokenManager = new StsTokenManager();
-		stsTokenManager.updateFromIdToken(idToken);
-		const user = new UserImpl({
-			uid: coreAccount.localId,
-			auth,
-			stsTokenManager,
-			isAnonymous
-		});
-		const updates = {
-			uid: coreAccount.localId,
-			displayName: coreAccount.displayName || null,
-			photoURL: coreAccount.photoUrl || null,
-			email: coreAccount.email || null,
-			emailVerified: coreAccount.emailVerified || false,
-			phoneNumber: coreAccount.phoneNumber || null,
-			tenantId: coreAccount.tenantId || null,
-			providerData,
-			metadata: new UserMetadata(coreAccount.createdAt, coreAccount.lastLoginAt),
-			isAnonymous: !(coreAccount.email && coreAccount.passwordHash) && !providerData?.length
-		};
-		Object.assign(user, updates);
-		return user;
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var instanceCache = /* @__PURE__ */ new Map();
-function _getInstance(cls) {
-	debugAssert(cls instanceof Function, "Expected a class definition");
-	let instance = instanceCache.get(cls);
-	if (instance) {
-		debugAssert(instance instanceof cls, "Instance stored in cache mismatched with class");
-		return instance;
-	}
-	instance = new cls();
-	instanceCache.set(cls, instance);
-	return instance;
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var InMemoryPersistence = class {
-	constructor() {
-		this.type = "NONE";
-		this.storage = {};
-	}
-	async _isAvailable() {
-		return true;
-	}
-	async _set(key, value) {
-		this.storage[key] = value;
-	}
-	async _get(key) {
-		const value = this.storage[key];
-		return value === void 0 ? null : value;
-	}
-	async _remove(key) {
-		delete this.storage[key];
-	}
-	_addListener(_key, _listener) {}
-	_removeListener(_key, _listener) {}
-};
-InMemoryPersistence.type = "NONE";
-/**
-* An implementation of {@link Persistence} of type 'NONE'.
-*
-* @public
-*/
-var inMemoryPersistence = InMemoryPersistence;
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _persistenceKeyName(key, apiKey, appName) {
-	return `firebase:${key}:${apiKey}:${appName}`;
-}
-var PersistenceUserManager = class PersistenceUserManager {
-	constructor(persistence, auth, userKey) {
-		this.persistence = persistence;
-		this.auth = auth;
-		this.userKey = userKey;
-		const { config, name } = this.auth;
-		this.fullUserKey = _persistenceKeyName(this.userKey, config.apiKey, name);
-		this.fullPersistenceKey = _persistenceKeyName("persistence", config.apiKey, name);
-		this.boundEventHandler = auth._onStorageEvent.bind(auth);
-		try {
-			this.persistence._addListener(this.fullUserKey, this.boundEventHandler);
-		} catch {}
-	}
-	setCurrentUser(user) {
-		return this.persistence._set(this.fullUserKey, user.toJSON());
-	}
-	async getCurrentUser() {
-		const blob = await this.persistence._get(this.fullUserKey);
-		if (!blob) return null;
-		if (typeof blob === "string") {
-			const response = await getAccountInfo(this.auth, { idToken: blob }).catch(() => void 0);
-			if (!response) return null;
-			return UserImpl._fromGetAccountInfoResponse(this.auth, response, blob);
-		}
-		return UserImpl._fromJSON(this.auth, blob);
-	}
-	removeCurrentUser() {
-		return this.persistence._remove(this.fullUserKey);
-	}
-	savePersistenceForRedirect() {
-		return this.persistence._set(this.fullPersistenceKey, this.persistence.type);
-	}
-	async setPersistence(newPersistence) {
-		if (this.persistence === newPersistence) return;
-		const currentUser = await this.getCurrentUser();
-		await this.removeCurrentUser();
-		this.persistence = newPersistence;
-		if (currentUser) return this.setCurrentUser(currentUser);
-	}
-	delete() {
-		try {
-			this.persistence._removeListener(this.fullUserKey, this.boundEventHandler);
-		} catch {}
-	}
-	static async create(auth, persistenceHierarchy, userKey = "authUser") {
-		if (!persistenceHierarchy.length) return new PersistenceUserManager(_getInstance(inMemoryPersistence), auth, userKey);
-		const availablePersistences = (await Promise.all(persistenceHierarchy.map(async (persistence) => {
-			try {
-				if (await persistence._isAvailable()) return persistence;
-			} catch {
-				return;
-			}
-		}))).filter((persistence) => persistence);
-		let selectedPersistence = availablePersistences[0] || _getInstance(inMemoryPersistence);
-		const key = _persistenceKeyName(userKey, auth.config.apiKey, auth.name);
-		let userToMigrate = null;
-		for (const persistence of persistenceHierarchy) try {
-			const blob = await persistence._get(key);
-			if (blob) {
-				let user;
-				if (typeof blob === "string") {
-					const response = await getAccountInfo(auth, { idToken: blob }).catch(() => void 0);
-					if (!response) break;
-					user = await UserImpl._fromGetAccountInfoResponse(auth, response, blob);
-				} else user = UserImpl._fromJSON(auth, blob);
-				if (persistence !== selectedPersistence) userToMigrate = user;
-				selectedPersistence = persistence;
-				break;
-			}
-		} catch {}
-		const migrationHierarchy = availablePersistences.filter((p) => p._shouldAllowMigration);
-		if (!selectedPersistence._shouldAllowMigration || !migrationHierarchy.length) return new PersistenceUserManager(selectedPersistence, auth, userKey);
-		selectedPersistence = migrationHierarchy[0];
-		if (userToMigrate) await selectedPersistence._set(key, userToMigrate.toJSON());
-		await Promise.all(persistenceHierarchy.map(async (persistence) => {
-			if (persistence !== selectedPersistence) try {
-				await persistence._remove(key);
-			} catch {}
-		}));
-		return new PersistenceUserManager(selectedPersistence, auth, userKey);
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Determine the browser for the purposes of reporting usage to the API
-*/
-function _getBrowserName(userAgent) {
-	const ua = userAgent.toLowerCase();
-	if (ua.includes("opera/") || ua.includes("opr/") || ua.includes("opios/")) return "Opera";
-	else if (_isIEMobile(ua)) return "IEMobile";
-	else if (ua.includes("msie") || ua.includes("trident/")) return "IE";
-	else if (ua.includes("edge/")) return "Edge";
-	else if (_isFirefox(ua)) return "Firefox";
-	else if (ua.includes("silk/")) return "Silk";
-	else if (_isBlackBerry(ua)) return "Blackberry";
-	else if (_isWebOS(ua)) return "Webos";
-	else if (_isSafari(ua)) return "Safari";
-	else if ((ua.includes("chrome/") || _isChromeIOS(ua)) && !ua.includes("edge/")) return "Chrome";
-	else if (_isAndroid(ua)) return "Android";
-	else {
-		const matches = userAgent.match(/([a-zA-Z\d\.]+)\/[a-zA-Z\d\.]*$/);
-		if (matches?.length === 2) return matches[1];
-	}
-	return "Other";
-}
-function _isFirefox(ua = getUA()) {
-	return /firefox\//i.test(ua);
-}
-function _isSafari(userAgent = getUA()) {
-	const ua = userAgent.toLowerCase();
-	return ua.includes("safari/") && !ua.includes("chrome/") && !ua.includes("crios/") && !ua.includes("android");
-}
-function _isChromeIOS(ua = getUA()) {
-	return /crios\//i.test(ua);
-}
-function _isIEMobile(ua = getUA()) {
-	return /iemobile/i.test(ua);
-}
-function _isAndroid(ua = getUA()) {
-	return /android/i.test(ua);
-}
-function _isBlackBerry(ua = getUA()) {
-	return /blackberry/i.test(ua);
-}
-function _isWebOS(ua = getUA()) {
-	return /webos/i.test(ua);
-}
-function _isIOS(ua = getUA()) {
-	return /iphone|ipad|ipod/i.test(ua) || /macintosh/i.test(ua) && /mobile/i.test(ua);
-}
-function _isIOSStandalone(ua = getUA()) {
-	return _isIOS(ua) && !!window.navigator?.standalone;
-}
-function _isIE10() {
-	return isIE() && document.documentMode === 10;
-}
-function _isMobileBrowser(ua = getUA()) {
-	return _isIOS(ua) || _isAndroid(ua) || _isWebOS(ua) || _isBlackBerry(ua) || /windows phone/i.test(ua) || _isIEMobile(ua);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _getClientVersion(clientPlatform, frameworks = []) {
-	let reportedPlatform;
-	switch (clientPlatform) {
-		case "Browser":
-			reportedPlatform = _getBrowserName(getUA());
-			break;
-		case "Worker":
-			reportedPlatform = `${_getBrowserName(getUA())}-${clientPlatform}`;
-			break;
-		default: reportedPlatform = clientPlatform;
-	}
-	const reportedFrameworks = frameworks.length ? frameworks.join(",") : "FirebaseCore-web";
-	return `${reportedPlatform}/JsCore/${SDK_VERSION}/${reportedFrameworks}`;
-}
-/**
-* @license
-* Copyright 2022 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var AuthMiddlewareQueue = class {
-	constructor(auth) {
-		this.auth = auth;
-		this.queue = [];
-	}
-	pushCallback(callback, onAbort) {
-		const wrappedCallback = (user) => new Promise((resolve, reject) => {
-			try {
-				resolve(callback(user));
-			} catch (e) {
-				reject(e);
-			}
-		});
-		wrappedCallback.onAbort = onAbort;
-		this.queue.push(wrappedCallback);
-		const index = this.queue.length - 1;
-		return () => {
-			this.queue[index] = () => Promise.resolve();
-		};
-	}
-	async runMiddleware(nextUser) {
-		if (this.auth.currentUser === nextUser) return;
-		const onAbortStack = [];
-		try {
-			for (const beforeStateCallback of this.queue) {
-				await beforeStateCallback(nextUser);
-				if (beforeStateCallback.onAbort) onAbortStack.push(beforeStateCallback.onAbort);
-			}
-		} catch (e) {
-			onAbortStack.reverse();
-			for (const onAbort of onAbortStack) try {
-				onAbort();
-			} catch (_) {}
-			throw this.auth._errorFactory.create("login-blocked", { originalMessage: e?.message });
-		}
-	}
-};
-/**
-* @license
-* Copyright 2023 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Fetches the password policy for the currently set tenant or the project if no tenant is set.
-*
-* @param auth Auth object.
-* @param request Password policy request.
-* @returns Password policy response.
-*/
-async function _getPasswordPolicy(auth, request = {}) {
-	return _performApiRequest(auth, "GET", "/v2/passwordPolicy", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2023 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var MINIMUM_MIN_PASSWORD_LENGTH = 6;
-/**
-* Stores password policy requirements and provides password validation against the policy.
-*
-* @internal
-*/
-var PasswordPolicyImpl = class {
-	constructor(response) {
-		const responseOptions = response.customStrengthOptions;
-		this.customStrengthOptions = {};
-		this.customStrengthOptions.minPasswordLength = responseOptions.minPasswordLength ?? MINIMUM_MIN_PASSWORD_LENGTH;
-		if (responseOptions.maxPasswordLength) this.customStrengthOptions.maxPasswordLength = responseOptions.maxPasswordLength;
-		if (responseOptions.containsLowercaseCharacter !== void 0) this.customStrengthOptions.containsLowercaseLetter = responseOptions.containsLowercaseCharacter;
-		if (responseOptions.containsUppercaseCharacter !== void 0) this.customStrengthOptions.containsUppercaseLetter = responseOptions.containsUppercaseCharacter;
-		if (responseOptions.containsNumericCharacter !== void 0) this.customStrengthOptions.containsNumericCharacter = responseOptions.containsNumericCharacter;
-		if (responseOptions.containsNonAlphanumericCharacter !== void 0) this.customStrengthOptions.containsNonAlphanumericCharacter = responseOptions.containsNonAlphanumericCharacter;
-		this.enforcementState = response.enforcementState;
-		if (this.enforcementState === "ENFORCEMENT_STATE_UNSPECIFIED") this.enforcementState = "OFF";
-		this.allowedNonAlphanumericCharacters = response.allowedNonAlphanumericCharacters?.join("") ?? "";
-		this.forceUpgradeOnSignin = response.forceUpgradeOnSignin ?? false;
-		this.schemaVersion = response.schemaVersion;
-	}
-	validatePassword(password) {
-		const status = {
-			isValid: true,
-			passwordPolicy: this
-		};
-		this.validatePasswordLengthOptions(password, status);
-		this.validatePasswordCharacterOptions(password, status);
-		status.isValid && (status.isValid = status.meetsMinPasswordLength ?? true);
-		status.isValid && (status.isValid = status.meetsMaxPasswordLength ?? true);
-		status.isValid && (status.isValid = status.containsLowercaseLetter ?? true);
-		status.isValid && (status.isValid = status.containsUppercaseLetter ?? true);
-		status.isValid && (status.isValid = status.containsNumericCharacter ?? true);
-		status.isValid && (status.isValid = status.containsNonAlphanumericCharacter ?? true);
-		return status;
-	}
-	/**
-	* Validates that the password meets the length options for the policy.
-	*
-	* @param password Password to validate.
-	* @param status Validation status.
-	*/
-	validatePasswordLengthOptions(password, status) {
-		const minPasswordLength = this.customStrengthOptions.minPasswordLength;
-		const maxPasswordLength = this.customStrengthOptions.maxPasswordLength;
-		if (minPasswordLength) status.meetsMinPasswordLength = password.length >= minPasswordLength;
-		if (maxPasswordLength) status.meetsMaxPasswordLength = password.length <= maxPasswordLength;
-	}
-	/**
-	* Validates that the password meets the character options for the policy.
-	*
-	* @param password Password to validate.
-	* @param status Validation status.
-	*/
-	validatePasswordCharacterOptions(password, status) {
-		this.updatePasswordCharacterOptionsStatuses(status, false, false, false, false);
-		let passwordChar;
-		for (let i = 0; i < password.length; i++) {
-			passwordChar = password.charAt(i);
-			this.updatePasswordCharacterOptionsStatuses(status, passwordChar >= "a" && passwordChar <= "z", passwordChar >= "A" && passwordChar <= "Z", passwordChar >= "0" && passwordChar <= "9", this.allowedNonAlphanumericCharacters.includes(passwordChar));
-		}
-	}
-	/**
-	* Updates the running validation status with the statuses for the character options.
-	* Expected to be called each time a character is processed to update each option status
-	* based on the current character.
-	*
-	* @param status Validation status.
-	* @param containsLowercaseCharacter Whether the character is a lowercase letter.
-	* @param containsUppercaseCharacter Whether the character is an uppercase letter.
-	* @param containsNumericCharacter Whether the character is a numeric character.
-	* @param containsNonAlphanumericCharacter Whether the character is a non-alphanumeric character.
-	*/
-	updatePasswordCharacterOptionsStatuses(status, containsLowercaseCharacter, containsUppercaseCharacter, containsNumericCharacter, containsNonAlphanumericCharacter) {
-		if (this.customStrengthOptions.containsLowercaseLetter) status.containsLowercaseLetter || (status.containsLowercaseLetter = containsLowercaseCharacter);
-		if (this.customStrengthOptions.containsUppercaseLetter) status.containsUppercaseLetter || (status.containsUppercaseLetter = containsUppercaseCharacter);
-		if (this.customStrengthOptions.containsNumericCharacter) status.containsNumericCharacter || (status.containsNumericCharacter = containsNumericCharacter);
-		if (this.customStrengthOptions.containsNonAlphanumericCharacter) status.containsNonAlphanumericCharacter || (status.containsNonAlphanumericCharacter = containsNonAlphanumericCharacter);
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var AuthImpl = class {
-	constructor(app, heartbeatServiceProvider, appCheckServiceProvider, config) {
-		this.app = app;
-		this.heartbeatServiceProvider = heartbeatServiceProvider;
-		this.appCheckServiceProvider = appCheckServiceProvider;
-		this.config = config;
-		this.currentUser = null;
-		this.emulatorConfig = null;
-		this.operations = Promise.resolve();
-		this.authStateSubscription = new Subscription(this);
-		this.idTokenSubscription = new Subscription(this);
-		this.beforeStateQueue = new AuthMiddlewareQueue(this);
-		this.redirectUser = null;
-		this.isProactiveRefreshEnabled = false;
-		this.EXPECTED_PASSWORD_POLICY_SCHEMA_VERSION = 1;
-		this._canInitEmulator = true;
-		this._isInitialized = false;
-		this._deleted = false;
-		this._initializationPromise = null;
-		this._popupRedirectResolver = null;
-		this._errorFactory = _DEFAULT_AUTH_ERROR_FACTORY;
-		this._agentRecaptchaConfig = null;
-		this._tenantRecaptchaConfigs = {};
-		this._projectPasswordPolicy = null;
-		this._tenantPasswordPolicies = {};
-		this._resolvePersistenceManagerAvailable = void 0;
-		this.lastNotifiedUid = void 0;
-		this.languageCode = null;
-		this.tenantId = null;
-		this.settings = { appVerificationDisabledForTesting: false };
-		this.frameworks = [];
-		this.name = app.name;
-		this.clientVersion = config.sdkClientVersion;
-		this._persistenceManagerAvailable = new Promise((resolve) => this._resolvePersistenceManagerAvailable = resolve);
-	}
-	_initializeWithPersistence(persistenceHierarchy, popupRedirectResolver) {
-		if (popupRedirectResolver) this._popupRedirectResolver = _getInstance(popupRedirectResolver);
-		this._initializationPromise = this.queue(async () => {
-			if (this._deleted) return;
-			try {
-				this.persistenceManager = await PersistenceUserManager.create(this, persistenceHierarchy);
-			} catch (e) {
-				_logWarn(`Failed to initialize persistence: ${e}`);
-				this.persistenceManager = await PersistenceUserManager.create(this, []);
-			} finally {
-				this._resolvePersistenceManagerAvailable?.();
-			}
-			if (this._deleted) return;
-			if (this._popupRedirectResolver?._shouldInitProactively) try {
-				await this._popupRedirectResolver._initialize(this);
-			} catch (e) {}
-			try {
-				await this.initializeCurrentUser(popupRedirectResolver);
-			} catch (e) {
-				_logWarn(`Failed to initialize current user: ${e}`);
-				await this.directlySetCurrentUser(null).catch(() => {});
-			}
-			this.lastNotifiedUid = this.currentUser?.uid || null;
-			if (this._deleted) return;
-			this._isInitialized = true;
-		});
-		return this._initializationPromise;
-	}
-	/**
-	* If the persistence is changed in another window, the user manager will let us know
-	*/
-	async _onStorageEvent() {
-		if (this._deleted) return;
-		const user = await this.assertedPersistence.getCurrentUser();
-		if (!this.currentUser && !user) return;
-		if (this.currentUser && user && this.currentUser.uid === user.uid) {
-			this._currentUser._assign(user);
-			await this.currentUser.getIdToken();
-			return;
-		}
-		await this._updateCurrentUser(user, true);
-	}
-	async initializeCurrentUserFromIdToken(idToken) {
-		try {
-			const response = await getAccountInfo(this, { idToken });
-			const user = await UserImpl._fromGetAccountInfoResponse(this, response, idToken);
-			await this.directlySetCurrentUser(user);
-		} catch (err) {
-			console.warn("FirebaseServerApp could not login user with provided authIdToken: ", err);
-			await this.directlySetCurrentUser(null);
-		}
-	}
-	async initializeCurrentUser(popupRedirectResolver) {
-		if (_isFirebaseServerApp(this.app)) {
-			const idToken = this.app.settings.authIdToken;
-			if (idToken) return new Promise((resolve) => {
-				setTimeout(() => this.initializeCurrentUserFromIdToken(idToken).then(resolve, resolve));
-			});
-			else return this.directlySetCurrentUser(null);
-		}
-		const previouslyStoredUser = await this.assertedPersistence.getCurrentUser();
-		let futureCurrentUser = previouslyStoredUser;
-		let needsTocheckMiddleware = false;
-		if (popupRedirectResolver && this.config.authDomain) {
-			await this.getOrInitRedirectPersistenceManager();
-			const redirectUserEventId = this.redirectUser?._redirectEventId;
-			const storedUserEventId = futureCurrentUser?._redirectEventId;
-			const result = await this.tryRedirectSignIn(popupRedirectResolver);
-			if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && result?.user) {
-				futureCurrentUser = result.user;
-				needsTocheckMiddleware = true;
-			}
-		}
-		if (!futureCurrentUser) return this.directlySetCurrentUser(null);
-		if (!futureCurrentUser._redirectEventId) {
-			if (needsTocheckMiddleware) try {
-				await this.beforeStateQueue.runMiddleware(futureCurrentUser);
-			} catch (e) {
-				futureCurrentUser = previouslyStoredUser;
-				this._popupRedirectResolver._overrideRedirectResult(this, () => Promise.reject(e));
-			}
-			if (futureCurrentUser) return this.reloadAndSetCurrentUserOrClear(futureCurrentUser);
-			else return this.directlySetCurrentUser(null);
-		}
-		_assert(this._popupRedirectResolver, this, "argument-error");
-		await this.getOrInitRedirectPersistenceManager();
-		if (this.redirectUser && this.redirectUser._redirectEventId === futureCurrentUser._redirectEventId) return this.directlySetCurrentUser(futureCurrentUser);
-		return this.reloadAndSetCurrentUserOrClear(futureCurrentUser);
-	}
-	async tryRedirectSignIn(redirectResolver) {
-		let result = null;
-		try {
-			result = await this._popupRedirectResolver._completeRedirectFn(this, redirectResolver, true);
-		} catch (e) {
-			await this._setRedirectUser(null);
-		}
-		return result;
-	}
-	async reloadAndSetCurrentUserOrClear(user) {
-		try {
-			await _reloadWithoutSaving(user);
-		} catch (e) {
-			if (_isUserInvalidated(e)) return this.directlySetCurrentUser(null);
-		}
-		return this.directlySetCurrentUser(user);
-	}
-	useDeviceLanguage() {
-		this.languageCode = _getUserLanguage();
-	}
-	async _delete() {
-		this._deleted = true;
-	}
-	async updateCurrentUser(userExtern) {
-		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
-		const user = userExtern ? getModularInstance(userExtern) : null;
-		if (user) _assert(user.auth.config.apiKey === this.config.apiKey, this, "invalid-user-token");
-		return this._updateCurrentUser(user && user._clone(this));
-	}
-	async _updateCurrentUser(user, skipBeforeStateCallbacks = false) {
-		if (this._deleted) return;
-		if (user) _assert(this.tenantId === user.tenantId, this, "tenant-id-mismatch");
-		if (!skipBeforeStateCallbacks) await this.beforeStateQueue.runMiddleware(user);
-		return this.queue(async () => {
-			await this.directlySetCurrentUser(user);
-			this.notifyAuthListeners();
-		});
-	}
-	async signOut() {
-		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
-		await this.beforeStateQueue.runMiddleware(null);
-		if (this.redirectPersistenceManager || this._popupRedirectResolver) await this._setRedirectUser(null);
-		return this._updateCurrentUser(null, true);
-	}
-	setPersistence(persistence) {
-		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
-		return this.queue(async () => {
-			await this.assertedPersistence.setPersistence(_getInstance(persistence));
-		});
-	}
-	_getRecaptchaConfig() {
-		if (this.tenantId == null) return this._agentRecaptchaConfig;
-		else return this._tenantRecaptchaConfigs[this.tenantId];
-	}
-	async validatePassword(password) {
-		if (!this._getPasswordPolicyInternal()) await this._updatePasswordPolicy();
-		const passwordPolicy = this._getPasswordPolicyInternal();
-		if (passwordPolicy.schemaVersion !== this.EXPECTED_PASSWORD_POLICY_SCHEMA_VERSION) return Promise.reject(this._errorFactory.create("unsupported-password-policy-schema-version", {}));
-		return passwordPolicy.validatePassword(password);
-	}
-	_getPasswordPolicyInternal() {
-		if (this.tenantId === null) return this._projectPasswordPolicy;
-		else return this._tenantPasswordPolicies[this.tenantId];
-	}
-	async _updatePasswordPolicy() {
-		const passwordPolicy = new PasswordPolicyImpl(await _getPasswordPolicy(this));
-		if (this.tenantId === null) this._projectPasswordPolicy = passwordPolicy;
-		else this._tenantPasswordPolicies[this.tenantId] = passwordPolicy;
-	}
-	_getPersistenceType() {
-		return this.assertedPersistence.persistence.type;
-	}
-	_getPersistence() {
-		return this.assertedPersistence.persistence;
-	}
-	_updateErrorMap(errorMap) {
-		this._errorFactory = new ErrorFactory("auth", "Firebase", errorMap());
-	}
-	onAuthStateChanged(nextOrObserver, error, completed) {
-		return this.registerStateListener(this.authStateSubscription, nextOrObserver, error, completed);
-	}
-	beforeAuthStateChanged(callback, onAbort) {
-		return this.beforeStateQueue.pushCallback(callback, onAbort);
-	}
-	onIdTokenChanged(nextOrObserver, error, completed) {
-		return this.registerStateListener(this.idTokenSubscription, nextOrObserver, error, completed);
-	}
-	authStateReady() {
-		return new Promise((resolve, reject) => {
-			if (this.currentUser) resolve();
-			else {
-				const unsubscribe = this.onAuthStateChanged(() => {
-					unsubscribe();
-					resolve();
-				}, reject);
-			}
-		});
-	}
-	/**
-	* Revokes the given access token. Currently only supports Apple OAuth access tokens.
-	*/
-	async revokeAccessToken(token) {
-		if (this.currentUser) {
-			const request = {
-				providerId: "apple.com",
-				tokenType: "ACCESS_TOKEN",
-				token,
-				idToken: await this.currentUser.getIdToken()
-			};
-			if (this.tenantId != null) request.tenantId = this.tenantId;
-			await revokeToken(this, request);
-		}
-	}
-	toJSON() {
-		return {
-			apiKey: this.config.apiKey,
-			authDomain: this.config.authDomain,
-			appName: this.name,
-			currentUser: this._currentUser?.toJSON()
-		};
-	}
-	async _setRedirectUser(user, popupRedirectResolver) {
-		const redirectManager = await this.getOrInitRedirectPersistenceManager(popupRedirectResolver);
-		return user === null ? redirectManager.removeCurrentUser() : redirectManager.setCurrentUser(user);
-	}
-	async getOrInitRedirectPersistenceManager(popupRedirectResolver) {
-		if (!this.redirectPersistenceManager) {
-			const resolver = popupRedirectResolver && _getInstance(popupRedirectResolver) || this._popupRedirectResolver;
-			_assert(resolver, this, "argument-error");
-			this.redirectPersistenceManager = await PersistenceUserManager.create(this, [_getInstance(resolver._redirectPersistence)], "redirectUser");
-			this.redirectUser = await this.redirectPersistenceManager.getCurrentUser();
-		}
-		return this.redirectPersistenceManager;
-	}
-	async _redirectUserForId(id) {
-		if (this._isInitialized) await this.queue(async () => {});
-		if (this._currentUser?._redirectEventId === id) return this._currentUser;
-		if (this.redirectUser?._redirectEventId === id) return this.redirectUser;
-		return null;
-	}
-	async _persistUserIfCurrent(user) {
-		if (user === this.currentUser) return this.queue(async () => this.directlySetCurrentUser(user));
-	}
-	/** Notifies listeners only if the user is current */
-	_notifyListenersIfCurrent(user) {
-		if (user === this.currentUser) this.notifyAuthListeners();
-	}
-	_key() {
-		return `${this.config.authDomain}:${this.config.apiKey}:${this.name}`;
-	}
-	_startProactiveRefresh() {
-		this.isProactiveRefreshEnabled = true;
-		if (this.currentUser) this._currentUser._startProactiveRefresh();
-	}
-	_stopProactiveRefresh() {
-		this.isProactiveRefreshEnabled = false;
-		if (this.currentUser) this._currentUser._stopProactiveRefresh();
-	}
-	/** Returns the current user cast as the internal type */
-	get _currentUser() {
-		return this.currentUser;
-	}
-	notifyAuthListeners() {
-		if (!this._isInitialized) return;
-		this.idTokenSubscription.next(this.currentUser);
-		const currentUid = this.currentUser?.uid ?? null;
-		if (this.lastNotifiedUid !== currentUid) {
-			this.lastNotifiedUid = currentUid;
-			this.authStateSubscription.next(this.currentUser);
-		}
-	}
-	registerStateListener(subscription, nextOrObserver, error, completed) {
-		if (this._deleted) return () => {};
-		const cb = typeof nextOrObserver === "function" ? nextOrObserver : nextOrObserver.next.bind(nextOrObserver);
-		let isUnsubscribed = false;
-		const promise = this._isInitialized ? Promise.resolve() : this._initializationPromise;
-		_assert(promise, this, "internal-error");
-		promise.then(() => {
-			if (isUnsubscribed) return;
-			cb(this.currentUser);
-		}).catch((err) => {
-			if (isUnsubscribed) return;
-			if (typeof nextOrObserver !== "function" && nextOrObserver.error) nextOrObserver.error(err);
-			else if (error) error(err);
-			else throw err;
-		});
-		if (typeof nextOrObserver === "function") {
-			const unsubscribe = subscription.addObserver(nextOrObserver, error, completed);
-			return () => {
-				isUnsubscribed = true;
-				unsubscribe();
-			};
-		} else {
-			const unsubscribe = subscription.addObserver(nextOrObserver);
-			return () => {
-				isUnsubscribed = true;
-				unsubscribe();
-			};
-		}
-	}
-	/**
-	* Unprotected (from race conditions) method to set the current user. This
-	* should only be called from within a queued callback. This is necessary
-	* because the queue shouldn't rely on another queued callback.
-	*/
-	async directlySetCurrentUser(user) {
-		if (this.currentUser && this.currentUser !== user) this._currentUser._stopProactiveRefresh();
-		if (user && this.isProactiveRefreshEnabled) user._startProactiveRefresh();
-		this.currentUser = user;
-		if (this.persistenceManager) try {
-			if (user) await this.persistenceManager.setCurrentUser(user);
-			else await this.persistenceManager.removeCurrentUser();
-		} catch (e) {
-			const originalMessage = e?.message || String(e);
-			const error = _errorWithCustomMessage(this, "internal-error", `An internal AuthError has occurred: ${originalMessage}`);
-			error.customData = { originalError: e };
-			throw error;
-		}
-	}
-	queue(action) {
-		this.operations = this.operations.then(action, action);
-		return this.operations;
-	}
-	get assertedPersistence() {
-		_assert(this.persistenceManager, this, "internal-error");
-		return this.persistenceManager;
-	}
-	_logFramework(framework) {
-		if (!framework || this.frameworks.includes(framework)) return;
-		this.frameworks.push(framework);
-		this.frameworks.sort();
-		this.clientVersion = _getClientVersion(this.config.clientPlatform, this._getFrameworks());
-	}
-	_getFrameworks() {
-		return this.frameworks;
-	}
-	async _getAdditionalHeaders() {
-		const headers = { ["X-Client-Version"]: this.clientVersion };
-		if (this.app.options.appId) headers["X-Firebase-gmpid"] = this.app.options.appId;
-		const heartbeatsHeader = await this.heartbeatServiceProvider.getImmediate({ optional: true })?.getHeartbeatsHeader();
-		if (heartbeatsHeader) headers["X-Firebase-Client"] = heartbeatsHeader;
-		const appCheckToken = await this._getAppCheckToken();
-		if (appCheckToken) headers["X-Firebase-AppCheck"] = appCheckToken;
-		return headers;
-	}
-	async _getAppCheckToken() {
-		if (_isFirebaseServerApp(this.app) && this.app.settings.appCheckToken) return this.app.settings.appCheckToken;
-		const appCheckTokenResult = await this.appCheckServiceProvider.getImmediate({ optional: true })?.getToken();
-		if (appCheckTokenResult?.error) _logWarn(`Error while retrieving App Check token: ${appCheckTokenResult.error}`);
-		return appCheckTokenResult?.token;
-	}
-};
-/**
-* Method to be used to cast down to our private implementation of Auth.
-* It will also handle unwrapping from the compat type if necessary
-*
-* @param auth Auth object passed in from developer
-*/
-function _castAuth(auth) {
-	return getModularInstance(auth);
-}
-/** Helper class to wrap subscriber logic */
-var Subscription = class {
-	constructor(auth) {
-		this.auth = auth;
-		this.observer = null;
-		this.addObserver = createSubscribe((observer) => this.observer = observer);
-	}
-	get next() {
-		_assert(this.observer, this.auth, "internal-error");
-		return this.observer.next.bind(this.observer);
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var externalJSProvider = {
-	async loadJS() {
-		throw new Error("Unable to load external scripts");
-	},
-	recaptchaV2Script: "",
-	recaptchaEnterpriseScript: "",
-	gapiScript: ""
-};
-function _setExternalJSProvider(p) {
-	externalJSProvider = p;
-}
-function _loadJS(url) {
-	return externalJSProvider.loadJS(url);
-}
-function _recaptchaEnterpriseScriptUrl() {
-	return externalJSProvider.recaptchaEnterpriseScript;
-}
-function _gapiScriptUrl() {
-	return externalJSProvider.gapiScript;
-}
-function _generateCallbackName(prefix) {
-	return `__${prefix}${Math.floor(Math.random() * 1e6)}`;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var MockGreCAPTCHATopLevel = class {
-	constructor() {
-		this.enterprise = new MockGreCAPTCHA();
-	}
-	ready(callback) {
-		callback();
-	}
-	execute(_siteKey, _options) {
-		return Promise.resolve("token");
-	}
-	render(_container, _parameters) {
-		return "";
-	}
-};
-var MockGreCAPTCHA = class {
-	ready(callback) {
-		callback();
-	}
-	execute(_siteKey, _options) {
-		return Promise.resolve("token");
-	}
-	render(_container, _parameters) {
-		return "";
-	}
-};
-/**
-* @license
-* Copyright 2022 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var RECAPTCHA_ENTERPRISE_VERIFIER_TYPE = "recaptcha-enterprise";
-var FAKE_TOKEN = "NO_RECAPTCHA";
-var RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME = "onFirebaseAuthREInstanceReady";
-var RecaptchaEnterpriseVerifier = class RecaptchaEnterpriseVerifier {
-	/**
-	*
-	* @param authExtern - The corresponding Firebase {@link Auth} instance.
-	*
-	*/
-	constructor(authExtern) {
-		/**
-		* Identifies the type of application verifier (e.g. "recaptcha-enterprise").
-		*/
-		this.type = RECAPTCHA_ENTERPRISE_VERIFIER_TYPE;
-		this.auth = _castAuth(authExtern);
-	}
-	/**
-	* Executes the verification process.
-	*
-	* @returns A Promise for a token that can be used to assert the validity of a request.
-	*/
-	async verify(action = "verify", forceRefresh = false) {
-		async function retrieveSiteKey(auth) {
-			if (!forceRefresh) {
-				if (auth.tenantId == null && auth._agentRecaptchaConfig != null) return auth._agentRecaptchaConfig.siteKey;
-				if (auth.tenantId != null && auth._tenantRecaptchaConfigs[auth.tenantId] !== void 0) return auth._tenantRecaptchaConfigs[auth.tenantId].siteKey;
-			}
-			return new Promise(async (resolve, reject) => {
-				getRecaptchaConfig(auth, {
-					clientType: "CLIENT_TYPE_WEB",
-					version: "RECAPTCHA_ENTERPRISE"
-				}).then((response) => {
-					if (response.recaptchaKey === void 0) reject(/* @__PURE__ */ new Error("recaptcha Enterprise site key undefined"));
-					else {
-						const config = new RecaptchaConfig(response);
-						if (auth.tenantId == null) auth._agentRecaptchaConfig = config;
-						else auth._tenantRecaptchaConfigs[auth.tenantId] = config;
-						return resolve(config.siteKey);
-					}
-				}).catch((error) => {
-					reject(error);
-				});
-			});
-		}
-		function retrieveRecaptchaToken(siteKey, resolve, reject) {
-			const grecaptcha = window.grecaptcha;
-			if (isEnterprise(grecaptcha)) grecaptcha.enterprise.ready(() => {
-				grecaptcha.enterprise.execute(siteKey, { action }).then((token) => {
-					resolve(token);
-				}).catch(() => {
-					resolve(FAKE_TOKEN);
-				});
-			});
-			else reject(Error("No reCAPTCHA enterprise script loaded."));
-		}
-		if (this.auth.settings.appVerificationDisabledForTesting) return new MockGreCAPTCHATopLevel().execute("siteKey", { action: "verify" });
-		return new Promise((resolve, reject) => {
-			retrieveSiteKey(this.auth).then(async (siteKey) => {
-				if (!forceRefresh && isEnterprise(window.grecaptcha) && RecaptchaEnterpriseVerifier.scriptInjectionDeferred) {
-					await RecaptchaEnterpriseVerifier.scriptInjectionDeferred.promise;
-					retrieveRecaptchaToken(siteKey, resolve, reject);
-				} else {
-					if (typeof window === "undefined") {
-						reject(/* @__PURE__ */ new Error("RecaptchaVerifier is only supported in browser"));
-						return;
-					}
-					let url = _recaptchaEnterpriseScriptUrl();
-					if (url.length !== 0) url += siteKey + `&onload=${RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME}`;
-					RecaptchaEnterpriseVerifier.scriptInjectionDeferred = new Deferred();
-					/**
-					* Script attached to global window object that will be called
-					* when the ReCAPTCHA Enterprise instance is ready.
-					* grecaptcha.ready() is not reliable when there are multiple
-					* scripts on the page, and script.onload only indicates the
-					* script has downloaded, not that it has initialized.
-					*/
-					window[RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME] = () => {
-						RecaptchaEnterpriseVerifier.scriptInjectionDeferred?.resolve();
-					};
-					_loadJS(url).then(() => RecaptchaEnterpriseVerifier.scriptInjectionDeferred?.promise).then(() => {
-						retrieveRecaptchaToken(siteKey, resolve, reject);
-					}).catch((error) => {
-						reject(error);
-					});
-				}
-			}).catch((error) => {
-				reject(error);
-			});
-		});
-	}
-};
-/**
-* Deferred that resolves when script tag has been injected onto the page
-* and the script is ready (grecaptcha.ready() and script.onload are not
-* reliable indicators, so this resolves when the global
-* `window[RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME]()` callback provided to the recaptcha url param "onload"
-* is triggered).
-* As a static variable this is applied to all instances of the class.
-* This will cause an error if users try to create multiple RecaptchaVerifiers
-* with different Recaptcha Enterprise sitekeys, which should be an
-* unuspported use case.
-*/
-RecaptchaEnterpriseVerifier.scriptInjectionDeferred = null;
-async function injectRecaptchaFields(auth, request, action, isCaptchaResp = false, isFakeToken = false) {
-	const verifier = new RecaptchaEnterpriseVerifier(auth);
-	let captchaResponse;
-	if (isFakeToken) captchaResponse = FAKE_TOKEN;
-	else try {
-		captchaResponse = await verifier.verify(action);
-	} catch (error) {
-		captchaResponse = await verifier.verify(action, true);
-	}
-	const newRequest = { ...request };
-	if (action === "mfaSmsEnrollment" || action === "mfaSmsSignIn") {
-		if ("phoneEnrollmentInfo" in newRequest) {
-			const phoneNumber = newRequest.phoneEnrollmentInfo.phoneNumber;
-			const recaptchaToken = newRequest.phoneEnrollmentInfo.recaptchaToken;
-			Object.assign(newRequest, { "phoneEnrollmentInfo": {
-				phoneNumber,
-				recaptchaToken,
-				captchaResponse,
-				"clientType": "CLIENT_TYPE_WEB",
-				"recaptchaVersion": "RECAPTCHA_ENTERPRISE"
-			} });
-		} else if ("phoneSignInInfo" in newRequest) {
-			const recaptchaToken = newRequest.phoneSignInInfo.recaptchaToken;
-			Object.assign(newRequest, { "phoneSignInInfo": {
-				recaptchaToken,
-				captchaResponse,
-				"clientType": "CLIENT_TYPE_WEB",
-				"recaptchaVersion": "RECAPTCHA_ENTERPRISE"
-			} });
-		}
-		return newRequest;
-	}
-	if (!isCaptchaResp) Object.assign(newRequest, { captchaResponse });
-	else Object.assign(newRequest, { "captchaResp": captchaResponse });
-	Object.assign(newRequest, { "clientType": "CLIENT_TYPE_WEB" });
-	Object.assign(newRequest, { "recaptchaVersion": "RECAPTCHA_ENTERPRISE" });
-	return newRequest;
-}
-async function handleRecaptchaFlow(authInstance, request, actionName, actionMethod, recaptchaAuthProvider) {
-	if (recaptchaAuthProvider === "EMAIL_PASSWORD_PROVIDER") {
-		if (authInstance._getRecaptchaConfig()?.isProviderEnabled("EMAIL_PASSWORD_PROVIDER")) return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, actionName === "getOobCode"));
-		else return actionMethod(authInstance, request).catch(async (error) => {
-			if (error.code === `auth/missing-recaptcha-token`) {
-				console.log(`${actionName} is protected by reCAPTCHA Enterprise for this project. Automatically triggering the reCAPTCHA flow and restarting the flow.`);
-				return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, actionName === "getOobCode"));
-			} else return Promise.reject(error);
-		});
-	} else if (recaptchaAuthProvider === "PHONE_PROVIDER") {
-		if (authInstance._getRecaptchaConfig()?.isProviderEnabled("PHONE_PROVIDER")) return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName)).catch(async (error) => {
-			if (authInstance._getRecaptchaConfig()?.getProviderEnforcementState("PHONE_PROVIDER") === "AUDIT") {
-				if (error.code === `auth/missing-recaptcha-token` || error.code === `auth/invalid-app-credential`) {
-					console.log(`Failed to verify with reCAPTCHA Enterprise. Automatically triggering the reCAPTCHA v2 flow to complete the ${actionName} flow.`);
-					return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, false, true));
-				}
-			}
-			return Promise.reject(error);
-		});
-		else return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, false, true));
-	} else return Promise.reject(recaptchaAuthProvider + " provider is not supported.");
-}
-async function _initializeRecaptchaConfig(auth) {
-	const authInternal = _castAuth(auth);
-	const config = new RecaptchaConfig(await getRecaptchaConfig(authInternal, {
-		clientType: "CLIENT_TYPE_WEB",
-		version: "RECAPTCHA_ENTERPRISE"
-	}));
-	if (authInternal.tenantId == null) authInternal._agentRecaptchaConfig = config;
-	else authInternal._tenantRecaptchaConfigs[authInternal.tenantId] = config;
-	if (config.isAnyProviderEnabled()) new RecaptchaEnterpriseVerifier(authInternal).verify().catch(() => {});
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Initializes an {@link Auth} instance with fine-grained control over
-* {@link Dependencies}.
-*
-* @remarks
-*
-* This function allows more control over the {@link Auth} instance than
-* {@link getAuth}. `getAuth` uses platform-specific defaults to supply
-* the {@link Dependencies}. In general, `getAuth` is the easiest way to
-* initialize Auth and works for most use cases. Use `initializeAuth` if you
-* need control over which persistence layer is used, or to minimize bundle
-* size if you're not using either `signInWithPopup` or `signInWithRedirect`.
-*
-* For example, if your app only uses anonymous accounts and you only want
-* accounts saved for the current session, initialize `Auth` with:
-*
-* ```js
-* const auth = initializeAuth(app, {
-*   persistence: browserSessionPersistence,
-*   popupRedirectResolver: undefined,
-* });
-* ```
-*
-* @public
-*/
-function initializeAuth(app, deps) {
-	const provider = _getProvider(app, "auth");
-	if (provider.isInitialized()) {
-		const auth = provider.getImmediate();
-		if (deepEqual(provider.getOptions(), deps ?? {})) return auth;
-		else _fail(auth, "already-initialized");
-	}
-	return provider.initialize({ options: deps });
-}
-function _initializeAuthInstance(auth, deps) {
-	const persistence = deps?.persistence || [];
-	const hierarchy = (Array.isArray(persistence) ? persistence : [persistence]).map(_getInstance);
-	if (deps?.errorMap) auth._updateErrorMap(deps.errorMap);
-	auth._initializeWithPersistence(hierarchy, deps?.popupRedirectResolver);
-}
-/**
-* Changes the {@link Auth} instance to communicate with the Firebase Auth Emulator, instead of production
-* Firebase Auth services.
-*
-* @remarks
-* This must be called synchronously immediately following the first call to
-* {@link initializeAuth}.  Do not use with production credentials as emulator
-* traffic is not encrypted.
-*
-*
-* @example
-* ```javascript
-* connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-* ```
-*
-* @param auth - The {@link Auth} instance.
-* @param url - The URL at which the emulator is running (eg, 'http://localhost:9099').
-* @param options - Optional. `options.disableWarnings` defaults to `false`. Set it to
-* `true` to disable the warning banner attached to the DOM.
-*
-* @public
-*/
-function connectAuthEmulator(auth, url, options) {
-	const authInternal = _castAuth(auth);
-	_assert(/^https?:\/\//.test(url), authInternal, "invalid-emulator-scheme");
-	const disableWarnings = !!options?.disableWarnings;
-	const protocol = extractProtocol(url);
-	const { host, port } = extractHostAndPort(url);
-	const portStr = port === null ? "" : `:${port}`;
-	const emulator = { url: `${protocol}//${host}${portStr}/` };
-	const emulatorConfig = Object.freeze({
-		host,
-		port,
-		protocol: protocol.replace(":", ""),
-		options: Object.freeze({ disableWarnings })
-	});
-	if (!authInternal._canInitEmulator) {
-		_assert(authInternal.config.emulator && authInternal.emulatorConfig, authInternal, "emulator-config-failed");
-		_assert(deepEqual(emulator, authInternal.config.emulator) && deepEqual(emulatorConfig, authInternal.emulatorConfig), authInternal, "emulator-config-failed");
-		return;
-	}
-	authInternal.config.emulator = emulator;
-	authInternal.emulatorConfig = emulatorConfig;
-	authInternal.settings.appVerificationDisabledForTesting = true;
-	if (isCloudWorkstation(host)) pingServer(`${protocol}//${host}${portStr}`);
-	else if (!disableWarnings) emitEmulatorWarning();
-}
-function extractProtocol(url) {
-	const protocolEnd = url.indexOf(":");
-	return protocolEnd < 0 ? "" : url.substr(0, protocolEnd + 1);
-}
-function extractHostAndPort(url) {
-	const protocol = extractProtocol(url);
-	const authority = /(\/\/)?([^?#/]+)/.exec(url.substr(protocol.length));
-	if (!authority) return {
-		host: "",
-		port: null
-	};
-	const hostAndPort = authority[2].split("@").pop() || "";
-	const bracketedIPv6 = /^(\[[^\]]+\])(:|$)/.exec(hostAndPort);
-	if (bracketedIPv6) {
-		const host = bracketedIPv6[1];
-		return {
-			host,
-			port: parsePort(hostAndPort.substr(host.length + 1))
-		};
-	} else {
-		const [host, port] = hostAndPort.split(":");
-		return {
-			host,
-			port: parsePort(port)
-		};
-	}
-}
-function parsePort(portStr) {
-	if (!portStr) return null;
-	const port = Number(portStr);
-	if (isNaN(port)) return null;
-	return port;
-}
-function emitEmulatorWarning() {
-	function attachBanner() {
-		const el = document.createElement("p");
-		const sty = el.style;
-		el.innerText = "Running in emulator mode. Do not use with production credentials.";
-		sty.position = "fixed";
-		sty.width = "100%";
-		sty.backgroundColor = "#ffffff";
-		sty.border = ".1em solid #000000";
-		sty.color = "#b50000";
-		sty.bottom = "0px";
-		sty.left = "0px";
-		sty.margin = "0px";
-		sty.zIndex = "10000";
-		sty.textAlign = "center";
-		el.classList.add("firebase-emulator-warning");
-		document.body.appendChild(el);
-	}
-	if (typeof console !== "undefined" && typeof console.info === "function") console.info("WARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.");
-	if (typeof window !== "undefined" && typeof document !== "undefined") {
-		if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", attachBanner);
-		else attachBanner();
-	}
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Interface that represents the credentials returned by an {@link AuthProvider}.
-*
-* @remarks
-* Implementations specify the details about each auth provider's credential requirements.
-*
-* @public
-*/
-var AuthCredential = class {
-	/** @internal */
-	constructor(providerId, signInMethod) {
-		this.providerId = providerId;
-		this.signInMethod = signInMethod;
-	}
-	/**
-	* Returns a JSON-serializable representation of this object.
-	*
-	* @returns a JSON-serializable representation of this object.
-	*/
-	toJSON() {
-		return debugFail("not implemented");
-	}
-	/** @internal */
-	_getIdTokenResponse(_auth) {
-		return debugFail("not implemented");
-	}
-	/** @internal */
-	_linkToIdToken(_auth, _idToken) {
-		return debugFail("not implemented");
-	}
-	/** @internal */
-	_getReauthenticationResolver(_auth) {
-		return debugFail("not implemented");
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function linkEmailPassword(auth, request) {
-	return _performApiRequest(auth, "POST", "/v1/accounts:signUp", request);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function signInWithPassword(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPassword", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function signInWithEmailLink$1(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithEmailLink", _addTidIfNecessary(auth, request));
-}
-async function signInWithEmailLinkForLinking(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithEmailLink", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Interface that represents the credentials returned by {@link EmailAuthProvider} for
-* {@link ProviderId}.PASSWORD
-*
-* @remarks
-* Covers both {@link SignInMethod}.EMAIL_PASSWORD and
-* {@link SignInMethod}.EMAIL_LINK.
-*
-* @public
-*/
-var EmailAuthCredential = class EmailAuthCredential extends AuthCredential {
-	/** @internal */
-	constructor(_email, _password, signInMethod, _tenantId = null) {
-		super("password", signInMethod);
-		this._email = _email;
-		this._password = _password;
-		this._tenantId = _tenantId;
-	}
-	/** @internal */
-	static _fromEmailAndPassword(email, password) {
-		return new EmailAuthCredential(email, password, "password");
-	}
-	/** @internal */
-	static _fromEmailAndCode(email, oobCode, tenantId = null) {
-		return new EmailAuthCredential(email, oobCode, "emailLink", tenantId);
-	}
-	/** {@inheritdoc AuthCredential.toJSON} */
-	toJSON() {
-		return {
-			email: this._email,
-			password: this._password,
-			signInMethod: this.signInMethod,
-			tenantId: this._tenantId
-		};
-	}
-	/**
-	* Static method to deserialize a JSON representation of an object into an {@link  AuthCredential}.
-	*
-	* @param json - Either `object` or the stringified representation of the object. When string is
-	* provided, `JSON.parse` would be called first.
-	*
-	* @returns If the JSON input does not represent an {@link AuthCredential}, null is returned.
-	*/
-	static fromJSON(json) {
-		const obj = typeof json === "string" ? JSON.parse(json) : json;
-		if (obj?.email && obj?.password) {
-			if (obj.signInMethod === "password") return this._fromEmailAndPassword(obj.email, obj.password);
-			else if (obj.signInMethod === "emailLink") return this._fromEmailAndCode(obj.email, obj.password, obj.tenantId);
-		}
-		return null;
-	}
-	/** @internal */
-	async _getIdTokenResponse(auth) {
-		switch (this.signInMethod) {
-			case "password": return handleRecaptchaFlow(auth, {
-				returnSecureToken: true,
-				email: this._email,
-				password: this._password,
-				clientType: "CLIENT_TYPE_WEB"
-			}, "signInWithPassword", signInWithPassword, "EMAIL_PASSWORD_PROVIDER");
-			case "emailLink": return signInWithEmailLink$1(auth, {
-				email: this._email,
-				oobCode: this._password
-			});
-			default: _fail(auth, "internal-error");
-		}
-	}
-	/** @internal */
-	async _linkToIdToken(auth, idToken) {
-		switch (this.signInMethod) {
-			case "password": return handleRecaptchaFlow(auth, {
-				idToken,
-				returnSecureToken: true,
-				email: this._email,
-				password: this._password,
-				clientType: "CLIENT_TYPE_WEB"
-			}, "signUpPassword", linkEmailPassword, "EMAIL_PASSWORD_PROVIDER");
-			case "emailLink": return signInWithEmailLinkForLinking(auth, {
-				idToken,
-				email: this._email,
-				oobCode: this._password
-			});
-			default: _fail(auth, "internal-error");
-		}
-	}
-	/** @internal */
-	_getReauthenticationResolver(auth) {
-		return this._getIdTokenResponse(auth);
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function signInWithIdp(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithIdp", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var IDP_REQUEST_URI$1 = "http://localhost";
-/**
-* Represents the OAuth credentials returned by an {@link OAuthProvider}.
-*
-* @remarks
-* Implementations specify the details about each auth provider's credential requirements.
-*
-* @public
-*/
-var OAuthCredential = class OAuthCredential extends AuthCredential {
-	constructor() {
-		super(...arguments);
-		this.pendingToken = null;
-	}
-	/** @internal */
-	static _fromParams(params) {
-		const cred = new OAuthCredential(params.providerId, params.signInMethod);
-		if (params.idToken || params.accessToken) {
-			if (params.idToken) cred.idToken = params.idToken;
-			if (params.accessToken) cred.accessToken = params.accessToken;
-			if (params.nonce && !params.pendingToken) cred.nonce = params.nonce;
-			if (params.pendingToken) cred.pendingToken = params.pendingToken;
-		} else if (params.oauthToken && params.oauthTokenSecret) {
-			cred.accessToken = params.oauthToken;
-			cred.secret = params.oauthTokenSecret;
-		} else _fail("argument-error");
-		return cred;
-	}
-	/** {@inheritdoc AuthCredential.toJSON}  */
-	toJSON() {
-		return {
-			idToken: this.idToken,
-			accessToken: this.accessToken,
-			secret: this.secret,
-			nonce: this.nonce,
-			pendingToken: this.pendingToken,
-			providerId: this.providerId,
-			signInMethod: this.signInMethod
-		};
-	}
-	/**
-	* Static method to deserialize a JSON representation of an object into an
-	* {@link  AuthCredential}.
-	*
-	* @param json - Input can be either Object or the stringified representation of the object.
-	* When string is provided, JSON.parse would be called first.
-	*
-	* @returns If the JSON input does not represent an {@link  AuthCredential}, null is returned.
-	*/
-	static fromJSON(json) {
-		const { providerId, signInMethod, ...rest } = typeof json === "string" ? JSON.parse(json) : json;
-		if (!providerId || !signInMethod) return null;
-		const cred = new OAuthCredential(providerId, signInMethod);
-		cred.idToken = rest.idToken || void 0;
-		cred.accessToken = rest.accessToken || void 0;
-		cred.secret = rest.secret;
-		cred.nonce = rest.nonce;
-		cred.pendingToken = rest.pendingToken || null;
-		return cred;
-	}
-	/** @internal */
-	_getIdTokenResponse(auth) {
-		return signInWithIdp(auth, this.buildRequest());
-	}
-	/** @internal */
-	_linkToIdToken(auth, idToken) {
-		const request = this.buildRequest();
-		request.idToken = idToken;
-		return signInWithIdp(auth, request);
-	}
-	/** @internal */
-	_getReauthenticationResolver(auth) {
-		const request = this.buildRequest();
-		request.autoCreate = false;
-		return signInWithIdp(auth, request);
-	}
-	buildRequest() {
-		const request = {
-			requestUri: IDP_REQUEST_URI$1,
-			returnSecureToken: true
-		};
-		if (this.pendingToken) request.pendingToken = this.pendingToken;
-		else {
-			const postBody = {};
-			if (this.idToken) postBody["id_token"] = this.idToken;
-			if (this.accessToken) postBody["access_token"] = this.accessToken;
-			if (this.secret) postBody["oauth_token_secret"] = this.secret;
-			postBody["providerId"] = this.providerId;
-			if (this.nonce && !this.pendingToken) postBody["nonce"] = this.nonce;
-			request.postBody = querystring(postBody);
-		}
-		return request;
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function sendPhoneVerificationCode(auth, request) {
-	return _performApiRequest(auth, "POST", "/v1/accounts:sendVerificationCode", _addTidIfNecessary(auth, request));
-}
-async function signInWithPhoneNumber$1(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, request));
-}
-async function linkWithPhoneNumber$1(auth, request) {
-	const response = await _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, request));
-	if (response.temporaryProof) throw _makeTaggedError(auth, "account-exists-with-different-credential", response);
-	return response;
-}
-var VERIFY_PHONE_NUMBER_FOR_EXISTING_ERROR_MAP_ = { ["USER_NOT_FOUND"]: "user-not-found" };
-async function verifyPhoneNumberForExisting(auth, request) {
-	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, {
-		...request,
-		operation: "REAUTH"
-	}), VERIFY_PHONE_NUMBER_FOR_EXISTING_ERROR_MAP_);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Represents the credentials returned by {@link PhoneAuthProvider}.
-*
-* @public
-*/
-var PhoneAuthCredential = class PhoneAuthCredential extends AuthCredential {
-	constructor(params) {
-		super("phone", "phone");
-		this.params = params;
-	}
-	/** @internal */
-	static _fromVerification(verificationId, verificationCode) {
-		return new PhoneAuthCredential({
-			verificationId,
-			verificationCode
-		});
-	}
-	/** @internal */
-	static _fromTokenResponse(phoneNumber, temporaryProof) {
-		return new PhoneAuthCredential({
-			phoneNumber,
-			temporaryProof
-		});
-	}
-	/** @internal */
-	_getIdTokenResponse(auth) {
-		return signInWithPhoneNumber$1(auth, this._makeVerificationRequest());
-	}
-	/** @internal */
-	_linkToIdToken(auth, idToken) {
-		return linkWithPhoneNumber$1(auth, {
-			idToken,
-			...this._makeVerificationRequest()
-		});
-	}
-	/** @internal */
-	_getReauthenticationResolver(auth) {
-		return verifyPhoneNumberForExisting(auth, this._makeVerificationRequest());
-	}
-	/** @internal */
-	_makeVerificationRequest() {
-		const { temporaryProof, phoneNumber, verificationId, verificationCode } = this.params;
-		if (temporaryProof && phoneNumber) return {
-			temporaryProof,
-			phoneNumber
-		};
-		return {
-			sessionInfo: verificationId,
-			code: verificationCode
-		};
-	}
-	/** {@inheritdoc AuthCredential.toJSON} */
-	toJSON() {
-		const obj = { providerId: this.providerId };
-		if (this.params.phoneNumber) obj.phoneNumber = this.params.phoneNumber;
-		if (this.params.temporaryProof) obj.temporaryProof = this.params.temporaryProof;
-		if (this.params.verificationCode) obj.verificationCode = this.params.verificationCode;
-		if (this.params.verificationId) obj.verificationId = this.params.verificationId;
-		return obj;
-	}
-	/** Generates a phone credential based on a plain object or a JSON string. */
-	static fromJSON(json) {
-		if (typeof json === "string") json = JSON.parse(json);
-		const { verificationId, verificationCode, phoneNumber, temporaryProof } = json;
-		if (!verificationCode && !verificationId && !phoneNumber && !temporaryProof) return null;
-		return new PhoneAuthCredential({
-			verificationId,
-			verificationCode,
-			phoneNumber,
-			temporaryProof
-		});
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Maps the mode string in action code URL to Action Code Info operation.
-*
-* @param mode
-*/
-function parseMode(mode) {
-	switch (mode) {
-		case "recoverEmail": return "RECOVER_EMAIL";
-		case "resetPassword": return "PASSWORD_RESET";
-		case "signIn": return "EMAIL_SIGNIN";
-		case "verifyEmail": return "VERIFY_EMAIL";
-		case "verifyAndChangeEmail": return "VERIFY_AND_CHANGE_EMAIL";
-		case "revertSecondFactorAddition": return "REVERT_SECOND_FACTOR_ADDITION";
-		default: return null;
-	}
-}
-/**
-* Helper to parse FDL links
-*
-* @param url
-*/
-function parseDeepLink(url) {
-	const link = querystringDecode(extractQuerystring(url))["link"];
-	const doubleDeepLink = link ? querystringDecode(extractQuerystring(link))["deep_link_id"] : null;
-	const iOSDeepLink = querystringDecode(extractQuerystring(url))["deep_link_id"];
-	return (iOSDeepLink ? querystringDecode(extractQuerystring(iOSDeepLink))["link"] : null) || iOSDeepLink || doubleDeepLink || link || url;
-}
-/**
-* A utility class to parse email action URLs such as password reset, email verification,
-* email link sign in, etc.
-*
-* @public
-*/
-var ActionCodeURL = class ActionCodeURL {
-	/**
-	* @param actionLink - The link from which to extract the URL.
-	* @returns The {@link ActionCodeURL} object, or null if the link is invalid.
-	*
-	* @internal
-	*/
-	constructor(actionLink) {
-		const searchParams = querystringDecode(extractQuerystring(actionLink));
-		const apiKey = searchParams["apiKey"] ?? null;
-		const code = searchParams["oobCode"] ?? null;
-		const operation = parseMode(searchParams["mode"] ?? null);
-		_assert(apiKey && code && operation, "argument-error");
-		this.apiKey = apiKey;
-		this.operation = operation;
-		this.code = code;
-		this.continueUrl = searchParams["continueUrl"] ?? null;
-		this.languageCode = searchParams["lang"] ?? null;
-		this.tenantId = searchParams["tenantId"] ?? null;
-	}
-	/**
-	* Parses the email action link string and returns an {@link ActionCodeURL} if the link is valid,
-	* otherwise returns null.
-	*
-	* @param link  - The email action link string.
-	* @returns The {@link ActionCodeURL} object, or null if the link is invalid.
-	*
-	* @public
-	*/
-	static parseLink(link) {
-		const actionLink = parseDeepLink(link);
-		try {
-			return new ActionCodeURL(actionLink);
-		} catch {
-			return null;
-		}
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating {@link EmailAuthCredential}.
-*
-* @public
-*/
-var EmailAuthProvider = class EmailAuthProvider {
-	constructor() {
-		/**
-		* Always set to {@link ProviderId}.PASSWORD, even for email link.
-		*/
-		this.providerId = EmailAuthProvider.PROVIDER_ID;
-	}
-	/**
-	* Initialize an {@link AuthCredential} using an email and password.
-	*
-	* @example
-	* ```javascript
-	* const authCredential = EmailAuthProvider.credential(email, password);
-	* const userCredential = await signInWithCredential(auth, authCredential);
-	* ```
-	*
-	* @example
-	* ```javascript
-	* const userCredential = await signInWithEmailAndPassword(auth, email, password);
-	* ```
-	*
-	* @param email - Email address.
-	* @param password - User account password.
-	* @returns The auth provider credential.
-	*/
-	static credential(email, password) {
-		return EmailAuthCredential._fromEmailAndPassword(email, password);
-	}
-	/**
-	* Initialize an {@link AuthCredential} using an email and an email link after a sign in with
-	* email link operation.
-	*
-	* @example
-	* ```javascript
-	* const authCredential = EmailAuthProvider.credentialWithLink(auth, email, emailLink);
-	* const userCredential = await signInWithCredential(auth, authCredential);
-	* ```
-	*
-	* @example
-	* ```javascript
-	* await sendSignInLinkToEmail(auth, email);
-	* // Obtain emailLink from user.
-	* const userCredential = await signInWithEmailLink(auth, email, emailLink);
-	* ```
-	*
-	* @param auth - The {@link Auth} instance used to verify the link.
-	* @param email - Email address.
-	* @param emailLink - Sign-in email link.
-	* @returns - The auth provider credential.
-	*/
-	static credentialWithLink(email, emailLink) {
-		const actionCodeUrl = ActionCodeURL.parseLink(emailLink);
-		_assert(actionCodeUrl, "argument-error");
-		return EmailAuthCredential._fromEmailAndCode(email, actionCodeUrl.code, actionCodeUrl.tenantId);
-	}
-};
-/**
-* Always set to {@link ProviderId}.PASSWORD, even for email link.
-*/
-EmailAuthProvider.PROVIDER_ID = "password";
-/**
-* Always set to {@link SignInMethod}.EMAIL_PASSWORD.
-*/
-EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD = "password";
-/**
-* Always set to {@link SignInMethod}.EMAIL_LINK.
-*/
-EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD = "emailLink";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* The base class for all Federated providers (OAuth (including OIDC), SAML).
-*
-* This class is not meant to be instantiated directly.
-*
-* @public
-*/
-var FederatedAuthProvider = class {
-	/**
-	* Constructor for generic OAuth providers.
-	*
-	* @param providerId - Provider for which credentials should be generated.
-	*/
-	constructor(providerId) {
-		this.providerId = providerId;
-		/** @internal */
-		this.defaultLanguageCode = null;
-		/** @internal */
-		this.customParameters = {};
-	}
-	/**
-	* Set the language gode.
-	*
-	* @param languageCode - language code
-	*/
-	setDefaultLanguage(languageCode) {
-		this.defaultLanguageCode = languageCode;
-	}
-	/**
-	* Sets the OAuth custom parameters to pass in an OAuth request for popup and redirect sign-in
-	* operations.
-	*
-	* @remarks
-	* For a detailed list, check the reserved required OAuth 2.0 parameters such as `client_id`,
-	* `redirect_uri`, `scope`, `response_type`, and `state` are not allowed and will be ignored.
-	*
-	* @param customOAuthParameters - The custom OAuth parameters to pass in the OAuth request.
-	*/
-	setCustomParameters(customOAuthParameters) {
-		this.customParameters = customOAuthParameters;
-		return this;
-	}
-	/**
-	* Retrieve the current list of {@link CustomParameters}.
-	*/
-	getCustomParameters() {
-		return this.customParameters;
-	}
-};
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Common code to all OAuth providers. This is separate from the
-* {@link OAuthProvider} so that child providers (like
-* {@link GoogleAuthProvider}) don't inherit the `credential` instance method.
-* Instead, they rely on a static `credential` method.
-*/
-var BaseOAuthProvider = class extends FederatedAuthProvider {
-	constructor() {
-		super(...arguments);
-		/** @internal */
-		this.scopes = [];
-	}
-	/**
-	* Add an OAuth scope to the credential.
-	*
-	* @param scope - Provider OAuth scope to add.
-	*/
-	addScope(scope) {
-		if (!this.scopes.includes(scope)) this.scopes.push(scope);
-		return this;
-	}
-	/**
-	* Retrieve the current list of OAuth scopes.
-	*/
-	getScopes() {
-		return [...this.scopes];
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.FACEBOOK.
-*
-* @example
-* ```javascript
-* // Sign in using a redirect.
-* const provider = new FacebookAuthProvider();
-* // Start a sign in process for an unauthenticated user.
-* provider.addScope('user_birthday');
-* await signInWithRedirect(auth, provider);
-* // This will trigger a full page redirect away from your app
-*
-* // After returning from the redirect when your app initializes you can obtain the result
-* const result = await getRedirectResult(auth);
-* if (result) {
-*   // This is the signed-in user
-*   const user = result.user;
-*   // This gives you a Facebook Access Token.
-*   const credential = FacebookAuthProvider.credentialFromResult(result);
-*   const token = credential.accessToken;
-* }
-* ```
-*
-* @example
-* ```javascript
-* // Sign in using a popup.
-* const provider = new FacebookAuthProvider();
-* provider.addScope('user_birthday');
-* const result = await signInWithPopup(auth, provider);
-*
-* // The signed-in user info.
-* const user = result.user;
-* // This gives you a Facebook Access Token.
-* const credential = FacebookAuthProvider.credentialFromResult(result);
-* const token = credential.accessToken;
-* ```
-*
-* @public
-*/
-var FacebookAuthProvider = class FacebookAuthProvider extends BaseOAuthProvider {
-	constructor() {
-		super("facebook.com");
-	}
-	/**
-	* Creates a credential for Facebook.
-	*
-	* @example
-	* ```javascript
-	* // `event` from the Facebook auth.authResponseChange callback.
-	* const credential = FacebookAuthProvider.credential(event.authResponse.accessToken);
-	* const result = await signInWithCredential(credential);
-	* ```
-	*
-	* @param accessToken - Facebook access token.
-	*/
-	static credential(accessToken) {
-		return OAuthCredential._fromParams({
-			providerId: FacebookAuthProvider.PROVIDER_ID,
-			signInMethod: FacebookAuthProvider.FACEBOOK_SIGN_IN_METHOD,
-			accessToken
-		});
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromResult(userCredential) {
-		return FacebookAuthProvider.credentialFromTaggedObject(userCredential);
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
-	* thrown during a sign-in, link, or reauthenticate operation.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromError(error) {
-		return FacebookAuthProvider.credentialFromTaggedObject(error.customData || {});
-	}
-	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
-		if (!tokenResponse || !("oauthAccessToken" in tokenResponse)) return null;
-		if (!tokenResponse.oauthAccessToken) return null;
-		try {
-			return FacebookAuthProvider.credential(tokenResponse.oauthAccessToken);
-		} catch {
-			return null;
-		}
-	}
-};
-/** Always set to {@link SignInMethod}.FACEBOOK. */
-FacebookAuthProvider.FACEBOOK_SIGN_IN_METHOD = "facebook.com";
-/** Always set to {@link ProviderId}.FACEBOOK. */
-FacebookAuthProvider.PROVIDER_ID = "facebook.com";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.GOOGLE.
-*
-* @example
-* ```javascript
-* // Sign in using a redirect.
-* const provider = new GoogleAuthProvider();
-* // Start a sign in process for an unauthenticated user.
-* provider.addScope('profile');
-* provider.addScope('email');
-* await signInWithRedirect(auth, provider);
-* // This will trigger a full page redirect away from your app
-*
-* // After returning from the redirect when your app initializes you can obtain the result
-* const result = await getRedirectResult(auth);
-* if (result) {
-*   // This is the signed-in user
-*   const user = result.user;
-*   // This gives you a Google Access Token.
-*   const credential = GoogleAuthProvider.credentialFromResult(result);
-*   const token = credential.accessToken;
-* }
-* ```
-*
-* @example
-* ```javascript
-* // Sign in using a popup.
-* const provider = new GoogleAuthProvider();
-* provider.addScope('profile');
-* provider.addScope('email');
-* const result = await signInWithPopup(auth, provider);
-*
-* // The signed-in user info.
-* const user = result.user;
-* // This gives you a Google Access Token.
-* const credential = GoogleAuthProvider.credentialFromResult(result);
-* const token = credential.accessToken;
-* ```
-*
-* @public
-*/
-var GoogleAuthProvider = class GoogleAuthProvider extends BaseOAuthProvider {
-	constructor() {
-		super("google.com");
-		this.addScope("profile");
-	}
-	/**
-	* Creates a credential for Google. At least one of ID token and access token is required.
-	*
-	* @example
-	* ```javascript
-	* // \`googleUser\` from the onsuccess Google Sign In callback.
-	* const credential = GoogleAuthProvider.credential(googleUser.getAuthResponse().id_token);
-	* const result = await signInWithCredential(credential);
-	* ```
-	*
-	* @param idToken - Google ID token.
-	* @param accessToken - Google access token.
-	*/
-	static credential(idToken, accessToken) {
-		return OAuthCredential._fromParams({
-			providerId: GoogleAuthProvider.PROVIDER_ID,
-			signInMethod: GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD,
-			idToken,
-			accessToken
-		});
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromResult(userCredential) {
-		return GoogleAuthProvider.credentialFromTaggedObject(userCredential);
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
-	* thrown during a sign-in, link, or reauthenticate operation.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromError(error) {
-		return GoogleAuthProvider.credentialFromTaggedObject(error.customData || {});
-	}
-	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
-		if (!tokenResponse) return null;
-		const { oauthIdToken, oauthAccessToken } = tokenResponse;
-		if (!oauthIdToken && !oauthAccessToken) return null;
-		try {
-			return GoogleAuthProvider.credential(oauthIdToken, oauthAccessToken);
-		} catch {
-			return null;
-		}
-	}
-};
-/** Always set to {@link SignInMethod}.GOOGLE. */
-GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD = "google.com";
-/** Always set to {@link ProviderId}.GOOGLE. */
-GoogleAuthProvider.PROVIDER_ID = "google.com";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.GITHUB.
-*
-* @remarks
-* GitHub requires an OAuth 2.0 redirect, so you can either handle the redirect directly, or use
-* the {@link signInWithPopup} handler:
-*
-* @example
-* ```javascript
-* // Sign in using a redirect.
-* const provider = new GithubAuthProvider();
-* // Start a sign in process for an unauthenticated user.
-* provider.addScope('repo');
-* await signInWithRedirect(auth, provider);
-* // This will trigger a full page redirect away from your app
-*
-* // After returning from the redirect when your app initializes you can obtain the result
-* const result = await getRedirectResult(auth);
-* if (result) {
-*   // This is the signed-in user
-*   const user = result.user;
-*   // This gives you a GitHub Access Token.
-*   const credential = GithubAuthProvider.credentialFromResult(result);
-*   const token = credential.accessToken;
-* }
-* ```
-*
-* @example
-* ```javascript
-* // Sign in using a popup.
-* const provider = new GithubAuthProvider();
-* provider.addScope('repo');
-* const result = await signInWithPopup(auth, provider);
-*
-* // The signed-in user info.
-* const user = result.user;
-* // This gives you a GitHub Access Token.
-* const credential = GithubAuthProvider.credentialFromResult(result);
-* const token = credential.accessToken;
-* ```
-* @public
-*/
-var GithubAuthProvider = class GithubAuthProvider extends BaseOAuthProvider {
-	constructor() {
-		super("github.com");
-	}
-	/**
-	* Creates a credential for GitHub.
-	*
-	* @param accessToken - GitHub access token.
-	*/
-	static credential(accessToken) {
-		return OAuthCredential._fromParams({
-			providerId: GithubAuthProvider.PROVIDER_ID,
-			signInMethod: GithubAuthProvider.GITHUB_SIGN_IN_METHOD,
-			accessToken
-		});
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromResult(userCredential) {
-		return GithubAuthProvider.credentialFromTaggedObject(userCredential);
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
-	* thrown during a sign-in, link, or reauthenticate operation.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromError(error) {
-		return GithubAuthProvider.credentialFromTaggedObject(error.customData || {});
-	}
-	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
-		if (!tokenResponse || !("oauthAccessToken" in tokenResponse)) return null;
-		if (!tokenResponse.oauthAccessToken) return null;
-		try {
-			return GithubAuthProvider.credential(tokenResponse.oauthAccessToken);
-		} catch {
-			return null;
-		}
-	}
-};
-/** Always set to {@link SignInMethod}.GITHUB. */
-GithubAuthProvider.GITHUB_SIGN_IN_METHOD = "github.com";
-/** Always set to {@link ProviderId}.GITHUB. */
-GithubAuthProvider.PROVIDER_ID = "github.com";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.TWITTER.
-*
-* @example
-* ```javascript
-* // Sign in using a redirect.
-* const provider = new TwitterAuthProvider();
-* // Start a sign in process for an unauthenticated user.
-* await signInWithRedirect(auth, provider);
-* // This will trigger a full page redirect away from your app
-*
-* // After returning from the redirect when your app initializes you can obtain the result
-* const result = await getRedirectResult(auth);
-* if (result) {
-*   // This is the signed-in user
-*   const user = result.user;
-*   // This gives you a Twitter Access Token and Secret.
-*   const credential = TwitterAuthProvider.credentialFromResult(result);
-*   const token = credential.accessToken;
-*   const secret = credential.secret;
-* }
-* ```
-*
-* @example
-* ```javascript
-* // Sign in using a popup.
-* const provider = new TwitterAuthProvider();
-* const result = await signInWithPopup(auth, provider);
-*
-* // The signed-in user info.
-* const user = result.user;
-* // This gives you a Twitter Access Token and Secret.
-* const credential = TwitterAuthProvider.credentialFromResult(result);
-* const token = credential.accessToken;
-* const secret = credential.secret;
-* ```
-*
-* @public
-*/
-var TwitterAuthProvider = class TwitterAuthProvider extends BaseOAuthProvider {
-	constructor() {
-		super("twitter.com");
-	}
-	/**
-	* Creates a credential for Twitter.
-	*
-	* @param token - Twitter access token.
-	* @param secret - Twitter secret.
-	*/
-	static credential(token, secret) {
-		return OAuthCredential._fromParams({
-			providerId: TwitterAuthProvider.PROVIDER_ID,
-			signInMethod: TwitterAuthProvider.TWITTER_SIGN_IN_METHOD,
-			oauthToken: token,
-			oauthTokenSecret: secret
-		});
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromResult(userCredential) {
-		return TwitterAuthProvider.credentialFromTaggedObject(userCredential);
-	}
-	/**
-	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
-	* thrown during a sign-in, link, or reauthenticate operation.
-	*
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromError(error) {
-		return TwitterAuthProvider.credentialFromTaggedObject(error.customData || {});
-	}
-	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
-		if (!tokenResponse) return null;
-		const { oauthAccessToken, oauthTokenSecret } = tokenResponse;
-		if (!oauthAccessToken || !oauthTokenSecret) return null;
-		try {
-			return TwitterAuthProvider.credential(oauthAccessToken, oauthTokenSecret);
-		} catch {
-			return null;
-		}
-	}
-};
-/** Always set to {@link SignInMethod}.TWITTER. */
-TwitterAuthProvider.TWITTER_SIGN_IN_METHOD = "twitter.com";
-/** Always set to {@link ProviderId}.TWITTER. */
-TwitterAuthProvider.PROVIDER_ID = "twitter.com";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var UserCredentialImpl = class UserCredentialImpl {
-	constructor(params) {
-		this.user = params.user;
-		this.providerId = params.providerId;
-		this._tokenResponse = params._tokenResponse;
-		this.operationType = params.operationType;
-	}
-	static async _fromIdTokenResponse(auth, operationType, idTokenResponse, isAnonymous = false) {
-		const user = await UserImpl._fromIdTokenResponse(auth, idTokenResponse, isAnonymous);
-		const providerId = providerIdForResponse(idTokenResponse);
-		return new UserCredentialImpl({
-			user,
-			providerId,
-			_tokenResponse: idTokenResponse,
-			operationType
-		});
-	}
-	static async _forOperation(user, operationType, response) {
-		await user._updateTokensIfNecessary(response, true);
-		const providerId = providerIdForResponse(response);
-		return new UserCredentialImpl({
-			user,
-			providerId,
-			_tokenResponse: response,
-			operationType
-		});
-	}
-};
-function providerIdForResponse(response) {
-	if (response.providerId) return response.providerId;
-	if ("phoneNumber" in response) return "phone";
-	return null;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var MultiFactorError = class MultiFactorError extends FirebaseError {
-	constructor(auth, error, operationType, user) {
-		super(error.code, error.message);
-		this.operationType = operationType;
-		this.user = user;
-		Object.setPrototypeOf(this, MultiFactorError.prototype);
-		this.customData = {
-			appName: auth.name,
-			tenantId: auth.tenantId ?? void 0,
-			_serverResponse: error.customData._serverResponse,
-			operationType
-		};
-	}
-	static _fromErrorAndOperation(auth, error, operationType, user) {
-		return new MultiFactorError(auth, error, operationType, user);
-	}
-};
-function _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential, user) {
-	return (operationType === "reauthenticate" ? credential._getReauthenticationResolver(auth) : credential._getIdTokenResponse(auth)).catch((error) => {
-		if (error.code === `auth/multi-factor-auth-required`) throw MultiFactorError._fromErrorAndOperation(auth, error, operationType, user);
-		throw error;
-	});
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _link$1(user, credential, bypassAuthState = false) {
-	const response = await _logoutIfInvalidated(user, credential._linkToIdToken(user.auth, await user.getIdToken()), bypassAuthState);
-	return UserCredentialImpl._forOperation(user, "link", response);
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _reauthenticate(user, credential, bypassAuthState = false) {
-	const { auth } = user;
-	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
-	const operationType = "reauthenticate";
-	try {
-		const response = await _logoutIfInvalidated(user, _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential, user), bypassAuthState);
-		_assert(response.idToken, auth, "internal-error");
-		const parsed = _parseToken(response.idToken);
-		_assert(parsed, auth, "internal-error");
-		const { sub: localId } = parsed;
-		_assert(user.uid === localId, auth, "user-mismatch");
-		return UserCredentialImpl._forOperation(user, operationType, response);
-	} catch (e) {
-		if (e?.code === `auth/user-not-found`) _fail(auth, "user-mismatch");
-		throw e;
-	}
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _signInWithCredential(auth, credential, bypassAuthState = false) {
-	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
-	const operationType = "signIn";
-	const response = await _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential);
-	const userCredential = await UserCredentialImpl._fromIdTokenResponse(auth, operationType, response);
-	if (!bypassAuthState) await auth._updateCurrentUser(userCredential.user);
-	return userCredential;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Adds an observer for changes to the signed-in user's ID token.
-*
-* @remarks
-* This includes sign-in, sign-out, and token refresh events.
-* This will not be triggered automatically upon ID token expiration. Use {@link User.getIdToken} to refresh the ID token.
-*
-* @param auth - The {@link Auth} instance.
-* @param nextOrObserver - callback triggered on change.
-* @param error - Deprecated. This callback is never triggered. Errors
-* on signing in/out can be caught in promises returned from
-* sign-in/sign-out functions.
-* @param completed - Deprecated. This callback is never triggered.
-*
-* @public
-*/
-function onIdTokenChanged(auth, nextOrObserver, error, completed) {
-	return getModularInstance(auth).onIdTokenChanged(nextOrObserver, error, completed);
-}
-/**
-* Adds a blocking callback that runs before an auth state change
-* sets a new user.
-*
-* @param auth - The {@link Auth} instance.
-* @param callback - callback triggered before new user value is set.
-*   If this throws, it blocks the user from being set.
-* @param onAbort - callback triggered if a later `beforeAuthStateChanged()`
-*   callback throws, allowing you to undo any side effects.
-*/
-function beforeAuthStateChanged(auth, callback, onAbort) {
-	return getModularInstance(auth).beforeAuthStateChanged(callback, onAbort);
-}
-/**
-* Adds an observer for changes to the user's sign-in state.
-*
-* @remarks
-* To keep the old behavior, see {@link onIdTokenChanged}.
-*
-* @param auth - The {@link Auth} instance.
-* @param nextOrObserver - callback triggered on change.
-* @param error - Deprecated. This callback is never triggered. Errors
-* on signing in/out can be caught in promises returned from
-* sign-in/sign-out functions.
-* @param completed - Deprecated. This callback is never triggered.
-*
-* @public
-*/
-function onAuthStateChanged(auth, nextOrObserver, error, completed) {
-	return getModularInstance(auth).onAuthStateChanged(nextOrObserver, error, completed);
-}
-/**
-* Signs out the current user.
-*
-* @remarks
-* This method is not supported by {@link Auth} instances created with a
-* {@link @firebase/app#FirebaseServerApp}.
-*
-* @param auth - The {@link Auth} instance.
-*
-* @public
-*/
-function signOut(auth) {
-	return getModularInstance(auth).signOut();
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function startEnrollPhoneMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:start", _addTidIfNecessary(auth, request));
-}
-function finalizeEnrollPhoneMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:finalize", _addTidIfNecessary(auth, request));
-}
-function startEnrollTotpMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:start", _addTidIfNecessary(auth, request));
-}
-function finalizeEnrollTotpMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:finalize", _addTidIfNecessary(auth, request));
-}
-var STORAGE_AVAILABLE_KEY = "__sak";
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var BrowserPersistenceClass = class {
-	constructor(storageRetriever, type) {
-		this.storageRetriever = storageRetriever;
-		this.type = type;
-	}
-	_isAvailable() {
-		try {
-			if (!this.storage) return Promise.resolve(false);
-			this.storage.setItem(STORAGE_AVAILABLE_KEY, "1");
-			this.storage.removeItem(STORAGE_AVAILABLE_KEY);
-			return Promise.resolve(true);
-		} catch {
-			return Promise.resolve(false);
-		}
-	}
-	_set(key, value) {
-		this.storage.setItem(key, JSON.stringify(value));
-		return Promise.resolve();
-	}
-	_get(key) {
-		const json = this.storage.getItem(key);
-		return Promise.resolve(json ? JSON.parse(json) : null);
-	}
-	_remove(key) {
-		this.storage.removeItem(key);
-		return Promise.resolve();
-	}
-	get storage() {
-		return this.storageRetriever();
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var _POLLING_INTERVAL_MS$1 = 1e3;
-var IE10_LOCAL_STORAGE_SYNC_DELAY = 10;
-var BrowserLocalPersistence = class extends BrowserPersistenceClass {
-	constructor() {
-		super(() => window.localStorage, "LOCAL");
-		this.boundEventHandler = (event, poll) => this.onStorageEvent(event, poll);
-		this.listeners = {};
-		this.localCache = {};
-		this.pollTimer = null;
-		this.fallbackToPolling = _isMobileBrowser();
-		this._shouldAllowMigration = true;
-	}
-	forAllChangedKeys(cb) {
-		for (const key of Object.keys(this.listeners)) {
-			const newValue = this.storage.getItem(key);
-			const oldValue = this.localCache[key];
-			if (newValue !== oldValue) cb(key, oldValue, newValue);
-		}
-	}
-	onStorageEvent(event, poll = false) {
-		if (!event.key) {
-			this.forAllChangedKeys((key, _oldValue, newValue) => {
-				this.notifyListeners(key, newValue);
-			});
-			return;
-		}
-		const key = event.key;
-		if (poll) this.detachListener();
-		else this.stopPolling();
-		const triggerListeners = () => {
-			const storedValue = this.storage.getItem(key);
-			if (!poll && this.localCache[key] === storedValue) return;
-			this.notifyListeners(key, storedValue);
-		};
-		const storedValue = this.storage.getItem(key);
-		if (_isIE10() && storedValue !== event.newValue && event.newValue !== event.oldValue) setTimeout(triggerListeners, IE10_LOCAL_STORAGE_SYNC_DELAY);
-		else triggerListeners();
-	}
-	notifyListeners(key, value) {
-		this.localCache[key] = value;
-		const listeners = this.listeners[key];
-		if (listeners) for (const listener of Array.from(listeners)) listener(value ? JSON.parse(value) : value);
-	}
-	startPolling() {
-		this.stopPolling();
-		this.pollTimer = setInterval(() => {
-			this.forAllChangedKeys((key, oldValue, newValue) => {
-				this.onStorageEvent(new StorageEvent("storage", {
-					key,
-					oldValue,
-					newValue
-				}), true);
-			});
-		}, _POLLING_INTERVAL_MS$1);
-	}
-	stopPolling() {
-		if (this.pollTimer) {
-			clearInterval(this.pollTimer);
-			this.pollTimer = null;
-		}
-	}
-	attachListener() {
-		window.addEventListener("storage", this.boundEventHandler);
-	}
-	detachListener() {
-		window.removeEventListener("storage", this.boundEventHandler);
-	}
-	_addListener(key, listener) {
-		if (Object.keys(this.listeners).length === 0) {
-			if (this.fallbackToPolling) this.startPolling();
-			else this.attachListener();
-		}
-		if (!this.listeners[key]) {
-			this.listeners[key] = /* @__PURE__ */ new Set();
-			this.localCache[key] = this.storage.getItem(key);
-		}
-		this.listeners[key].add(listener);
-	}
-	_removeListener(key, listener) {
-		if (this.listeners[key]) {
-			this.listeners[key].delete(listener);
-			if (this.listeners[key].size === 0) delete this.listeners[key];
-		}
-		if (Object.keys(this.listeners).length === 0) {
-			this.detachListener();
-			this.stopPolling();
-		}
-	}
-	async _set(key, value) {
-		await super._set(key, value);
-		this.localCache[key] = JSON.stringify(value);
-	}
-	async _get(key) {
-		const value = await super._get(key);
-		this.localCache[key] = JSON.stringify(value);
-		return value;
-	}
-	async _remove(key) {
-		await super._remove(key);
-		delete this.localCache[key];
-	}
-};
-BrowserLocalPersistence.type = "LOCAL";
-/**
-* An implementation of {@link Persistence} of type `LOCAL` using `localStorage`
-* for the underlying storage.
-*
-* @public
-*/
-var browserLocalPersistence = BrowserLocalPersistence;
-/**
-* @license
-* Copyright 2025 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var POLLING_INTERVAL_MS = 1e3;
-function getDocumentCookie(name) {
-	const escapedName = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-	const matcher = RegExp(`${escapedName}=([^;]+)`);
-	return document.cookie.match(matcher)?.[1] ?? null;
-}
-function getCookieName(key) {
-	return `${window.location.protocol === "http:" ? "__dev_" : "__HOST-"}FIREBASE_${key.split(":")[3]}`;
-}
-var CookiePersistence = class {
-	constructor() {
-		this.type = "COOKIE";
-		this.listenerUnsubscribes = /* @__PURE__ */ new Map();
-	}
-	_getFinalTarget(originalUrl) {
-		const url = new URL(`${window.location.origin}/__cookies__`);
-		url.searchParams.set("finalTarget", originalUrl);
-		return url;
-	}
-	async _isAvailable() {
-		if (typeof isSecureContext === "boolean" && !isSecureContext) return false;
-		if (typeof navigator === "undefined" || typeof document === "undefined") return false;
-		return navigator.cookieEnabled ?? true;
-	}
-	async _set(_key, _value) {}
-	async _get(key) {
-		if (!this._isAvailable()) return null;
-		const name = getCookieName(key);
-		if (window.cookieStore) return (await window.cookieStore.get(name))?.value;
-		return getDocumentCookie(name);
-	}
-	async _remove(key) {
-		if (!this._isAvailable()) return;
-		if (!await this._get(key)) return;
-		const name = getCookieName(key);
-		document.cookie = `${name}=;Max-Age=34560000;Partitioned;Secure;SameSite=Strict;Path=/;Priority=High`;
-		await fetch(`/__cookies__`, { method: "DELETE" }).catch(() => void 0);
-	}
-	_addListener(key, listener) {
-		if (!this._isAvailable()) return;
-		const name = getCookieName(key);
-		if (window.cookieStore) {
-			const cb = ((event) => {
-				const changedCookie = event.changed.find((change) => change.name === name);
-				if (changedCookie) listener(changedCookie.value);
-				if (event.deleted.find((change) => change.name === name)) listener(null);
-			});
-			const unsubscribe = () => window.cookieStore.removeEventListener("change", cb);
-			this.listenerUnsubscribes.set(listener, unsubscribe);
-			return window.cookieStore.addEventListener("change", cb);
-		}
-		let lastValue = getDocumentCookie(name);
-		const interval = setInterval(() => {
-			const currentValue = getDocumentCookie(name);
-			if (currentValue !== lastValue) {
-				listener(currentValue);
-				lastValue = currentValue;
-			}
-		}, POLLING_INTERVAL_MS);
-		const unsubscribe = () => clearInterval(interval);
-		this.listenerUnsubscribes.set(listener, unsubscribe);
-	}
-	_removeListener(_key, listener) {
-		const unsubscribe = this.listenerUnsubscribes.get(listener);
-		if (!unsubscribe) return;
-		unsubscribe();
-		this.listenerUnsubscribes.delete(listener);
-	}
-};
-CookiePersistence.type = "COOKIE";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var BrowserSessionPersistence = class extends BrowserPersistenceClass {
-	constructor() {
-		super(() => window.sessionStorage, "SESSION");
-	}
-	_addListener(_key, _listener) {}
-	_removeListener(_key, _listener) {}
-};
-BrowserSessionPersistence.type = "SESSION";
-/**
-* An implementation of {@link Persistence} of `SESSION` using `sessionStorage`
-* for the underlying storage.
-*
-* @public
-*/
-var browserSessionPersistence = BrowserSessionPersistence;
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Shim for Promise.allSettled, note the slightly different format of `fulfilled` vs `status`.
-*
-* @param promises - Array of promises to wait on.
-*/
-function _allSettled(promises) {
-	return Promise.all(promises.map(async (promise) => {
-		try {
-			return {
-				fulfilled: true,
-				value: await promise
-			};
-		} catch (reason) {
-			return {
-				fulfilled: false,
-				reason
-			};
-		}
-	}));
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Interface class for receiving messages.
-*
-*/
-var Receiver = class Receiver {
-	constructor(eventTarget) {
-		this.eventTarget = eventTarget;
-		this.handlersMap = {};
-		this.boundEventHandler = this.handleEvent.bind(this);
-	}
-	/**
-	* Obtain an instance of a Receiver for a given event target, if none exists it will be created.
-	*
-	* @param eventTarget - An event target (such as window or self) through which the underlying
-	* messages will be received.
-	*/
-	static _getInstance(eventTarget) {
-		const existingInstance = this.receivers.find((receiver) => receiver.isListeningto(eventTarget));
-		if (existingInstance) return existingInstance;
-		const newInstance = new Receiver(eventTarget);
-		this.receivers.push(newInstance);
-		return newInstance;
-	}
-	isListeningto(eventTarget) {
-		return this.eventTarget === eventTarget;
-	}
-	/**
-	* Fans out a MessageEvent to the appropriate listeners.
-	*
-	* @remarks
-	* Sends an {@link Status.ACK} upon receipt and a {@link Status.DONE} once all handlers have
-	* finished processing.
-	*
-	* @param event - The MessageEvent.
-	*
-	*/
-	async handleEvent(event) {
-		const messageEvent = event;
-		const { eventId, eventType, data } = messageEvent.data;
-		const handlers = this.handlersMap[eventType];
-		if (!handlers?.size) return;
-		messageEvent.ports[0].postMessage({
-			status: "ack",
-			eventId,
-			eventType
-		});
-		const response = await _allSettled(Array.from(handlers).map(async (handler) => handler(messageEvent.origin, data)));
-		messageEvent.ports[0].postMessage({
-			status: "done",
-			eventId,
-			eventType,
-			response
-		});
-	}
-	/**
-	* Subscribe an event handler for a particular event.
-	*
-	* @param eventType - Event name to subscribe to.
-	* @param eventHandler - The event handler which should receive the events.
-	*
-	*/
-	_subscribe(eventType, eventHandler) {
-		if (Object.keys(this.handlersMap).length === 0) this.eventTarget.addEventListener("message", this.boundEventHandler);
-		if (!this.handlersMap[eventType]) this.handlersMap[eventType] = /* @__PURE__ */ new Set();
-		this.handlersMap[eventType].add(eventHandler);
-	}
-	/**
-	* Unsubscribe an event handler from a particular event.
-	*
-	* @param eventType - Event name to unsubscribe from.
-	* @param eventHandler - Optional event handler, if none provided, unsubscribe all handlers on this event.
-	*
-	*/
-	_unsubscribe(eventType, eventHandler) {
-		if (this.handlersMap[eventType] && eventHandler) this.handlersMap[eventType].delete(eventHandler);
-		if (!eventHandler || this.handlersMap[eventType].size === 0) delete this.handlersMap[eventType];
-		if (Object.keys(this.handlersMap).length === 0) this.eventTarget.removeEventListener("message", this.boundEventHandler);
-	}
-};
-Receiver.receivers = [];
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _generateEventId(prefix = "", digits = 10) {
-	let random = "";
-	for (let i = 0; i < digits; i++) random += Math.floor(Math.random() * 10);
-	return prefix + random;
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Interface for sending messages and waiting for a completion response.
-*
-*/
-var Sender = class {
-	constructor(target) {
-		this.target = target;
-		this.handlers = /* @__PURE__ */ new Set();
-	}
-	/**
-	* Unsubscribe the handler and remove it from our tracking Set.
-	*
-	* @param handler - The handler to unsubscribe.
-	*/
-	removeMessageHandler(handler) {
-		if (handler.messageChannel) {
-			handler.messageChannel.port1.removeEventListener("message", handler.onMessage);
-			handler.messageChannel.port1.close();
-		}
-		this.handlers.delete(handler);
-	}
-	/**
-	* Send a message to the Receiver located at {@link target}.
-	*
-	* @remarks
-	* We'll first wait a bit for an ACK , if we get one we will wait significantly longer until the
-	* receiver has had a chance to fully process the event.
-	*
-	* @param eventType - Type of event to send.
-	* @param data - The payload of the event.
-	* @param timeout - Timeout for waiting on an ACK from the receiver.
-	*
-	* @returns An array of settled promises from all the handlers that were listening on the receiver.
-	*/
-	async _send(eventType, data, timeout = 50) {
-		const messageChannel = typeof MessageChannel !== "undefined" ? new MessageChannel() : null;
-		if (!messageChannel) throw new Error("connection_unavailable");
-		let completionTimer;
-		let handler;
-		return new Promise((resolve, reject) => {
-			const eventId = _generateEventId("", 20);
-			messageChannel.port1.start();
-			const ackTimer = setTimeout(() => {
-				reject(/* @__PURE__ */ new Error("unsupported_event"));
-			}, timeout);
-			handler = {
-				messageChannel,
-				onMessage(event) {
-					const messageEvent = event;
-					if (messageEvent.data.eventId !== eventId) return;
-					switch (messageEvent.data.status) {
-						case "ack":
-							clearTimeout(ackTimer);
-							completionTimer = setTimeout(() => {
-								reject(/* @__PURE__ */ new Error("timeout"));
-							}, 3e3);
-							break;
-						case "done":
-							clearTimeout(completionTimer);
-							resolve(messageEvent.data.response);
-							break;
-						default:
-							clearTimeout(ackTimer);
-							clearTimeout(completionTimer);
-							reject(/* @__PURE__ */ new Error("invalid_response"));
-					}
-				}
-			};
-			this.handlers.add(handler);
-			messageChannel.port1.addEventListener("message", handler.onMessage);
-			this.target.postMessage({
-				eventType,
-				eventId,
-				data
-			}, [messageChannel.port2]);
-		}).finally(() => {
-			if (handler) this.removeMessageHandler(handler);
-		});
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Lazy accessor for window, since the compat layer won't tree shake this out,
-* we need to make sure not to mess with window unless we have to
-*/
-function _window() {
-	return window;
-}
-function _setWindowLocation(url) {
-	_window().location.href = url;
-}
-/**
-* @license
-* Copyright 2020 Google LLC.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function _isWorker() {
-	return typeof _window()["WorkerGlobalScope"] !== "undefined" && typeof _window()["importScripts"] === "function";
-}
-async function _getActiveServiceWorker() {
-	if (!navigator?.serviceWorker) return null;
-	try {
-		return (await navigator.serviceWorker.ready).active;
-	} catch {
-		return null;
-	}
-}
-function _getServiceWorkerController() {
-	return navigator?.serviceWorker?.controller || null;
-}
-function _getWorkerGlobalScope() {
-	return _isWorker() ? self : null;
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var DB_NAME = "firebaseLocalStorageDb";
-var DB_VERSION = 1;
-var DB_OBJECTSTORE_NAME = "firebaseLocalStorage";
-var DB_DATA_KEYPATH = "fbase_key";
-/**
-* Promise wrapper for IDBRequest
-*
-* Unfortunately we can't cleanly extend Promise<T> since promises are not callable in ES6
-*
-*/
-var DBPromise = class {
-	constructor(request) {
-		this.request = request;
-	}
-	toPromise() {
-		return new Promise((resolve, reject) => {
-			this.request.addEventListener("success", () => {
-				resolve(this.request.result);
-			});
-			this.request.addEventListener("error", () => {
-				reject(this.request.error);
-			});
-		});
-	}
-};
-function getObjectStore(db, isReadWrite) {
-	return db.transaction([DB_OBJECTSTORE_NAME], isReadWrite ? "readwrite" : "readonly").objectStore(DB_OBJECTSTORE_NAME);
-}
-function _deleteDatabase() {
-	return new DBPromise(indexedDB.deleteDatabase(DB_NAME)).toPromise();
-}
-function _openDatabase() {
-	const request = indexedDB.open(DB_NAME, DB_VERSION);
-	return new Promise((resolve, reject) => {
-		request.addEventListener("error", () => {
-			reject(request.error);
-		});
-		request.addEventListener("upgradeneeded", () => {
-			const db = request.result;
-			try {
-				db.createObjectStore(DB_OBJECTSTORE_NAME, { keyPath: DB_DATA_KEYPATH });
-			} catch (e) {
-				reject(e);
-			}
-		});
-		request.addEventListener("success", async () => {
-			const db = request.result;
-			if (!db.objectStoreNames.contains(DB_OBJECTSTORE_NAME)) {
-				db.close();
-				await _deleteDatabase();
-				resolve(await _openDatabase());
-			} else resolve(db);
-		});
-	});
-}
-async function _putObject(db, key, value) {
-	return new DBPromise(getObjectStore(db, true).put({
-		[DB_DATA_KEYPATH]: key,
-		value
-	})).toPromise();
-}
-async function getObject(db, key) {
-	const data = await new DBPromise(getObjectStore(db, false).get(key)).toPromise();
-	return data === void 0 ? null : data.value;
-}
-function _deleteObject(db, key) {
-	return new DBPromise(getObjectStore(db, true).delete(key)).toPromise();
-}
-var _POLLING_INTERVAL_MS = 800;
-var _TRANSACTION_RETRY_COUNT = 3;
-var IndexedDBLocalPersistence = class {
-	registerLifecycleListeners() {
-		if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-			window.addEventListener("pagehide", this.onPageHide);
-			window.addEventListener("pageshow", this.onPageShow);
-		}
-	}
-	unregisterLifecycleListeners() {
-		if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
-			window.removeEventListener("pagehide", this.onPageHide);
-			window.removeEventListener("pageshow", this.onPageShow);
-		}
-	}
-	constructor() {
-		this.type = "LOCAL";
-		this.dbPromise = null;
-		this._shouldAllowMigration = true;
-		this.listeners = {};
-		this.localCache = {};
-		this.pollTimer = null;
-		this.isClosing = false;
-		this.pendingWrites = 0;
-		this.receiver = null;
-		this.sender = null;
-		this.serviceWorkerReceiverAvailable = false;
-		this.activeServiceWorker = null;
-		this.onPageHide = () => {
-			this.isClosing = true;
-			this.stopPolling();
-			if (this.dbPromise) {
-				this.dbPromise.then((db) => db.close()).catch(() => {});
-				this.dbPromise = null;
-			}
-		};
-		this.onPageShow = () => {
-			if (this.isClosing) {
-				this.isClosing = false;
-				if (Object.keys(this.listeners).length > 0) this.startPolling();
-			}
-		};
-		this._workerInitializationPromise = this.initializeServiceWorkerMessaging().then(() => {}, () => {});
-	}
-	async _openDb() {
-		if (this.dbPromise) return this.dbPromise;
-		this.dbPromise = _openDatabase();
-		this.dbPromise.catch(() => {
-			this.dbPromise = null;
-		});
-		return this.dbPromise;
-	}
-	async _withRetries(op) {
-		let numAttempts = 0;
-		while (true) try {
-			return await op(await this._openDb());
-		} catch (e) {
-			if (numAttempts++ > _TRANSACTION_RETRY_COUNT) throw e;
-			if (this.dbPromise) {
-				const dbPromise = this.dbPromise;
-				this.dbPromise = null;
-				try {
-					(await dbPromise).close();
-				} catch {}
-			}
-		}
-	}
-	/**
-	* IndexedDB events do not propagate from the main window to the worker context.  We rely on a
-	* postMessage interface to send these events to the worker ourselves.
-	*/
-	async initializeServiceWorkerMessaging() {
-		return _isWorker() ? this.initializeReceiver() : this.initializeSender();
-	}
-	/**
-	* As the worker we should listen to events from the main window.
-	*/
-	async initializeReceiver() {
-		this.receiver = Receiver._getInstance(_getWorkerGlobalScope());
-		this.receiver._subscribe("keyChanged", async (_origin, data) => {
-			return { keyProcessed: (await this._poll()).includes(data.key) };
-		});
-		this.receiver._subscribe("ping", async (_origin, _data) => {
-			return ["keyChanged"];
-		});
-	}
-	/**
-	* As the main window, we should let the worker know when keys change (set and remove).
-	*
-	* @remarks
-	* {@link https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/ready | ServiceWorkerContainer.ready}
-	* may not resolve.
-	*/
-	async initializeSender() {
-		this.activeServiceWorker = await _getActiveServiceWorker();
-		if (!this.activeServiceWorker) return;
-		this.sender = new Sender(this.activeServiceWorker);
-		const results = await this.sender._send("ping", {}, 800);
-		if (!results) return;
-		if (results[0]?.fulfilled && results[0]?.value.includes("keyChanged")) this.serviceWorkerReceiverAvailable = true;
-	}
-	/**
-	* Let the worker know about a changed key, the exact key doesn't technically matter since the
-	* worker will just trigger a full sync anyway.
-	*
-	* @remarks
-	* For now, we only support one service worker per page.
-	*
-	* @param key - Storage key which changed.
-	*/
-	async notifyServiceWorker(key) {
-		if (!this.sender || !this.activeServiceWorker || _getServiceWorkerController() !== this.activeServiceWorker) return;
-		try {
-			await this.sender._send("keyChanged", { key }, this.serviceWorkerReceiverAvailable ? 800 : 50);
-		} catch {}
-	}
-	async _isAvailable() {
-		try {
-			if (!indexedDB) return false;
-			await this._withRetries(async (db) => {
-				await _putObject(db, STORAGE_AVAILABLE_KEY, "1");
-				await _deleteObject(db, STORAGE_AVAILABLE_KEY);
-			});
-			return true;
-		} catch {}
-		return false;
-	}
-	async _withPendingWrite(write) {
-		this.pendingWrites++;
-		try {
-			await write();
-		} finally {
-			this.pendingWrites--;
-		}
-	}
-	async _set(key, value) {
-		return this._withPendingWrite(async () => {
-			await this._withRetries((db) => _putObject(db, key, value));
-			this.localCache[key] = value;
-			return this.notifyServiceWorker(key);
-		});
-	}
-	async _get(key) {
-		const obj = await this._withRetries((db) => getObject(db, key));
-		this.localCache[key] = obj;
-		return obj;
-	}
-	async _remove(key) {
-		return this._withPendingWrite(async () => {
-			await this._withRetries((db) => _deleteObject(db, key));
-			delete this.localCache[key];
-			return this.notifyServiceWorker(key);
-		});
-	}
-	async _poll() {
-		if (this.isClosing) return [];
-		try {
-			const result = await this._withRetries((db) => {
-				return new DBPromise(getObjectStore(db, false).getAll()).toPromise();
-			});
-			if (this.isClosing) return [];
-			if (!result) return [];
-			if (this.pendingWrites !== 0) return [];
-			const keys = [];
-			const keysInResult = /* @__PURE__ */ new Set();
-			if (result.length !== 0) for (const { fbase_key: key, value } of result) {
-				keysInResult.add(key);
-				if (JSON.stringify(this.localCache[key]) !== JSON.stringify(value)) {
-					this.notifyListeners(key, value);
-					keys.push(key);
-				}
-			}
-			for (const localKey of Object.keys(this.localCache)) if (this.localCache[localKey] && !keysInResult.has(localKey)) {
-				this.notifyListeners(localKey, null);
-				keys.push(localKey);
-			}
-			return keys;
-		} catch (e) {
-			if (!this.isClosing) _logWarn(`Firebase Auth cross-tab polling failed with error: ${e}`);
-			return [];
-		}
-	}
-	notifyListeners(key, newValue) {
-		this.localCache[key] = newValue;
-		const listeners = this.listeners[key];
-		if (listeners) for (const listener of Array.from(listeners)) listener(newValue);
-	}
-	startPolling() {
-		this.stopPolling();
-		this.pollTimer = setInterval(async () => this._poll(), _POLLING_INTERVAL_MS);
-	}
-	stopPolling() {
-		if (this.pollTimer) {
-			clearInterval(this.pollTimer);
-			this.pollTimer = null;
-		}
-	}
-	_addListener(key, listener) {
-		if (Object.keys(this.listeners).length === 0) {
-			this.startPolling();
-			this.registerLifecycleListeners();
-		}
-		if (!this.listeners[key]) {
-			this.listeners[key] = /* @__PURE__ */ new Set();
-			this._get(key).catch(() => {});
-		}
-		this.listeners[key].add(listener);
-	}
-	_removeListener(key, listener) {
-		if (this.listeners[key]) {
-			this.listeners[key].delete(listener);
-			if (this.listeners[key].size === 0) delete this.listeners[key];
-		}
-		if (Object.keys(this.listeners).length === 0) {
-			this.stopPolling();
-			this.unregisterLifecycleListeners();
-		}
-	}
-};
-IndexedDBLocalPersistence.type = "LOCAL";
-/**
-* An implementation of {@link Persistence} of type `LOCAL` using `indexedDB`
-* for the underlying storage.
-*
-* @public
-*/
-var indexedDBLocalPersistence = IndexedDBLocalPersistence;
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function startSignInPhoneMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:start", _addTidIfNecessary(auth, request));
-}
-function finalizeSignInPhoneMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:finalize", _addTidIfNecessary(auth, request));
-}
-function finalizeSignInTotpMfa(auth, request) {
-	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:finalize", _addTidIfNecessary(auth, request));
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-_generateCallbackName("rcb");
-new Delay(3e4, 6e4);
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var RECAPTCHA_VERIFIER_TYPE = "recaptcha";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Returns a verification ID to be used in conjunction with the SMS code that is sent.
-*
-*/
-async function _verifyPhoneNumber(auth, options, verifier) {
-	if (!auth._getRecaptchaConfig()) try {
-		await _initializeRecaptchaConfig(auth);
-	} catch (error) {
-		console.log("Failed to initialize reCAPTCHA Enterprise config. Triggering the reCAPTCHA v2 verification.");
-	}
-	try {
-		let phoneInfoOptions;
-		if (typeof options === "string") phoneInfoOptions = { phoneNumber: options };
-		else phoneInfoOptions = options;
-		if ("session" in phoneInfoOptions) {
-			const session = phoneInfoOptions.session;
-			if ("phoneNumber" in phoneInfoOptions) {
-				_assert(session.type === "enroll", auth, "internal-error");
-				const startPhoneMfaEnrollmentRequest = {
-					idToken: session.credential,
-					phoneEnrollmentInfo: {
-						phoneNumber: phoneInfoOptions.phoneNumber,
-						clientType: "CLIENT_TYPE_WEB"
-					}
-				};
-				const startEnrollPhoneMfaActionCallback = async (authInstance, request) => {
-					if (request.phoneEnrollmentInfo.captchaResponse === FAKE_TOKEN) {
-						_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
-						return startEnrollPhoneMfa(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
-					}
-					return startEnrollPhoneMfa(authInstance, request);
-				};
-				return (await handleRecaptchaFlow(auth, startPhoneMfaEnrollmentRequest, "mfaSmsEnrollment", startEnrollPhoneMfaActionCallback, "PHONE_PROVIDER").catch((error) => {
-					return Promise.reject(error);
-				})).phoneSessionInfo.sessionInfo;
-			} else {
-				_assert(session.type === "signin", auth, "internal-error");
-				const mfaEnrollmentId = phoneInfoOptions.multiFactorHint?.uid || phoneInfoOptions.multiFactorUid;
-				_assert(mfaEnrollmentId, auth, "missing-multi-factor-info");
-				const startPhoneMfaSignInRequest = {
-					mfaPendingCredential: session.credential,
-					mfaEnrollmentId,
-					phoneSignInInfo: { clientType: "CLIENT_TYPE_WEB" }
-				};
-				const startSignInPhoneMfaActionCallback = async (authInstance, request) => {
-					if (request.phoneSignInInfo.captchaResponse === FAKE_TOKEN) {
-						_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
-						return startSignInPhoneMfa(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
-					}
-					return startSignInPhoneMfa(authInstance, request);
-				};
-				return (await handleRecaptchaFlow(auth, startPhoneMfaSignInRequest, "mfaSmsSignIn", startSignInPhoneMfaActionCallback, "PHONE_PROVIDER").catch((error) => {
-					return Promise.reject(error);
-				})).phoneResponseInfo.sessionInfo;
-			}
-		} else {
-			const sendPhoneVerificationCodeRequest = {
-				phoneNumber: phoneInfoOptions.phoneNumber,
-				clientType: "CLIENT_TYPE_WEB"
-			};
-			const sendPhoneVerificationCodeActionCallback = async (authInstance, request) => {
-				if (request.captchaResponse === FAKE_TOKEN) {
-					_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
-					return sendPhoneVerificationCode(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
-				}
-				return sendPhoneVerificationCode(authInstance, request);
-			};
-			return (await handleRecaptchaFlow(auth, sendPhoneVerificationCodeRequest, "sendVerificationCode", sendPhoneVerificationCodeActionCallback, "PHONE_PROVIDER").catch((error) => {
-				return Promise.reject(error);
-			})).sessionInfo;
-		}
-	} finally {
-		verifier?._reset();
-	}
-}
-async function injectRecaptchaV2Token(auth, request, recaptchaV2Verifier) {
-	_assert(recaptchaV2Verifier.type === RECAPTCHA_VERIFIER_TYPE, auth, "argument-error");
-	const recaptchaV2Token = await recaptchaV2Verifier.verify();
-	_assert(typeof recaptchaV2Token === "string", auth, "argument-error");
-	const newRequest = { ...request };
-	if ("phoneEnrollmentInfo" in newRequest) {
-		const phoneNumber = newRequest.phoneEnrollmentInfo.phoneNumber;
-		const captchaResponse = newRequest.phoneEnrollmentInfo.captchaResponse;
-		const clientType = newRequest.phoneEnrollmentInfo.clientType;
-		const recaptchaVersion = newRequest.phoneEnrollmentInfo.recaptchaVersion;
-		Object.assign(newRequest, { "phoneEnrollmentInfo": {
-			phoneNumber,
-			recaptchaToken: recaptchaV2Token,
-			captchaResponse,
-			clientType,
-			recaptchaVersion
-		} });
-		return newRequest;
-	} else if ("phoneSignInInfo" in newRequest) {
-		const captchaResponse = newRequest.phoneSignInInfo.captchaResponse;
-		const clientType = newRequest.phoneSignInInfo.clientType;
-		const recaptchaVersion = newRequest.phoneSignInInfo.recaptchaVersion;
-		Object.assign(newRequest, { "phoneSignInInfo": {
-			recaptchaToken: recaptchaV2Token,
-			captchaResponse,
-			clientType,
-			recaptchaVersion
-		} });
-		return newRequest;
-	} else {
-		Object.assign(newRequest, { "recaptchaToken": recaptchaV2Token });
-		return newRequest;
-	}
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Provider for generating an {@link PhoneAuthCredential}.
-*
-* @remarks
-* `PhoneAuthProvider` does not work in a Node.js environment.
-*
-* @example
-* ```javascript
-* // 'recaptcha-container' is the ID of an element in the DOM.
-* const applicationVerifier = new RecaptchaVerifier('recaptcha-container');
-* const provider = new PhoneAuthProvider(auth);
-* const verificationId = await provider.verifyPhoneNumber('+16505550101', applicationVerifier);
-* // Obtain the verificationCode from the user.
-* const phoneCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
-* const userCredential = await signInWithCredential(auth, phoneCredential);
-* ```
-*
-* @public
-*/
-var PhoneAuthProvider = class PhoneAuthProvider {
-	/**
-	* @param auth - The Firebase {@link Auth} instance in which sign-ins should occur.
-	*
-	*/
-	constructor(auth) {
-		/** Always set to {@link ProviderId}.PHONE. */
-		this.providerId = PhoneAuthProvider.PROVIDER_ID;
-		this.auth = _castAuth(auth);
-	}
-	/**
-	*
-	* Starts a phone number authentication flow by sending a verification code to the given phone
-	* number.
-	*
-	* @example
-	* ```javascript
-	* const provider = new PhoneAuthProvider(auth);
-	* const verificationId = await provider.verifyPhoneNumber(phoneNumber, applicationVerifier);
-	* // Obtain verificationCode from the user.
-	* const authCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
-	* const userCredential = await signInWithCredential(auth, authCredential);
-	* ```
-	*
-	* @example
-	* An alternative flow is provided using the `signInWithPhoneNumber` method.
-	* ```javascript
-	* const confirmationResult = signInWithPhoneNumber(auth, phoneNumber, applicationVerifier);
-	* // Obtain verificationCode from the user.
-	* const userCredential = confirmationResult.confirm(verificationCode);
-	* ```
-	*
-	* @param phoneInfoOptions - The user's {@link PhoneInfoOptions}. The phone number should be in
-	* E.164 format (e.g. +16505550101).
-	* @param applicationVerifier - An {@link ApplicationVerifier}, which prevents
-	* requests from unauthorized clients. This SDK includes an implementation
-	* based on reCAPTCHA v2, {@link RecaptchaVerifier}. If you've enabled
-	* reCAPTCHA Enterprise bot protection in Enforce mode, this parameter is
-	* optional; in all other configurations, the parameter is required.
-	*
-	* @returns A Promise for a verification ID that can be passed to
-	* {@link PhoneAuthProvider.credential} to identify this flow.
-	*/
-	verifyPhoneNumber(phoneOptions, applicationVerifier) {
-		return _verifyPhoneNumber(this.auth, phoneOptions, getModularInstance(applicationVerifier));
-	}
-	/**
-	* Creates a phone auth credential, given the verification ID from
-	* {@link PhoneAuthProvider.verifyPhoneNumber} and the code that was sent to the user's
-	* mobile device.
-	*
-	* @example
-	* ```javascript
-	* const provider = new PhoneAuthProvider(auth);
-	* const verificationId = provider.verifyPhoneNumber(phoneNumber, applicationVerifier);
-	* // Obtain verificationCode from the user.
-	* const authCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
-	* const userCredential = signInWithCredential(auth, authCredential);
-	* ```
-	*
-	* @example
-	* An alternative flow is provided using the `signInWithPhoneNumber` method.
-	* ```javascript
-	* const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, applicationVerifier);
-	* // Obtain verificationCode from the user.
-	* const userCredential = await confirmationResult.confirm(verificationCode);
-	* ```
-	*
-	* @param verificationId - The verification ID returned from {@link PhoneAuthProvider.verifyPhoneNumber}.
-	* @param verificationCode - The verification code sent to the user's mobile device.
-	*
-	* @returns The auth provider credential.
-	*/
-	static credential(verificationId, verificationCode) {
-		return PhoneAuthCredential._fromVerification(verificationId, verificationCode);
-	}
-	/**
-	* Generates an {@link AuthCredential} from a {@link UserCredential}.
-	* @param userCredential - The user credential.
-	*/
-	static credentialFromResult(userCredential) {
-		const credential = userCredential;
-		return PhoneAuthProvider.credentialFromTaggedObject(credential);
-	}
-	/**
-	* Returns an {@link AuthCredential} when passed an error.
-	*
-	* @remarks
-	*
-	* This method works for errors like
-	* `auth/account-exists-with-different-credentials`. This is useful for
-	* recovering when attempting to set a user's phone number but the number
-	* in question is already tied to another account. For example, the following
-	* code tries to update the current user's phone number, and if that
-	* fails, links the user with the account associated with that number:
-	*
-	* ```js
-	* const provider = new PhoneAuthProvider(auth);
-	* const verificationId = await provider.verifyPhoneNumber(number, verifier);
-	* try {
-	*   const code = ''; // Prompt the user for the verification code
-	*   await updatePhoneNumber(
-	*       auth.currentUser,
-	*       PhoneAuthProvider.credential(verificationId, code));
-	* } catch (e) {
-	*   if ((e as FirebaseError)?.code === 'auth/account-exists-with-different-credential') {
-	*     const cred = PhoneAuthProvider.credentialFromError(e);
-	*     await linkWithCredential(auth.currentUser, cred);
-	*   }
-	* }
-	*
-	* // At this point, auth.currentUser.phoneNumber === number.
-	* ```
-	*
-	* @param error - The error to generate a credential from.
-	*/
-	static credentialFromError(error) {
-		return PhoneAuthProvider.credentialFromTaggedObject(error.customData || {});
-	}
-	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
-		if (!tokenResponse) return null;
-		const { phoneNumber, temporaryProof } = tokenResponse;
-		if (phoneNumber && temporaryProof) return PhoneAuthCredential._fromTokenResponse(phoneNumber, temporaryProof);
-		return null;
-	}
-};
-/** Always set to {@link ProviderId}.PHONE. */
-PhoneAuthProvider.PROVIDER_ID = "phone";
-/** Always set to {@link SignInMethod}.PHONE. */
-PhoneAuthProvider.PHONE_SIGN_IN_METHOD = "phone";
-/**
-* @license
-* Copyright 2021 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Chooses a popup/redirect resolver to use. This prefers the override (which
-* is directly passed in), and falls back to the property set on the auth
-* object. If neither are available, this function errors w/ an argument error.
-*/
-function _withDefaultResolver(auth, resolverOverride) {
-	if (resolverOverride) return _getInstance(resolverOverride);
-	_assert(auth._popupRedirectResolver, auth, "argument-error");
-	return auth._popupRedirectResolver;
-}
-/**
-* @license
-* Copyright 2019 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var IdpCredential = class extends AuthCredential {
-	constructor(params) {
-		super("custom", "custom");
-		this.params = params;
-	}
-	_getIdTokenResponse(auth) {
-		return signInWithIdp(auth, this._buildIdpRequest());
-	}
-	_linkToIdToken(auth, idToken) {
-		return signInWithIdp(auth, this._buildIdpRequest(idToken));
-	}
-	_getReauthenticationResolver(auth) {
-		return signInWithIdp(auth, this._buildIdpRequest());
-	}
-	_buildIdpRequest(idToken) {
-		const request = {
-			requestUri: this.params.requestUri,
-			sessionId: this.params.sessionId,
-			postBody: this.params.postBody,
-			tenantId: this.params.tenantId,
-			pendingToken: this.params.pendingToken,
-			returnSecureToken: true,
-			returnIdpCredential: true
-		};
-		if (idToken) request.idToken = idToken;
-		return request;
-	}
-};
-function _signIn(params) {
-	return _signInWithCredential(params.auth, new IdpCredential(params), params.bypassAuthState);
-}
-function _reauth(params) {
-	const { auth, user } = params;
-	_assert(user, auth, "internal-error");
-	return _reauthenticate(user, new IdpCredential(params), params.bypassAuthState);
-}
-async function _link(params) {
-	const { auth, user } = params;
-	_assert(user, auth, "internal-error");
-	return _link$1(user, new IdpCredential(params), params.bypassAuthState);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* Popup event manager. Handles the popup's entire lifecycle; listens to auth
-* events
-*/
-var AbstractPopupRedirectOperation = class {
-	constructor(auth, filter, resolver, user, bypassAuthState = false) {
-		this.auth = auth;
-		this.resolver = resolver;
-		this.user = user;
-		this.bypassAuthState = bypassAuthState;
-		this.pendingPromise = null;
-		this.eventManager = null;
-		this.filter = Array.isArray(filter) ? filter : [filter];
-	}
-	execute() {
-		return new Promise(async (resolve, reject) => {
-			this.pendingPromise = {
-				resolve,
-				reject
-			};
-			try {
-				this.eventManager = await this.resolver._initialize(this.auth);
-				if (!this.pendingPromise) return;
-				await this.onExecution();
-				if (!this.pendingPromise) return;
-				this.eventManager.registerConsumer(this);
-			} catch (e) {
-				if (this.pendingPromise) this.reject(e);
-			}
-		});
-	}
-	async onAuthEvent(event) {
-		if (!this.pendingPromise) return;
-		const { urlResponse, sessionId, postBody, tenantId, error, type } = event;
-		if (error) {
-			this.reject(error);
-			return;
-		}
-		const params = {
-			auth: this.auth,
-			requestUri: urlResponse,
-			sessionId,
-			tenantId: tenantId || void 0,
-			postBody: postBody || void 0,
-			user: this.user,
-			bypassAuthState: this.bypassAuthState
-		};
-		try {
-			this.resolve(await this.getIdpTask(type)(params));
-		} catch (e) {
-			this.reject(e);
-		}
-	}
-	onError(error) {
-		this.reject(error);
-	}
-	getIdpTask(type) {
-		switch (type) {
-			case "signInViaPopup":
-			case "signInViaRedirect": return _signIn;
-			case "linkViaPopup":
-			case "linkViaRedirect": return _link;
-			case "reauthViaPopup":
-			case "reauthViaRedirect": return _reauth;
-			default: _fail(this.auth, "internal-error");
-		}
-	}
-	resolve(cred) {
-		debugAssert(this.pendingPromise, "Pending promise was never set");
-		this.pendingPromise.resolve(cred);
-		this.unregisterAndCleanUp();
-	}
-	reject(error) {
-		debugAssert(this.pendingPromise, "Pending promise was never set");
-		this.pendingPromise.reject(error);
-		this.unregisterAndCleanUp();
-	}
-	unregisterAndCleanUp() {
-		if (this.eventManager) this.eventManager.unregisterConsumer(this);
-		this.pendingPromise = null;
-		this.cleanUp();
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var _POLL_WINDOW_CLOSE_TIMEOUT = new Delay(2e3, 1e4);
-/**
-* Authenticates a Firebase client using a popup-based OAuth authentication flow.
-*
-* @remarks
-* If succeeds, returns the signed in user along with the provider's credential. If sign in was
-* unsuccessful, returns an error object containing additional information about the error.
-*
-* This method does not work in a Node.js environment or with {@link Auth} instances created with a
-* {@link @firebase/app#FirebaseServerApp}.
-*
-* @example
-* ```javascript
-* // Sign in using a popup.
-* const provider = new FacebookAuthProvider();
-* const result = await signInWithPopup(auth, provider);
-*
-* // The signed-in user info.
-* const user = result.user;
-* // This gives you a Facebook Access Token.
-* const credential = provider.credentialFromResult(auth, result);
-* const token = credential.accessToken;
-* ```
-*
-* @param auth - The {@link Auth} instance.
-* @param provider - The provider to authenticate. The provider has to be an {@link OAuthProvider}.
-* Non-OAuth providers like {@link EmailAuthProvider} will throw an error.
-* @param resolver - An instance of {@link PopupRedirectResolver}, optional
-* if already supplied to {@link initializeAuth} or provided by {@link getAuth}.
-*
-* @public
-*/
-async function signInWithPopup(auth, provider, resolver) {
-	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_createError(auth, "operation-not-supported-in-this-environment"));
-	const authInternal = _castAuth(auth);
-	_assertInstanceOf(auth, provider, FederatedAuthProvider);
-	return new PopupOperation(authInternal, "signInViaPopup", provider, _withDefaultResolver(authInternal, resolver)).executeNotNull();
-}
-/**
-* Popup event manager. Handles the popup's entire lifecycle; listens to auth
-* events
-*
-*/
-var PopupOperation = class PopupOperation extends AbstractPopupRedirectOperation {
-	constructor(auth, filter, provider, resolver, user) {
-		super(auth, filter, resolver, user);
-		this.provider = provider;
-		this.authWindow = null;
-		this.pollId = null;
-		if (PopupOperation.currentPopupAction) PopupOperation.currentPopupAction.cancel();
-		PopupOperation.currentPopupAction = this;
-	}
-	async executeNotNull() {
-		const result = await this.execute();
-		_assert(result, this.auth, "internal-error");
-		return result;
-	}
-	async onExecution() {
-		debugAssert(this.filter.length === 1, "Popup operations only handle one event");
-		const eventId = _generateEventId();
-		this.authWindow = await this.resolver._openPopup(this.auth, this.provider, this.filter[0], eventId);
-		this.authWindow.associatedEvent = eventId;
-		this.resolver._originValidation(this.auth).catch((e) => {
-			this.reject(e);
-		});
-		this.resolver._isIframeWebStorageSupported(this.auth, (isSupported) => {
-			if (!isSupported) this.reject(_createError(this.auth, "web-storage-unsupported"));
-		});
-		this.pollUserCancellation();
-	}
-	get eventId() {
-		return this.authWindow?.associatedEvent || null;
-	}
-	cancel() {
-		this.reject(_createError(this.auth, "cancelled-popup-request"));
-	}
-	cleanUp() {
-		if (this.authWindow) this.authWindow.close();
-		if (this.pollId) window.clearTimeout(this.pollId);
-		this.authWindow = null;
-		this.pollId = null;
-		PopupOperation.currentPopupAction = null;
-	}
-	pollUserCancellation() {
-		const poll = () => {
-			if (this.authWindow?.window?.closed) {
-				this.pollId = window.setTimeout(() => {
-					this.pollId = null;
-					this.reject(_createError(this.auth, "popup-closed-by-user"));
-				}, 8e3);
-				return;
-			}
-			this.pollId = window.setTimeout(poll, _POLL_WINDOW_CLOSE_TIMEOUT.get());
-		};
-		poll();
-	}
-};
-PopupOperation.currentPopupAction = null;
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var PENDING_REDIRECT_KEY = "pendingRedirect";
-var redirectOutcomeMap = /* @__PURE__ */ new Map();
-var RedirectAction = class extends AbstractPopupRedirectOperation {
-	constructor(auth, resolver, bypassAuthState = false) {
-		super(auth, [
-			"signInViaRedirect",
-			"linkViaRedirect",
-			"reauthViaRedirect",
-			"unknown"
-		], resolver, void 0, bypassAuthState);
-		this.eventId = null;
-	}
-	/**
-	* Override the execute function; if we already have a redirect result, then
-	* just return it.
-	*/
-	async execute() {
-		let readyOutcome = redirectOutcomeMap.get(this.auth._key());
-		if (!readyOutcome) {
-			try {
-				const result = await _getAndClearPendingRedirectStatus(this.resolver, this.auth) ? await super.execute() : null;
-				readyOutcome = () => Promise.resolve(result);
-			} catch (e) {
-				readyOutcome = () => Promise.reject(e);
-			}
-			redirectOutcomeMap.set(this.auth._key(), readyOutcome);
-		}
-		if (!this.bypassAuthState) redirectOutcomeMap.set(this.auth._key(), () => Promise.resolve(null));
-		return readyOutcome();
-	}
-	async onAuthEvent(event) {
-		if (event.type === "signInViaRedirect") return super.onAuthEvent(event);
-		else if (event.type === "unknown") {
-			this.resolve(null);
-			return;
-		}
-		if (event.eventId) {
-			const user = await this.auth._redirectUserForId(event.eventId);
-			if (user) {
-				this.user = user;
-				return super.onAuthEvent(event);
-			} else this.resolve(null);
-		}
-	}
-	async onExecution() {}
-	cleanUp() {}
-};
-async function _getAndClearPendingRedirectStatus(resolver, auth) {
-	const key = pendingRedirectKey(auth);
-	const persistence = resolverPersistence(resolver);
-	if (!await persistence._isAvailable()) return false;
-	const hasPendingRedirect = await persistence._get(key) === "true";
-	await persistence._remove(key);
-	return hasPendingRedirect;
-}
-function _overrideRedirectResult(auth, result) {
-	redirectOutcomeMap.set(auth._key(), result);
-}
-function resolverPersistence(resolver) {
-	return _getInstance(resolver._redirectPersistence);
-}
-function pendingRedirectKey(auth) {
-	return _persistenceKeyName(PENDING_REDIRECT_KEY, auth.config.apiKey, auth.name);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _getRedirectResult(auth, resolverExtern, bypassAuthState = false) {
-	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
-	const authInternal = _castAuth(auth);
-	const result = await new RedirectAction(authInternal, _withDefaultResolver(authInternal, resolverExtern), bypassAuthState).execute();
-	if (result && !bypassAuthState) {
-		delete result.user._redirectEventId;
-		await authInternal._persistUserIfCurrent(result.user);
-		await authInternal._setRedirectUser(null, resolverExtern);
-	}
-	return result;
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var EVENT_DUPLICATION_CACHE_DURATION_MS = 6e5;
-var AuthEventManager = class {
-	constructor(auth) {
-		this.auth = auth;
-		this.cachedEventUids = /* @__PURE__ */ new Set();
-		this.consumers = /* @__PURE__ */ new Set();
-		this.queuedRedirectEvent = null;
-		this.hasHandledPotentialRedirect = false;
-		this.lastProcessedEventTime = Date.now();
-	}
-	registerConsumer(authEventConsumer) {
-		this.consumers.add(authEventConsumer);
-		if (this.queuedRedirectEvent && this.isEventForConsumer(this.queuedRedirectEvent, authEventConsumer)) {
-			this.sendToConsumer(this.queuedRedirectEvent, authEventConsumer);
-			this.saveEventToCache(this.queuedRedirectEvent);
-			this.queuedRedirectEvent = null;
-		}
-	}
-	unregisterConsumer(authEventConsumer) {
-		this.consumers.delete(authEventConsumer);
-	}
-	onEvent(event) {
-		if (this.hasEventBeenHandled(event)) return false;
-		let handled = false;
-		this.consumers.forEach((consumer) => {
-			if (this.isEventForConsumer(event, consumer)) {
-				handled = true;
-				this.sendToConsumer(event, consumer);
-				this.saveEventToCache(event);
-			}
-		});
-		if (this.hasHandledPotentialRedirect || !isRedirectEvent(event)) return handled;
-		this.hasHandledPotentialRedirect = true;
-		if (!handled) {
-			this.queuedRedirectEvent = event;
-			handled = true;
-		}
-		return handled;
-	}
-	sendToConsumer(event, consumer) {
-		if (event.error && !isNullRedirectEvent(event)) {
-			const code = event.error.code?.split("auth/")[1] || "internal-error";
-			consumer.onError(_createError(this.auth, code));
-		} else consumer.onAuthEvent(event);
-	}
-	isEventForConsumer(event, consumer) {
-		const eventIdMatches = consumer.eventId === null || !!event.eventId && event.eventId === consumer.eventId;
-		return consumer.filter.includes(event.type) && eventIdMatches;
-	}
-	hasEventBeenHandled(event) {
-		if (Date.now() - this.lastProcessedEventTime >= EVENT_DUPLICATION_CACHE_DURATION_MS) this.cachedEventUids.clear();
-		return this.cachedEventUids.has(eventUid(event));
-	}
-	saveEventToCache(event) {
-		this.cachedEventUids.add(eventUid(event));
-		this.lastProcessedEventTime = Date.now();
-	}
-};
-function eventUid(e) {
-	return [
-		e.type,
-		e.eventId,
-		e.sessionId,
-		e.tenantId
-	].filter((v) => v).join("-");
-}
-function isNullRedirectEvent({ type, error }) {
-	return type === "unknown" && error?.code === `auth/no-auth-event`;
-}
-function isRedirectEvent(event) {
-	switch (event.type) {
-		case "signInViaRedirect":
-		case "linkViaRedirect":
-		case "reauthViaRedirect": return true;
-		case "unknown": return isNullRedirectEvent(event);
-		default: return false;
-	}
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-async function _getProjectConfig(auth, request = {}) {
-	return _performApiRequest(auth, "GET", "/v1/projects", request);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var IP_ADDRESS_REGEX = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-var HTTP_REGEX = /^https?/;
-async function _validateOrigin(auth) {
-	if (auth.config.emulator) return;
-	const { authorizedDomains } = await _getProjectConfig(auth);
-	for (const domain of authorizedDomains) try {
-		if (matchDomain(domain)) return;
-	} catch {}
-	_fail(auth, "unauthorized-domain");
-}
-function matchDomain(expected) {
-	const currentUrl = _getCurrentUrl();
-	const { protocol, hostname } = new URL(currentUrl);
-	if (expected.startsWith("chrome-extension://")) {
-		const ceUrl = new URL(expected);
-		if (ceUrl.hostname === "" && hostname === "") return protocol === "chrome-extension:" && expected.replace("chrome-extension://", "") === currentUrl.replace("chrome-extension://", "");
-		return protocol === "chrome-extension:" && ceUrl.hostname === hostname;
-	}
-	if (!HTTP_REGEX.test(protocol)) return false;
-	if (IP_ADDRESS_REGEX.test(expected)) return hostname === expected;
-	const escapedDomainPattern = expected.replace(/\./g, "\\.");
-	return new RegExp("^(.+\\." + escapedDomainPattern + "|" + escapedDomainPattern + ")$", "i").test(hostname);
-}
-/**
-* @license
-* Copyright 2020 Google LLC.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var NETWORK_TIMEOUT = new Delay(3e4, 6e4);
-/**
-* Reset unloaded GApi modules. If gapi.load fails due to a network error,
-* it will stop working after a retrial. This is a hack to fix this issue.
-*/
-function resetUnloadedGapiModules() {
-	const beacon = _window().___jsl;
-	if (beacon?.H) for (const hint of Object.keys(beacon.H)) {
-		beacon.H[hint].r = beacon.H[hint].r || [];
-		beacon.H[hint].L = beacon.H[hint].L || [];
-		beacon.H[hint].r = [...beacon.H[hint].L];
-		if (beacon.CP) for (let i = 0; i < beacon.CP.length; i++) beacon.CP[i] = null;
-	}
-}
-function loadGapi(auth) {
-	return new Promise((resolve, reject) => {
-		function loadGapiIframe() {
-			resetUnloadedGapiModules();
-			gapi.load("gapi.iframes", {
-				callback: () => {
-					resolve(gapi.iframes.getContext());
-				},
-				ontimeout: () => {
-					resetUnloadedGapiModules();
-					reject(_createError(auth, "network-request-failed"));
-				},
-				timeout: NETWORK_TIMEOUT.get()
-			});
-		}
-		if (_window().gapi?.iframes?.Iframe) resolve(gapi.iframes.getContext());
-		else if (!!_window().gapi?.load) loadGapiIframe();
-		else {
-			const cbName = _generateCallbackName("iframefcb");
-			_window()[cbName] = () => {
-				if (!!gapi.load) loadGapiIframe();
-				else reject(_createError(auth, "network-request-failed"));
-			};
-			return _loadJS(`${_gapiScriptUrl()}?onload=${cbName}`).catch((e) => reject(e));
-		}
-	}).catch((error) => {
-		cachedGApiLoader = null;
-		throw error;
-	});
-}
-var cachedGApiLoader = null;
-function _loadGapi(auth) {
-	cachedGApiLoader = cachedGApiLoader || loadGapi(auth);
-	return cachedGApiLoader;
-}
-/**
-* @license
-* Copyright 2020 Google LLC.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var PING_TIMEOUT = new Delay(5e3, 15e3);
-var IFRAME_PATH = "__/auth/iframe";
-var EMULATED_IFRAME_PATH = "emulator/auth/iframe";
-var IFRAME_ATTRIBUTES = {
-	style: {
-		position: "absolute",
-		top: "-100px",
-		width: "1px",
-		height: "1px"
-	},
-	"aria-hidden": "true",
-	tabindex: "-1"
-};
-var EID_FROM_APIHOST = /* @__PURE__ */ new Map([
-	["identitytoolkit.googleapis.com", "p"],
-	["staging-identitytoolkit.sandbox.googleapis.com", "s"],
-	["test-identitytoolkit.sandbox.googleapis.com", "t"]
-]);
-function getIframeUrl(auth) {
-	const config = auth.config;
-	_assert(config.authDomain, auth, "auth-domain-config-required");
-	const url = config.emulator ? _emulatorUrl(config, EMULATED_IFRAME_PATH) : `https://${auth.config.authDomain}/${IFRAME_PATH}`;
-	const params = {
-		apiKey: config.apiKey,
-		appName: auth.name,
-		v: SDK_VERSION
-	};
-	const eid = EID_FROM_APIHOST.get(auth.config.apiHost);
-	if (eid) params.eid = eid;
-	const frameworks = auth._getFrameworks();
-	if (frameworks.length) params.fw = frameworks.join(",");
-	return `${url}?${querystring(params).slice(1)}`;
-}
-async function _openIframe(auth) {
-	const context = await _loadGapi(auth);
-	const gapi = _window().gapi;
-	_assert(gapi, auth, "internal-error");
-	return context.open({
-		where: document.body,
-		url: getIframeUrl(auth),
-		messageHandlersFilter: gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER,
-		attributes: IFRAME_ATTRIBUTES,
-		dontclear: true
-	}, (iframe) => new Promise(async (resolve, reject) => {
-		await iframe.restyle({ setHideOnLeave: false });
-		const networkError = _createError(auth, "network-request-failed");
-		const networkErrorTimer = _window().setTimeout(() => {
-			reject(networkError);
-		}, PING_TIMEOUT.get());
-		function clearTimerAndResolve() {
-			_window().clearTimeout(networkErrorTimer);
-			resolve(iframe);
-		}
-		iframe.ping(clearTimerAndResolve).then(clearTimerAndResolve, () => {
-			reject(networkError);
-		});
-	}));
-}
-/**
-* @license
-* Copyright 2020 Google LLC.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var BASE_POPUP_OPTIONS = {
-	location: "yes",
-	resizable: "yes",
-	statusbar: "yes",
-	toolbar: "no"
-};
-var DEFAULT_WIDTH = 500;
-var DEFAULT_HEIGHT = 600;
-var TARGET_BLANK = "_blank";
-var FIREFOX_EMPTY_URL = "http://localhost";
-var AuthPopup = class {
-	constructor(window) {
-		this.window = window;
-		this.associatedEvent = null;
-	}
-	close() {
-		if (this.window) try {
-			this.window.close();
-		} catch (e) {}
-	}
-};
-function _open(auth, url, name, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
-	const top = Math.max((window.screen.availHeight - height) / 2, 0).toString();
-	const left = Math.max((window.screen.availWidth - width) / 2, 0).toString();
-	let target = "";
-	const options = {
-		...BASE_POPUP_OPTIONS,
-		width: width.toString(),
-		height: height.toString(),
-		top,
-		left
-	};
-	const ua = getUA().toLowerCase();
-	if (name) target = _isChromeIOS(ua) ? TARGET_BLANK : name;
-	if (_isFirefox(ua)) {
-		url = url || FIREFOX_EMPTY_URL;
-		options.scrollbars = "yes";
-	}
-	const optionsString = Object.entries(options).reduce((accum, [key, value]) => `${accum}${key}=${value},`, "");
-	if (_isIOSStandalone(ua) && target !== "_self") {
-		openAsNewWindowIOS(url || "", target);
-		return new AuthPopup(null);
-	}
-	const newWin = window.open(url || "", target, optionsString);
-	_assert(newWin, auth, "popup-blocked");
-	try {
-		newWin.focus();
-	} catch (e) {}
-	return new AuthPopup(newWin);
-}
-function openAsNewWindowIOS(url, target) {
-	const el = document.createElement("a");
-	el.href = url;
-	el.target = target;
-	const click = document.createEvent("MouseEvent");
-	click.initMouseEvent("click", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 1, null);
-	el.dispatchEvent(click);
-}
-/**
-* @license
-* Copyright 2021 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* URL for Authentication widget which will initiate the OAuth handshake
-*
-* @internal
-*/
-var WIDGET_PATH = "__/auth/handler";
-/**
-* URL for emulated environment
-*
-* @internal
-*/
-var EMULATOR_WIDGET_PATH = "emulator/auth/handler";
-/**
-* Fragment name for the App Check token that gets passed to the widget
-*
-* @internal
-*/
-var FIREBASE_APP_CHECK_FRAGMENT_ID = encodeURIComponent("fac");
-async function _getRedirectUrl(auth, provider, authType, redirectUrl, eventId, additionalParams) {
-	_assert(auth.config.authDomain, auth, "auth-domain-config-required");
-	_assert(auth.config.apiKey, auth, "invalid-api-key");
-	const params = {
-		apiKey: auth.config.apiKey,
-		appName: auth.name,
-		authType,
-		redirectUrl,
-		v: SDK_VERSION,
-		eventId
-	};
-	if (provider instanceof FederatedAuthProvider) {
-		provider.setDefaultLanguage(auth.languageCode);
-		params.providerId = provider.providerId || "";
-		if (!isEmpty$1(provider.getCustomParameters())) params.customParameters = JSON.stringify(provider.getCustomParameters());
-		for (const [key, value] of Object.entries(additionalParams || {})) params[key] = value;
-	}
-	if (provider instanceof BaseOAuthProvider) {
-		const scopes = provider.getScopes().filter((scope) => scope !== "");
-		if (scopes.length > 0) params.scopes = scopes.join(",");
-	}
-	if (auth.tenantId) params.tid = auth.tenantId;
-	const paramsDict = params;
-	for (const key of Object.keys(paramsDict)) if (paramsDict[key] === void 0) delete paramsDict[key];
-	const appCheckToken = await auth._getAppCheckToken();
-	const appCheckTokenFragment = appCheckToken ? `#${FIREBASE_APP_CHECK_FRAGMENT_ID}=${encodeURIComponent(appCheckToken)}` : "";
-	return `${getHandlerBase(auth)}?${querystring(paramsDict).slice(1)}${appCheckTokenFragment}`;
-}
-function getHandlerBase({ config }) {
-	if (!config.emulator) return `https://${config.authDomain}/${WIDGET_PATH}`;
-	return _emulatorUrl(config, EMULATOR_WIDGET_PATH);
-}
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-/**
-* The special web storage event
-*
-*/
-var WEB_STORAGE_SUPPORT_KEY = "webStorageSupport";
-var BrowserPopupRedirectResolver = class {
-	constructor() {
-		this.eventManagers = {};
-		this.iframes = {};
-		this.originValidationPromises = {};
-		this._redirectPersistence = browserSessionPersistence;
-		this._completeRedirectFn = _getRedirectResult;
-		this._overrideRedirectResult = _overrideRedirectResult;
-	}
-	async _openPopup(auth, provider, authType, eventId) {
-		debugAssert(this.eventManagers[auth._key()]?.manager, "_initialize() not called before _openPopup()");
-		return _open(auth, await _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId), _generateEventId());
-	}
-	async _openRedirect(auth, provider, authType, eventId) {
-		await this._originValidation(auth);
-		_setWindowLocation(await _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId));
-		return new Promise(() => {});
-	}
-	_initialize(auth) {
-		const key = auth._key();
-		if (this.eventManagers[key]) {
-			const { manager, promise } = this.eventManagers[key];
-			if (manager) return Promise.resolve(manager);
-			else {
-				debugAssert(promise, "If manager is not set, promise should be");
-				return promise;
-			}
-		}
-		const promise = this.initAndGetManager(auth);
-		this.eventManagers[key] = { promise };
-		promise.catch(() => {
-			delete this.eventManagers[key];
-		});
-		return promise;
-	}
-	async initAndGetManager(auth) {
-		const iframe = await _openIframe(auth);
-		const manager = new AuthEventManager(auth);
-		iframe.register("authEvent", (iframeEvent) => {
-			_assert(iframeEvent?.authEvent, auth, "invalid-auth-event");
-			return { status: manager.onEvent(iframeEvent.authEvent) ? "ACK" : "ERROR" };
-		}, gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER);
-		this.eventManagers[auth._key()] = { manager };
-		this.iframes[auth._key()] = iframe;
-		return manager;
-	}
-	_isIframeWebStorageSupported(auth, cb) {
-		this.iframes[auth._key()].send(WEB_STORAGE_SUPPORT_KEY, { type: WEB_STORAGE_SUPPORT_KEY }, (result) => {
-			const isSupported = result?.[0]?.[WEB_STORAGE_SUPPORT_KEY];
-			if (isSupported !== void 0) cb(!!isSupported);
-			_fail(auth, "internal-error");
-		}, gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER);
-	}
-	_originValidation(auth) {
-		const key = auth._key();
-		if (!this.originValidationPromises[key]) this.originValidationPromises[key] = _validateOrigin(auth);
-		return this.originValidationPromises[key];
-	}
-	get _shouldInitProactively() {
-		return _isMobileBrowser() || _isSafari() || _isIOS();
-	}
-};
-/**
-* An implementation of {@link PopupRedirectResolver} suitable for browser
-* based applications.
-*
-* @remarks
-* This method does not work in a Node.js environment.
-*
-* @public
-*/
-var browserPopupRedirectResolver = BrowserPopupRedirectResolver;
-var MultiFactorAssertionImpl = class {
-	constructor(factorId) {
-		this.factorId = factorId;
-	}
-	_process(auth, session, displayName) {
-		switch (session.type) {
-			case "enroll": return this._finalizeEnroll(auth, session.credential, displayName);
-			case "signin": return this._finalizeSignIn(auth, session.credential);
-			default: return debugFail("unexpected MultiFactorSessionType");
-		}
-	}
-};
-/**
-* {@inheritdoc PhoneMultiFactorAssertion}
-*
-* @public
-*/
-var PhoneMultiFactorAssertionImpl = class PhoneMultiFactorAssertionImpl extends MultiFactorAssertionImpl {
-	constructor(credential) {
-		super("phone");
-		this.credential = credential;
-	}
-	/** @internal */
-	static _fromCredential(credential) {
-		return new PhoneMultiFactorAssertionImpl(credential);
-	}
-	/** @internal */
-	_finalizeEnroll(auth, idToken, displayName) {
-		return finalizeEnrollPhoneMfa(auth, {
-			idToken,
-			displayName,
-			phoneVerificationInfo: this.credential._makeVerificationRequest()
-		});
-	}
-	/** @internal */
-	_finalizeSignIn(auth, mfaPendingCredential) {
-		return finalizeSignInPhoneMfa(auth, {
-			mfaPendingCredential,
-			phoneVerificationInfo: this.credential._makeVerificationRequest()
-		});
-	}
-};
-/**
-* Provider for generating a {@link PhoneMultiFactorAssertion}.
-*
-* @public
-*/
-var PhoneMultiFactorGenerator = class {
-	constructor() {}
-	/**
-	* Provides a {@link PhoneMultiFactorAssertion} to confirm ownership of the phone second factor.
-	*
-	* @remarks
-	* This method does not work in a Node.js environment.
-	*
-	* @param phoneAuthCredential - A credential provided by {@link PhoneAuthProvider.credential}.
-	* @returns A {@link PhoneMultiFactorAssertion} which can be used with
-	* {@link MultiFactorResolver.resolveSignIn}
-	*/
-	static assertion(credential) {
-		return PhoneMultiFactorAssertionImpl._fromCredential(credential);
-	}
-};
-/**
-* The identifier of the phone second factor: `phone`.
-*/
-PhoneMultiFactorGenerator.FACTOR_ID = "phone";
-/**
-* Provider for generating a {@link TotpMultiFactorAssertion}.
-*
-* @public
-*/
-var TotpMultiFactorGenerator = class {
-	/**
-	* Provides a {@link TotpMultiFactorAssertion} to confirm ownership of
-	* the TOTP (time-based one-time password) second factor.
-	* This assertion is used to complete enrollment in TOTP second factor.
-	*
-	* @param secret A {@link TotpSecret} containing the shared secret key and other TOTP parameters.
-	* @param oneTimePassword One-time password from TOTP App.
-	* @returns A {@link TotpMultiFactorAssertion} which can be used with
-	* {@link MultiFactorUser.enroll}.
-	*/
-	static assertionForEnrollment(secret, oneTimePassword) {
-		return TotpMultiFactorAssertionImpl._fromSecret(secret, oneTimePassword);
-	}
-	/**
-	* Provides a {@link TotpMultiFactorAssertion} to confirm ownership of the TOTP second factor.
-	* This assertion is used to complete signIn with TOTP as the second factor.
-	*
-	* @param enrollmentId identifies the enrolled TOTP second factor.
-	* @param oneTimePassword One-time password from TOTP App.
-	* @returns A {@link TotpMultiFactorAssertion} which can be used with
-	* {@link MultiFactorResolver.resolveSignIn}.
-	*/
-	static assertionForSignIn(enrollmentId, oneTimePassword) {
-		return TotpMultiFactorAssertionImpl._fromEnrollmentId(enrollmentId, oneTimePassword);
-	}
-	/**
-	* Returns a promise to {@link TotpSecret} which contains the TOTP shared secret key and other parameters.
-	* Creates a TOTP secret as part of enrolling a TOTP second factor.
-	* Used for generating a QR code URL or inputting into a TOTP app.
-	* This method uses the auth instance corresponding to the user in the multiFactorSession.
-	*
-	* @param session The {@link MultiFactorSession} that the user is part of.
-	* @returns A promise to {@link TotpSecret}.
-	*/
-	static async generateSecret(session) {
-		const mfaSession = session;
-		_assert(typeof mfaSession.user?.auth !== "undefined", "internal-error");
-		const response = await startEnrollTotpMfa(mfaSession.user.auth, {
-			idToken: mfaSession.credential,
-			totpEnrollmentInfo: {}
-		});
-		return TotpSecret._fromStartTotpMfaEnrollmentResponse(response, mfaSession.user.auth);
-	}
-};
-/**
-* The identifier of the TOTP second factor: `totp`.
-*/
-TotpMultiFactorGenerator.FACTOR_ID = "totp";
-var TotpMultiFactorAssertionImpl = class TotpMultiFactorAssertionImpl extends MultiFactorAssertionImpl {
-	constructor(otp, enrollmentId, secret) {
-		super("totp");
-		this.otp = otp;
-		this.enrollmentId = enrollmentId;
-		this.secret = secret;
-	}
-	/** @internal */
-	static _fromSecret(secret, otp) {
-		return new TotpMultiFactorAssertionImpl(otp, void 0, secret);
-	}
-	/** @internal */
-	static _fromEnrollmentId(enrollmentId, otp) {
-		return new TotpMultiFactorAssertionImpl(otp, enrollmentId);
-	}
-	/** @internal */
-	async _finalizeEnroll(auth, idToken, displayName) {
-		_assert(typeof this.secret !== "undefined", auth, "argument-error");
-		return finalizeEnrollTotpMfa(auth, {
-			idToken,
-			displayName,
-			totpVerificationInfo: this.secret._makeTotpVerificationInfo(this.otp)
-		});
-	}
-	/** @internal */
-	async _finalizeSignIn(auth, mfaPendingCredential) {
-		_assert(this.enrollmentId !== void 0 && this.otp !== void 0, auth, "argument-error");
-		const totpVerificationInfo = { verificationCode: this.otp };
-		return finalizeSignInTotpMfa(auth, {
-			mfaPendingCredential,
-			mfaEnrollmentId: this.enrollmentId,
-			totpVerificationInfo
-		});
-	}
-};
-/**
-* Provider for generating a {@link TotpMultiFactorAssertion}.
-*
-* Stores the shared secret key and other parameters to generate time-based OTPs.
-* Implements methods to retrieve the shared secret key and generate a QR code URL.
-* @public
-*/
-var TotpSecret = class TotpSecret {
-	constructor(secretKey, hashingAlgorithm, codeLength, codeIntervalSeconds, enrollmentCompletionDeadline, sessionInfo, auth) {
-		this.sessionInfo = sessionInfo;
-		this.auth = auth;
-		this.secretKey = secretKey;
-		this.hashingAlgorithm = hashingAlgorithm;
-		this.codeLength = codeLength;
-		this.codeIntervalSeconds = codeIntervalSeconds;
-		this.enrollmentCompletionDeadline = enrollmentCompletionDeadline;
-	}
-	/** @internal */
-	static _fromStartTotpMfaEnrollmentResponse(response, auth) {
-		return new TotpSecret(response.totpSessionInfo.sharedSecretKey, response.totpSessionInfo.hashingAlgorithm, response.totpSessionInfo.verificationCodeLength, response.totpSessionInfo.periodSec, new Date(response.totpSessionInfo.finalizeEnrollmentTime).toUTCString(), response.totpSessionInfo.sessionInfo, auth);
-	}
-	/** @internal */
-	_makeTotpVerificationInfo(otp) {
-		return {
-			sessionInfo: this.sessionInfo,
-			verificationCode: otp
-		};
-	}
-	/**
-	* Returns a QR code URL as described in
-	* https://github.com/google/google-authenticator/wiki/Key-Uri-Format
-	* This can be displayed to the user as a QR code to be scanned into a TOTP app like Google Authenticator.
-	* If the optional parameters are unspecified, an accountName of <userEmail> and issuer of <firebaseAppName> are used.
-	*
-	* @param accountName the name of the account/app along with a user identifier.
-	* @param issuer issuer of the TOTP (likely the app name).
-	* @returns A QR code URL string.
-	*/
-	generateQrCodeUrl(accountName, issuer) {
-		let useDefaults = false;
-		if (_isEmptyString(accountName) || _isEmptyString(issuer)) useDefaults = true;
-		if (useDefaults) {
-			if (_isEmptyString(accountName)) accountName = this.auth.currentUser?.email || "unknownuser";
-			if (_isEmptyString(issuer)) issuer = this.auth.name;
-		}
-		return `otpauth://totp/${issuer}:${accountName}?secret=${this.secretKey}&issuer=${issuer}&algorithm=${this.hashingAlgorithm}&digits=${this.codeLength}`;
-	}
-};
-/** @internal */
-function _isEmptyString(input) {
-	return typeof input === "undefined" || input?.length === 0;
-}
-var name = "@firebase/auth";
-var version = "1.13.9";
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var AuthInterop = class {
-	constructor(auth) {
-		this.auth = auth;
-		this.internalListeners = /* @__PURE__ */ new Map();
-	}
-	getUid() {
-		this.assertAuthConfigured();
-		return this.auth.currentUser?.uid || null;
-	}
-	async getToken(forceRefresh) {
-		this.assertAuthConfigured();
-		await this.auth._initializationPromise;
-		if (!this.auth.currentUser) return null;
-		return { accessToken: await this.auth.currentUser.getIdToken(forceRefresh) };
-	}
-	addAuthTokenListener(listener) {
-		this.assertAuthConfigured();
-		if (this.internalListeners.has(listener)) return;
-		const unsubscribe = this.auth.onIdTokenChanged((user) => {
-			listener(user?.stsTokenManager.accessToken || null);
-		});
-		this.internalListeners.set(listener, unsubscribe);
-		this.updateProactiveRefresh();
-	}
-	removeAuthTokenListener(listener) {
-		this.assertAuthConfigured();
-		const unsubscribe = this.internalListeners.get(listener);
-		if (!unsubscribe) return;
-		this.internalListeners.delete(listener);
-		unsubscribe();
-		this.updateProactiveRefresh();
-	}
-	assertAuthConfigured() {
-		_assert(this.auth._initializationPromise, "dependent-sdk-initialized-before-auth");
-	}
-	updateProactiveRefresh() {
-		if (this.internalListeners.size > 0) this.auth._startProactiveRefresh();
-		else this.auth._stopProactiveRefresh();
-	}
-};
-/**
-* @license
-* Copyright 2020 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-function getVersionForPlatform(clientPlatform) {
-	switch (clientPlatform) {
-		case "Node": return "node";
-		case "ReactNative": return "rn";
-		case "Worker": return "webworker";
-		case "Cordova": return "cordova";
-		case "WebExtension": return "web-extension";
-		default: return;
-	}
-}
-/** @internal */
-function registerAuth(clientPlatform) {
-	_registerComponent(new Component("auth", (container, { options: deps }) => {
-		const app = container.getProvider("app").getImmediate();
-		const heartbeatServiceProvider = container.getProvider("heartbeat");
-		const appCheckServiceProvider = container.getProvider("app-check-internal");
-		const { apiKey, authDomain } = app.options;
-		_assert(apiKey && !apiKey.includes(":"), "invalid-api-key", { appName: app.name });
-		const authInstance = new AuthImpl(app, heartbeatServiceProvider, appCheckServiceProvider, {
-			apiKey,
-			authDomain,
-			clientPlatform,
-			apiHost: "identitytoolkit.googleapis.com",
-			tokenApiHost: "securetoken.googleapis.com",
-			apiScheme: "https",
-			sdkClientVersion: _getClientVersion(clientPlatform)
-		});
-		_initializeAuthInstance(authInstance, deps);
-		return authInstance;
-	}, "PUBLIC").setInstantiationMode("EXPLICIT").setInstanceCreatedCallback((container, _instanceIdentifier, _instance) => {
-		container.getProvider("auth-internal").initialize();
-	}));
-	_registerComponent(new Component("auth-internal", (container) => {
-		return ((auth) => new AuthInterop(auth))(_castAuth(container.getProvider("auth").getImmediate()));
-	}, "PRIVATE").setInstantiationMode("EXPLICIT"));
-	registerVersion(name, version, getVersionForPlatform(clientPlatform));
-	registerVersion(name, version, "esm2020");
-}
-/**
-* @license
-* Copyright 2021 Google LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-var authIdTokenMaxAge = getExperimentalSetting("authIdTokenMaxAge") || 300;
-var lastPostedIdToken = null;
-var mintCookieFactory = (url) => async (user) => {
-	const idTokenResult = user && await user.getIdTokenResult();
-	const idTokenAge = idTokenResult && ((/* @__PURE__ */ new Date()).getTime() - Date.parse(idTokenResult.issuedAtTime)) / 1e3;
-	if (idTokenAge && idTokenAge > authIdTokenMaxAge) return;
-	const idToken = idTokenResult?.token;
-	if (lastPostedIdToken === idToken) return;
-	lastPostedIdToken = idToken;
-	await fetch(url, {
-		method: idToken ? "POST" : "DELETE",
-		headers: idToken ? { "Authorization": `Bearer ${idToken}` } : {}
-	});
-};
-/**
-* Returns the Auth instance associated with the provided {@link @firebase/app#FirebaseApp}.
-* If no instance exists, initializes an Auth instance with platform-specific default dependencies.
-*
-* @param app - The Firebase App.
-*
-* @public
-*/
-function getAuth(app = getApp()) {
-	const provider = _getProvider(app, "auth");
-	if (provider.isInitialized()) return provider.getImmediate();
-	const auth = initializeAuth(app, {
-		popupRedirectResolver: browserPopupRedirectResolver,
-		persistence: [
-			indexedDBLocalPersistence,
-			browserLocalPersistence,
-			browserSessionPersistence
-		]
-	});
-	const authTokenSyncPath = getExperimentalSetting("authTokenSyncURL");
-	if (authTokenSyncPath && typeof isSecureContext === "boolean" && isSecureContext) {
-		const authTokenSyncUrl = new URL(authTokenSyncPath, location.origin);
-		if (location.origin === authTokenSyncUrl.origin) {
-			const mintCookie = mintCookieFactory(authTokenSyncUrl.toString());
-			beforeAuthStateChanged(auth, mintCookie, () => mintCookie(auth.currentUser));
-			onIdTokenChanged(auth, (user) => mintCookie(user));
-		}
-	}
-	const authEmulatorHost = getDefaultEmulatorHost("auth");
-	if (authEmulatorHost) connectAuthEmulator(auth, `http://${authEmulatorHost}`);
-	return auth;
-}
-function getScriptParentElement() {
-	return document.getElementsByTagName("head")?.[0] ?? document;
-}
-_setExternalJSProvider({
-	loadJS(url) {
-		return new Promise((resolve, reject) => {
-			const el = document.createElement("script");
-			el.setAttribute("src", url);
-			el.onload = resolve;
-			el.onerror = (e) => {
-				const error = _createError("internal-error");
-				error.customData = e;
-				reject(error);
-			};
-			el.type = "text/javascript";
-			el.charset = "UTF-8";
-			getScriptParentElement().appendChild(el);
-		});
-	},
-	gapiScript: "https://apis.google.com/js/api.js",
-	recaptchaV2Script: "https://www.google.com/recaptcha/api.js",
-	recaptchaEnterpriseScript: "https://www.google.com/recaptcha/enterprise.js?render="
-});
-registerAuth("Browser");
 // node_modules/@firebase/webchannel-wrapper/dist/bloom-blob/esm/bloom_blob_es2018.js
 var commonjsGlobal$1 = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 var bloom_blob_es2018 = {};
@@ -53506,6 +46240,16 @@ function getDocs(e) {
 	const t = ra(e.firestore, pa), n = oa(t), r = new ua(t);
 	return __PRIVATE_validateHasExplicitOrderByForLimitToLast(e._query), __PRIVATE_firestoreClientGetDocumentsViaSnapshotListener(n, e._query).then(((n) => new QuerySnapshot(t, r, e, n)));
 }
+/**
+* Executes the query and returns the results as a `QuerySnapshot` from the
+* server. Returns an error if the network is not available.
+*
+* @returns A `Promise` that resolves with the results of the query.
+*/ function getDocsFromServer(e) {
+	e = ra(e, Query);
+	const t = ra(e.firestore, pa), n = oa(t), r = new ua(t);
+	return __PRIVATE_firestoreClientGetDocumentsViaSnapshotListener(n, e._query, { source: "server" }).then(((n) => new QuerySnapshot(t, r, e, n)));
+}
 function setDoc(e, t, n) {
 	e = ra(e, aa);
 	const r = ra(e.firestore, pa), s = __PRIVATE_applyFirestoreDataConverter(e.converter, t, n);
@@ -53689,6 +46433,6919 @@ var Be = "4.19.1";
 		}, s._setSettings(n), s;
 	}), "PUBLIC").setMultipleInstances(true)), registerVersion(qe, Be, s), registerVersion(qe, Be, "esm2020");
 })();
+// node_modules/firebase/app/dist/esm/index.esm.js
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+registerVersion("firebase", "13.2.0", "app");
+// node_modules/@firebase/auth/dist/esm/index-Bz2J43nW.js
+/**
+* @license
+* Copyright 2021 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _prodErrorMap() {
+	return { ["dependent-sdk-initialized-before-auth"]: "Another Firebase SDK was initialized and is trying to use Auth before Auth is initialized. Please be sure to call `initializeAuth` or `getAuth` before starting any other Firebase SDK." };
+}
+/**
+* A minimal error map with all verbose error messages stripped.
+*
+* See discussion at {@link AuthErrorMap}
+*
+* @public
+*/
+var prodErrorMap = _prodErrorMap;
+var _DEFAULT_AUTH_ERROR_FACTORY = new ErrorFactory("auth", "Firebase", _prodErrorMap());
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var logClient = new Logger("@firebase/auth");
+function _logWarn(msg, ...args) {
+	if (logClient.logLevel <= LogLevel.WARN) logClient.warn(`Auth (${SDK_VERSION}): ${msg}`, ...args);
+}
+function _logError(msg, ...args) {
+	if (logClient.logLevel <= LogLevel.ERROR) logClient.error(`Auth (${SDK_VERSION}): ${msg}`, ...args);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _fail(authOrCode, ...rest) {
+	throw createErrorInternal(authOrCode, ...rest);
+}
+function _createError(authOrCode, ...rest) {
+	return createErrorInternal(authOrCode, ...rest);
+}
+function _errorWithCustomMessage(auth, code, message) {
+	return new ErrorFactory("auth", "Firebase", {
+		...prodErrorMap(),
+		[code]: message
+	}).create(code, { appName: auth.name });
+}
+function _serverAppCurrentUserOperationNotSupportedError(auth) {
+	return _errorWithCustomMessage(auth, "operation-not-supported-in-this-environment", "Operations that alter the current user are not supported in conjunction with FirebaseServerApp");
+}
+function _assertInstanceOf(auth, object, instance) {
+	const constructorInstance = instance;
+	if (!(object instanceof constructorInstance)) {
+		if (constructorInstance.name !== object.constructor.name) _fail(auth, "argument-error");
+		throw _errorWithCustomMessage(auth, "argument-error", `Type of ${object.constructor.name} does not match expected instance.Did you pass a reference from a different Auth SDK?`);
+	}
+}
+function createErrorInternal(authOrCode, ...rest) {
+	if (typeof authOrCode !== "string") {
+		const code = rest[0];
+		const fullParams = [...rest.slice(1)];
+		if (fullParams[0]) fullParams[0].appName = authOrCode.name;
+		return authOrCode._errorFactory.create(code, ...fullParams);
+	}
+	return _DEFAULT_AUTH_ERROR_FACTORY.create(authOrCode, ...rest);
+}
+function _assert(assertion, authOrCode, ...rest) {
+	if (!assertion) throw createErrorInternal(authOrCode, ...rest);
+}
+/**
+* Unconditionally fails, throwing an internal error with the given message.
+*
+* @param failure type of failure encountered
+* @throws Error
+*/
+function debugFail(failure) {
+	const message = `INTERNAL ASSERTION FAILED: ` + failure;
+	_logError(message);
+	throw new Error(message);
+}
+/**
+* Fails if the given assertion condition is false, throwing an Error with the
+* given message if it did.
+*
+* @param assertion
+* @param message
+*/
+function debugAssert(assertion, message) {
+	if (!assertion) debugFail(message);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _getCurrentUrl() {
+	return typeof self !== "undefined" && self.location?.href || "";
+}
+function _isHttpOrHttps() {
+	return _getCurrentScheme() === "http:" || _getCurrentScheme() === "https:";
+}
+function _getCurrentScheme() {
+	return typeof self !== "undefined" && self.location?.protocol || null;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Determine whether the browser is working online
+*/
+function _isOnline() {
+	if (typeof navigator !== "undefined" && navigator && "onLine" in navigator && typeof navigator.onLine === "boolean" && (_isHttpOrHttps() || isBrowserExtension() || "connection" in navigator)) return navigator.onLine;
+	return true;
+}
+function _getUserLanguage() {
+	if (typeof navigator === "undefined") return null;
+	const navigatorLanguage = navigator;
+	return navigatorLanguage.languages && navigatorLanguage.languages[0] || navigatorLanguage.language || null;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* A structure to help pick between a range of long and short delay durations
+* depending on the current environment. In general, the long delay is used for
+* mobile environments whereas short delays are used for desktop environments.
+*/
+var Delay = class {
+	constructor(shortDelay, longDelay) {
+		this.shortDelay = shortDelay;
+		this.longDelay = longDelay;
+		debugAssert(longDelay > shortDelay, "Short delay should be less than long delay!");
+		this.isMobile = isMobileCordova() || isReactNative();
+	}
+	get() {
+		if (!_isOnline()) return Math.min(5e3, this.shortDelay);
+		return this.isMobile ? this.longDelay : this.shortDelay;
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _emulatorUrl(config, path) {
+	debugAssert(config.emulator, "Emulator should always be set here");
+	const { url } = config.emulator;
+	if (!path) return url;
+	return `${url}${path.startsWith("/") ? path.slice(1) : path}`;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var FetchProvider = class {
+	static initialize(fetchImpl, headersImpl, responseImpl) {
+		this.fetchImpl = fetchImpl;
+		if (headersImpl) this.headersImpl = headersImpl;
+		if (responseImpl) this.responseImpl = responseImpl;
+	}
+	static fetch() {
+		if (this.fetchImpl) return this.fetchImpl;
+		if (typeof self !== "undefined" && "fetch" in self) return self.fetch;
+		if (typeof globalThis !== "undefined" && globalThis.fetch) return globalThis.fetch;
+		if (typeof fetch !== "undefined") return fetch;
+		debugFail("Could not find fetch implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
+	}
+	static headers() {
+		if (this.headersImpl) return this.headersImpl;
+		if (typeof self !== "undefined" && "Headers" in self) return self.Headers;
+		if (typeof globalThis !== "undefined" && globalThis.Headers) return globalThis.Headers;
+		if (typeof Headers !== "undefined") return Headers;
+		debugFail("Could not find Headers implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
+	}
+	static response() {
+		if (this.responseImpl) return this.responseImpl;
+		if (typeof self !== "undefined" && "Response" in self) return self.Response;
+		if (typeof globalThis !== "undefined" && globalThis.Response) return globalThis.Response;
+		if (typeof Response !== "undefined") return Response;
+		debugFail("Could not find Response implementation, make sure you call FetchProvider.initialize() with an appropriate polyfill");
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Map from errors returned by the server to errors to developer visible errors
+*/
+var SERVER_ERROR_MAP = {
+	["CREDENTIAL_MISMATCH"]: "custom-token-mismatch",
+	["MISSING_CUSTOM_TOKEN"]: "internal-error",
+	["INVALID_IDENTIFIER"]: "invalid-email",
+	["MISSING_CONTINUE_URI"]: "internal-error",
+	["INVALID_PASSWORD"]: "wrong-password",
+	["MISSING_PASSWORD"]: "missing-password",
+	["INVALID_LOGIN_CREDENTIALS"]: "invalid-credential",
+	["EMAIL_EXISTS"]: "email-already-in-use",
+	["PASSWORD_LOGIN_DISABLED"]: "operation-not-allowed",
+	["INVALID_IDP_RESPONSE"]: "invalid-credential",
+	["INVALID_PENDING_TOKEN"]: "invalid-credential",
+	["FEDERATED_USER_ID_ALREADY_LINKED"]: "credential-already-in-use",
+	["MISSING_REQ_TYPE"]: "internal-error",
+	["EMAIL_NOT_FOUND"]: "user-not-found",
+	["RESET_PASSWORD_EXCEED_LIMIT"]: "too-many-requests",
+	["EXPIRED_OOB_CODE"]: "expired-action-code",
+	["INVALID_OOB_CODE"]: "invalid-action-code",
+	["MISSING_OOB_CODE"]: "internal-error",
+	["CREDENTIAL_TOO_OLD_LOGIN_AGAIN"]: "requires-recent-login",
+	["INVALID_ID_TOKEN"]: "invalid-user-token",
+	["TOKEN_EXPIRED"]: "user-token-expired",
+	["USER_NOT_FOUND"]: "user-token-expired",
+	["TOO_MANY_ATTEMPTS_TRY_LATER"]: "too-many-requests",
+	["PASSWORD_DOES_NOT_MEET_REQUIREMENTS"]: "password-does-not-meet-requirements",
+	["INVALID_CODE"]: "invalid-verification-code",
+	["INVALID_SESSION_INFO"]: "invalid-verification-id",
+	["INVALID_TEMPORARY_PROOF"]: "invalid-credential",
+	["MISSING_SESSION_INFO"]: "missing-verification-id",
+	["SESSION_EXPIRED"]: "code-expired",
+	["MISSING_ANDROID_PACKAGE_NAME"]: "missing-android-pkg-name",
+	["UNAUTHORIZED_DOMAIN"]: "unauthorized-continue-uri",
+	["INVALID_OAUTH_CLIENT_ID"]: "invalid-oauth-client-id",
+	["ADMIN_ONLY_OPERATION"]: "admin-restricted-operation",
+	["INVALID_MFA_PENDING_CREDENTIAL"]: "invalid-multi-factor-session",
+	["MFA_ENROLLMENT_NOT_FOUND"]: "multi-factor-info-not-found",
+	["MISSING_MFA_ENROLLMENT_ID"]: "missing-multi-factor-info",
+	["MISSING_MFA_PENDING_CREDENTIAL"]: "missing-multi-factor-session",
+	["SECOND_FACTOR_EXISTS"]: "second-factor-already-in-use",
+	["SECOND_FACTOR_LIMIT_EXCEEDED"]: "maximum-second-factor-count-exceeded",
+	["BLOCKING_FUNCTION_ERROR_RESPONSE"]: "internal-error",
+	["RECAPTCHA_NOT_ENABLED"]: "recaptcha-not-enabled",
+	["MISSING_RECAPTCHA_TOKEN"]: "missing-recaptcha-token",
+	["INVALID_RECAPTCHA_TOKEN"]: "invalid-recaptcha-token",
+	["INVALID_RECAPTCHA_ACTION"]: "invalid-recaptcha-action",
+	["MISSING_CLIENT_TYPE"]: "missing-client-type",
+	["MISSING_RECAPTCHA_VERSION"]: "missing-recaptcha-version",
+	["INVALID_RECAPTCHA_VERSION"]: "invalid-recaptcha-version",
+	["INVALID_REQ_TYPE"]: "invalid-req-type"
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var CookieAuthProxiedEndpoints = [
+	"/v1/accounts:signInWithCustomToken",
+	"/v1/accounts:signInWithEmailLink",
+	"/v1/accounts:signInWithIdp",
+	"/v1/accounts:signInWithPassword",
+	"/v1/accounts:signInWithPhoneNumber",
+	"/v1/token"
+];
+var DEFAULT_API_TIMEOUT_MS = new Delay(3e4, 6e4);
+function _addTidIfNecessary(auth, request) {
+	if (auth.tenantId && !request.tenantId) return {
+		...request,
+		tenantId: auth.tenantId
+	};
+	return request;
+}
+async function _performApiRequest(auth, method, path, request, customErrorMap = {}) {
+	return _performFetchWithErrorHandling(auth, customErrorMap, async () => {
+		let body = {};
+		let params = {};
+		if (request) {
+			if (method === "GET") params = request;
+			else body = { body: JSON.stringify(request) };
+		}
+		const query = querystring({
+			...params,
+			key: auth.config.apiKey
+		}).slice(1);
+		const headers = await auth._getAdditionalHeaders();
+		headers["Content-Type"] = "application/json";
+		if (auth.languageCode) headers["X-Firebase-Locale"] = auth.languageCode;
+		const fetchArgs = {
+			method,
+			headers,
+			...body
+		};
+		if (!isCloudflareWorker()) fetchArgs.referrerPolicy = "strict-origin-when-cross-origin";
+		if (auth.emulatorConfig && isCloudWorkstation(auth.emulatorConfig.host)) fetchArgs.credentials = "include";
+		return FetchProvider.fetch()(await _getFinalTarget(auth, auth.config.apiHost, path, query), fetchArgs);
+	});
+}
+async function _performFetchWithErrorHandling(auth, customErrorMap, fetchFn) {
+	auth._canInitEmulator = false;
+	const errorMap = {
+		...SERVER_ERROR_MAP,
+		...customErrorMap
+	};
+	try {
+		const networkTimeout = new NetworkTimeout(auth);
+		const response = await Promise.race([fetchFn(), networkTimeout.promise]);
+		networkTimeout.clearNetworkTimeout();
+		const json = await response.json();
+		if ("needConfirmation" in json) throw _makeTaggedError(auth, "account-exists-with-different-credential", json);
+		if (response.ok && !("errorMessage" in json)) return json;
+		else {
+			const [serverErrorCode, serverErrorMessage] = (response.ok ? json.errorMessage : json.error.message).split(" : ");
+			if (serverErrorCode === "FEDERATED_USER_ID_ALREADY_LINKED") throw _makeTaggedError(auth, "credential-already-in-use", json);
+			else if (serverErrorCode === "EMAIL_EXISTS") throw _makeTaggedError(auth, "email-already-in-use", json);
+			else if (serverErrorCode === "USER_DISABLED") throw _makeTaggedError(auth, "user-disabled", json);
+			const authError = errorMap[serverErrorCode] || serverErrorCode.toLowerCase().replace(/[_\s]+/g, "-");
+			if (serverErrorMessage) throw _errorWithCustomMessage(auth, authError, serverErrorMessage);
+			else _fail(auth, authError);
+		}
+	} catch (e) {
+		if (e instanceof FirebaseError) throw e;
+		_fail(auth, "network-request-failed", { "message": String(e) });
+	}
+}
+async function _performSignInRequest(auth, method, path, request, customErrorMap = {}) {
+	const serverResponse = await _performApiRequest(auth, method, path, request, customErrorMap);
+	if ("mfaPendingCredential" in serverResponse) _fail(auth, "multi-factor-auth-required", { _serverResponse: serverResponse });
+	return serverResponse;
+}
+async function _getFinalTarget(auth, host, path, query) {
+	const base = `${host}${path}?${query}`;
+	const authInternal = auth;
+	const finalTarget = authInternal.config.emulator ? _emulatorUrl(auth.config, base) : `${auth.config.apiScheme}://${base}`;
+	if (CookieAuthProxiedEndpoints.includes(path)) {
+		await authInternal._persistenceManagerAvailable;
+		if (authInternal._getPersistenceType() === "COOKIE") return authInternal._getPersistence()._getFinalTarget(finalTarget).toString();
+	}
+	return finalTarget;
+}
+function _parseEnforcementState(enforcementStateStr) {
+	switch (enforcementStateStr) {
+		case "ENFORCE": return "ENFORCE";
+		case "AUDIT": return "AUDIT";
+		case "OFF": return "OFF";
+		default: return "ENFORCEMENT_STATE_UNSPECIFIED";
+	}
+}
+var NetworkTimeout = class {
+	clearNetworkTimeout() {
+		clearTimeout(this.timer);
+	}
+	constructor(auth) {
+		this.auth = auth;
+		this.timer = null;
+		this.promise = new Promise((_, reject) => {
+			this.timer = setTimeout(() => {
+				return reject(_createError(this.auth, "network-request-failed"));
+			}, DEFAULT_API_TIMEOUT_MS.get());
+		});
+	}
+};
+function _makeTaggedError(auth, code, response) {
+	const errorParams = { appName: auth.name };
+	if (response.email) errorParams.email = response.email;
+	if (response.phoneNumber) errorParams.phoneNumber = response.phoneNumber;
+	const error = _createError(auth, code, errorParams);
+	error.customData._tokenResponse = response;
+	return error;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function isEnterprise(grecaptcha) {
+	return grecaptcha !== void 0 && grecaptcha.enterprise !== void 0;
+}
+var RecaptchaConfig = class {
+	constructor(response) {
+		/**
+		* The reCAPTCHA site key.
+		*/
+		this.siteKey = "";
+		/**
+		* The list of providers and their enablement status for reCAPTCHA Enterprise.
+		*/
+		this.recaptchaEnforcementState = [];
+		if (response.recaptchaKey === void 0) throw new Error("recaptchaKey undefined");
+		this.siteKey = response.recaptchaKey.split("/")[3];
+		this.recaptchaEnforcementState = response.recaptchaEnforcementState;
+	}
+	/**
+	* Returns the reCAPTCHA Enterprise enforcement state for the given provider.
+	*
+	* @param providerStr - The provider whose enforcement state is to be returned.
+	* @returns The reCAPTCHA Enterprise enforcement state for the given provider.
+	*/
+	getProviderEnforcementState(providerStr) {
+		if (!this.recaptchaEnforcementState || this.recaptchaEnforcementState.length === 0) return null;
+		for (const recaptchaEnforcementState of this.recaptchaEnforcementState) if (recaptchaEnforcementState.provider && recaptchaEnforcementState.provider === providerStr) return _parseEnforcementState(recaptchaEnforcementState.enforcementState);
+		return null;
+	}
+	/**
+	* Returns true if the reCAPTCHA Enterprise enforcement state for the provider is set to ENFORCE or AUDIT.
+	*
+	* @param providerStr - The provider whose enablement state is to be returned.
+	* @returns Whether or not reCAPTCHA Enterprise protection is enabled for the given provider.
+	*/
+	isProviderEnabled(providerStr) {
+		return this.getProviderEnforcementState(providerStr) === "ENFORCE" || this.getProviderEnforcementState(providerStr) === "AUDIT";
+	}
+	/**
+	* Returns true if reCAPTCHA Enterprise protection is enabled in at least one provider, otherwise
+	* returns false.
+	*
+	* @returns Whether or not reCAPTCHA Enterprise protection is enabled for at least one provider.
+	*/
+	isAnyProviderEnabled() {
+		return this.isProviderEnabled("EMAIL_PASSWORD_PROVIDER") || this.isProviderEnabled("PHONE_PROVIDER");
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function getRecaptchaConfig(auth, request) {
+	return _performApiRequest(auth, "GET", "/v2/recaptchaConfig", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function deleteAccount(auth, request) {
+	return _performApiRequest(auth, "POST", "/v1/accounts:delete", request);
+}
+async function getAccountInfo(auth, request) {
+	return _performApiRequest(auth, "POST", "/v1/accounts:lookup", request);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function utcTimestampToDateString(utcTimestamp) {
+	if (!utcTimestamp) return;
+	try {
+		const date = new Date(Number(utcTimestamp));
+		if (!isNaN(date.getTime())) return date.toUTCString();
+	} catch (e) {}
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Returns a deserialized JSON Web Token (JWT) used to identify the user to a Firebase service.
+*
+* @remarks
+* Returns the current token if it has not expired or if it will not expire in the next five
+* minutes. Otherwise, this will refresh the token and return a new one.
+*
+* @param user - The user.
+* @param forceRefresh - Force refresh regardless of token expiration.
+*
+* @public
+*/
+async function getIdTokenResult(user, forceRefresh = false) {
+	const userInternal = getModularInstance(user);
+	const token = await userInternal.getIdToken(forceRefresh);
+	const claims = _parseToken(token);
+	_assert(claims && claims.exp && claims.auth_time && claims.iat, userInternal.auth, "internal-error");
+	const firebase = typeof claims.firebase === "object" ? claims.firebase : void 0;
+	const signInProvider = firebase?.["sign_in_provider"];
+	return {
+		claims,
+		token,
+		authTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.auth_time)),
+		issuedAtTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.iat)),
+		expirationTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.exp)),
+		signInProvider: signInProvider || null,
+		signInSecondFactor: firebase?.["sign_in_second_factor"] || null
+	};
+}
+function secondsStringToMilliseconds(seconds) {
+	return Number(seconds) * 1e3;
+}
+function _parseToken(token) {
+	const [algorithm, payload, signature] = token.split(".");
+	if (algorithm === void 0 || payload === void 0 || signature === void 0) {
+		_logError("JWT malformed, contained fewer than 3 sections");
+		return null;
+	}
+	try {
+		const decoded = base64Decode(payload);
+		if (!decoded) {
+			_logError("Failed to decode base64 JWT payload");
+			return null;
+		}
+		return JSON.parse(decoded);
+	} catch (e) {
+		_logError("Caught error parsing JWT payload as JSON", e?.toString());
+		return null;
+	}
+}
+/**
+* Extract expiresIn TTL from a token by subtracting the expiration from the issuance.
+*/
+function _tokenExpiresIn(token) {
+	const parsedToken = _parseToken(token);
+	_assert(parsedToken, "internal-error");
+	_assert(typeof parsedToken.exp !== "undefined", "internal-error");
+	_assert(typeof parsedToken.iat !== "undefined", "internal-error");
+	return Number(parsedToken.exp) - Number(parsedToken.iat);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _logoutIfInvalidated(user, promise, bypassAuthState = false) {
+	if (bypassAuthState) return promise;
+	try {
+		return await promise;
+	} catch (e) {
+		if (_isUserInvalidated(e)) {
+			if (user.auth.currentUser === user) await user.auth.signOut();
+		}
+		throw e;
+	}
+}
+function _isUserInvalidated(error) {
+	if (error instanceof FirebaseError) return error.code === `auth/user-disabled` || error.code === `auth/user-token-expired`;
+	return false;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var ProactiveRefresh = class {
+	constructor(user) {
+		this.user = user;
+		this.isRunning = false;
+		this.timerId = null;
+		this.errorBackoff = 3e4;
+	}
+	_start() {
+		if (this.isRunning) return;
+		this.isRunning = true;
+		this.schedule();
+	}
+	_stop() {
+		if (!this.isRunning) return;
+		this.isRunning = false;
+		if (this.timerId !== null) clearTimeout(this.timerId);
+	}
+	getInterval(wasError) {
+		if (wasError) {
+			const interval = this.errorBackoff;
+			this.errorBackoff = Math.min(this.errorBackoff * 2, 96e4);
+			return interval;
+		} else {
+			this.errorBackoff = 3e4;
+			const interval = (this.user.stsTokenManager.expirationTime ?? 0) - Date.now() - 3e5;
+			return Math.max(0, interval);
+		}
+	}
+	schedule(wasError = false) {
+		if (!this.isRunning) return;
+		const interval = this.getInterval(wasError);
+		this.timerId = setTimeout(async () => {
+			await this.iteration();
+		}, interval);
+	}
+	async iteration() {
+		try {
+			await this.user.getIdToken(true);
+		} catch (e) {
+			if (e?.code === `auth/network-request-failed`) this.schedule(true);
+			return;
+		}
+		this.schedule();
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var UserMetadata = class {
+	constructor(createdAt, lastLoginAt) {
+		this.createdAt = createdAt;
+		this.lastLoginAt = lastLoginAt;
+		this._initializeTime();
+	}
+	_initializeTime() {
+		this.lastSignInTime = utcTimestampToDateString(this.lastLoginAt);
+		this.creationTime = utcTimestampToDateString(this.createdAt);
+	}
+	_copy(metadata) {
+		this.createdAt = metadata.createdAt;
+		this.lastLoginAt = metadata.lastLoginAt;
+		this._initializeTime();
+	}
+	toJSON() {
+		return {
+			createdAt: this.createdAt,
+			lastLoginAt: this.lastLoginAt
+		};
+	}
+};
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _reloadWithoutSaving(user) {
+	const auth = user.auth;
+	const response = await _logoutIfInvalidated(user, getAccountInfo(auth, { idToken: await user.getIdToken() }));
+	_assert(response?.users.length, auth, "internal-error");
+	const coreAccount = response.users[0];
+	user._notifyReloadListener(coreAccount);
+	const newProviderData = coreAccount.providerUserInfo?.length ? extractProviderData(coreAccount.providerUserInfo) : [];
+	const providerData = mergeProviderData(user.providerData, newProviderData);
+	const oldIsAnonymous = user.isAnonymous;
+	const newIsAnonymous = !(user.email && coreAccount.passwordHash) && !providerData?.length;
+	const isAnonymous = !oldIsAnonymous ? false : newIsAnonymous;
+	const updates = {
+		uid: coreAccount.localId,
+		displayName: coreAccount.displayName || null,
+		photoURL: coreAccount.photoUrl || null,
+		email: coreAccount.email || null,
+		emailVerified: coreAccount.emailVerified || false,
+		phoneNumber: coreAccount.phoneNumber || null,
+		tenantId: coreAccount.tenantId || null,
+		providerData,
+		metadata: new UserMetadata(coreAccount.createdAt, coreAccount.lastLoginAt),
+		isAnonymous
+	};
+	Object.assign(user, updates);
+}
+/**
+* Reloads user account data, if signed in.
+*
+* @param user - The user.
+*
+* @public
+*/
+async function reload(user) {
+	const userInternal = getModularInstance(user);
+	await _reloadWithoutSaving(userInternal);
+	await userInternal.auth._persistUserIfCurrent(userInternal);
+	userInternal.auth._notifyListenersIfCurrent(userInternal);
+}
+function mergeProviderData(original, newData) {
+	return [...original.filter((o) => !newData.some((n) => n.providerId === o.providerId)), ...newData];
+}
+function extractProviderData(providers) {
+	return providers.map(({ providerId, ...provider }) => {
+		return {
+			providerId,
+			uid: provider.rawId || "",
+			displayName: provider.displayName || null,
+			email: provider.email || null,
+			phoneNumber: provider.phoneNumber || null,
+			photoURL: provider.photoUrl || null
+		};
+	});
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function requestStsToken(auth, refreshToken) {
+	const response = await _performFetchWithErrorHandling(auth, {}, async () => {
+		const body = querystring({
+			"grant_type": "refresh_token",
+			"refresh_token": refreshToken
+		}).slice(1);
+		const { tokenApiHost, apiKey } = auth.config;
+		const url = await _getFinalTarget(auth, tokenApiHost, "/v1/token", `key=${apiKey}`);
+		const headers = await auth._getAdditionalHeaders();
+		headers["Content-Type"] = "application/x-www-form-urlencoded";
+		const options = {
+			method: "POST",
+			headers,
+			body
+		};
+		if (auth.emulatorConfig && isCloudWorkstation(auth.emulatorConfig.host)) options.credentials = "include";
+		return FetchProvider.fetch()(url, options);
+	});
+	return {
+		accessToken: response.access_token,
+		expiresIn: response.expires_in,
+		refreshToken: response.refresh_token
+	};
+}
+async function revokeToken(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts:revokeToken", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* We need to mark this class as internal explicitly to exclude it in the public typings, because
+* it references AuthInternal which has a circular dependency with UserInternal.
+*
+* @internal
+*/
+var StsTokenManager = class StsTokenManager {
+	constructor() {
+		this.refreshToken = null;
+		this.accessToken = null;
+		this.expirationTime = null;
+	}
+	get isExpired() {
+		return !this.expirationTime || Date.now() > this.expirationTime - 3e5;
+	}
+	updateFromServerResponse(response) {
+		_assert(response.idToken, "internal-error");
+		_assert(typeof response.idToken !== "undefined", "internal-error");
+		_assert(typeof response.refreshToken !== "undefined", "internal-error");
+		const expiresIn = "expiresIn" in response && typeof response.expiresIn !== "undefined" ? Number(response.expiresIn) : _tokenExpiresIn(response.idToken);
+		this.updateTokensAndExpiration(response.idToken, response.refreshToken, expiresIn);
+	}
+	updateFromIdToken(idToken) {
+		_assert(idToken.length !== 0, "internal-error");
+		const expiresIn = _tokenExpiresIn(idToken);
+		this.updateTokensAndExpiration(idToken, null, expiresIn);
+	}
+	async getToken(auth, forceRefresh = false) {
+		if (!forceRefresh && this.accessToken && !this.isExpired) return this.accessToken;
+		_assert(this.refreshToken, auth, "user-token-expired");
+		if (this.refreshToken) {
+			await this.refresh(auth, this.refreshToken);
+			return this.accessToken;
+		}
+		return null;
+	}
+	clearRefreshToken() {
+		this.refreshToken = null;
+	}
+	async refresh(auth, oldToken) {
+		const { accessToken, refreshToken, expiresIn } = await requestStsToken(auth, oldToken);
+		this.updateTokensAndExpiration(accessToken, refreshToken, Number(expiresIn));
+	}
+	updateTokensAndExpiration(accessToken, refreshToken, expiresInSec) {
+		this.refreshToken = refreshToken || null;
+		this.accessToken = accessToken || null;
+		this.expirationTime = Date.now() + expiresInSec * 1e3;
+	}
+	static fromJSON(appName, object) {
+		const { refreshToken, accessToken, expirationTime } = object;
+		const manager = new StsTokenManager();
+		if (refreshToken) {
+			_assert(typeof refreshToken === "string", "internal-error", { appName });
+			manager.refreshToken = refreshToken;
+		}
+		if (accessToken) {
+			_assert(typeof accessToken === "string", "internal-error", { appName });
+			manager.accessToken = accessToken;
+		}
+		if (expirationTime) {
+			_assert(typeof expirationTime === "number", "internal-error", { appName });
+			manager.expirationTime = expirationTime;
+		}
+		return manager;
+	}
+	toJSON() {
+		return {
+			refreshToken: this.refreshToken,
+			accessToken: this.accessToken,
+			expirationTime: this.expirationTime
+		};
+	}
+	_assign(stsTokenManager) {
+		this.accessToken = stsTokenManager.accessToken;
+		this.refreshToken = stsTokenManager.refreshToken;
+		this.expirationTime = stsTokenManager.expirationTime;
+	}
+	_clone() {
+		return Object.assign(new StsTokenManager(), this.toJSON());
+	}
+	_performRefresh() {
+		return debugFail("not implemented");
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function assertStringOrUndefined(assertion, appName) {
+	_assert(typeof assertion === "string" || typeof assertion === "undefined", "internal-error", { appName });
+}
+var UserImpl = class UserImpl {
+	constructor({ uid, auth, stsTokenManager, ...opt }) {
+		this.providerId = "firebase";
+		this.proactiveRefresh = new ProactiveRefresh(this);
+		this.reloadUserInfo = null;
+		this.reloadListener = null;
+		this.uid = uid;
+		this.auth = auth;
+		this.stsTokenManager = stsTokenManager;
+		this.accessToken = stsTokenManager.accessToken;
+		this.displayName = opt.displayName || null;
+		this.email = opt.email || null;
+		this.emailVerified = opt.emailVerified || false;
+		this.phoneNumber = opt.phoneNumber || null;
+		this.photoURL = opt.photoURL || null;
+		this.isAnonymous = opt.isAnonymous || false;
+		this.tenantId = opt.tenantId || null;
+		this.providerData = opt.providerData ? [...opt.providerData] : [];
+		this.metadata = new UserMetadata(opt.createdAt || void 0, opt.lastLoginAt || void 0);
+	}
+	async getIdToken(forceRefresh) {
+		const accessToken = await _logoutIfInvalidated(this, this.stsTokenManager.getToken(this.auth, forceRefresh));
+		_assert(accessToken, this.auth, "internal-error");
+		if (this.accessToken !== accessToken) {
+			this.accessToken = accessToken;
+			await this.auth._persistUserIfCurrent(this);
+			this.auth._notifyListenersIfCurrent(this);
+		}
+		return accessToken;
+	}
+	getIdTokenResult(forceRefresh) {
+		return getIdTokenResult(this, forceRefresh);
+	}
+	reload() {
+		return reload(this);
+	}
+	_assign(user) {
+		if (this === user) return;
+		_assert(this.uid === user.uid, this.auth, "internal-error");
+		this.displayName = user.displayName;
+		this.photoURL = user.photoURL;
+		this.email = user.email;
+		this.emailVerified = user.emailVerified;
+		this.phoneNumber = user.phoneNumber;
+		this.isAnonymous = user.isAnonymous;
+		this.tenantId = user.tenantId;
+		this.providerData = user.providerData.map((userInfo) => ({ ...userInfo }));
+		this.metadata._copy(user.metadata);
+		this.stsTokenManager._assign(user.stsTokenManager);
+	}
+	_clone(auth) {
+		const newUser = new UserImpl({
+			...this,
+			auth,
+			stsTokenManager: this.stsTokenManager._clone()
+		});
+		newUser.metadata._copy(this.metadata);
+		return newUser;
+	}
+	_onReload(callback) {
+		_assert(!this.reloadListener, this.auth, "internal-error");
+		this.reloadListener = callback;
+		if (this.reloadUserInfo) {
+			this._notifyReloadListener(this.reloadUserInfo);
+			this.reloadUserInfo = null;
+		}
+	}
+	_notifyReloadListener(userInfo) {
+		if (this.reloadListener) this.reloadListener(userInfo);
+		else this.reloadUserInfo = userInfo;
+	}
+	_startProactiveRefresh() {
+		this.proactiveRefresh._start();
+	}
+	_stopProactiveRefresh() {
+		this.proactiveRefresh._stop();
+	}
+	async _updateTokensIfNecessary(response, reload = false) {
+		let tokensRefreshed = false;
+		if (response.idToken && response.idToken !== this.stsTokenManager.accessToken) {
+			this.stsTokenManager.updateFromServerResponse(response);
+			tokensRefreshed = true;
+		}
+		if (reload) await _reloadWithoutSaving(this);
+		await this.auth._persistUserIfCurrent(this);
+		if (tokensRefreshed) this.auth._notifyListenersIfCurrent(this);
+	}
+	async delete() {
+		if (_isFirebaseServerApp(this.auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this.auth));
+		const idToken = await this.getIdToken();
+		await _logoutIfInvalidated(this, deleteAccount(this.auth, { idToken }));
+		this.stsTokenManager.clearRefreshToken();
+		return this.auth.signOut();
+	}
+	toJSON() {
+		return {
+			uid: this.uid,
+			email: this.email || void 0,
+			emailVerified: this.emailVerified,
+			displayName: this.displayName || void 0,
+			isAnonymous: this.isAnonymous,
+			photoURL: this.photoURL || void 0,
+			phoneNumber: this.phoneNumber || void 0,
+			tenantId: this.tenantId || void 0,
+			providerData: this.providerData.map((userInfo) => ({ ...userInfo })),
+			stsTokenManager: this.stsTokenManager.toJSON(),
+			_redirectEventId: this._redirectEventId,
+			...this.metadata.toJSON(),
+			apiKey: this.auth.config.apiKey,
+			appName: this.auth.name
+		};
+	}
+	get refreshToken() {
+		return this.stsTokenManager.refreshToken || "";
+	}
+	static _fromJSON(auth, object) {
+		const displayName = object.displayName ?? void 0;
+		const email = object.email ?? void 0;
+		const phoneNumber = object.phoneNumber ?? void 0;
+		const photoURL = object.photoURL ?? void 0;
+		const tenantId = object.tenantId ?? void 0;
+		const _redirectEventId = object._redirectEventId ?? void 0;
+		const createdAt = object.createdAt ?? void 0;
+		const lastLoginAt = object.lastLoginAt ?? void 0;
+		const { uid, emailVerified, isAnonymous, providerData, stsTokenManager: plainObjectTokenManager } = object;
+		_assert(uid && plainObjectTokenManager, auth, "internal-error");
+		const stsTokenManager = StsTokenManager.fromJSON(this.name, plainObjectTokenManager);
+		_assert(typeof uid === "string", auth, "internal-error");
+		assertStringOrUndefined(displayName, auth.name);
+		assertStringOrUndefined(email, auth.name);
+		_assert(typeof emailVerified === "boolean", auth, "internal-error");
+		_assert(typeof isAnonymous === "boolean", auth, "internal-error");
+		assertStringOrUndefined(phoneNumber, auth.name);
+		assertStringOrUndefined(photoURL, auth.name);
+		assertStringOrUndefined(tenantId, auth.name);
+		assertStringOrUndefined(_redirectEventId, auth.name);
+		assertStringOrUndefined(createdAt, auth.name);
+		assertStringOrUndefined(lastLoginAt, auth.name);
+		const user = new UserImpl({
+			uid,
+			auth,
+			email,
+			emailVerified,
+			displayName,
+			isAnonymous,
+			photoURL,
+			phoneNumber,
+			tenantId,
+			stsTokenManager,
+			createdAt,
+			lastLoginAt
+		});
+		if (providerData && Array.isArray(providerData)) user.providerData = providerData.map((userInfo) => ({ ...userInfo }));
+		if (_redirectEventId) user._redirectEventId = _redirectEventId;
+		return user;
+	}
+	/**
+	* Initialize a User from an idToken server response
+	* @param auth
+	* @param idTokenResponse
+	*/
+	static async _fromIdTokenResponse(auth, idTokenResponse, isAnonymous = false) {
+		const stsTokenManager = new StsTokenManager();
+		stsTokenManager.updateFromServerResponse(idTokenResponse);
+		const user = new UserImpl({
+			uid: idTokenResponse.localId,
+			auth,
+			stsTokenManager,
+			isAnonymous
+		});
+		await _reloadWithoutSaving(user);
+		return user;
+	}
+	/**
+	* Initialize a User from an idToken server response
+	* @param auth
+	* @param idTokenResponse
+	*/
+	static async _fromGetAccountInfoResponse(auth, response, idToken) {
+		const coreAccount = response.users[0];
+		_assert(coreAccount.localId !== void 0, "internal-error");
+		const providerData = coreAccount.providerUserInfo !== void 0 ? extractProviderData(coreAccount.providerUserInfo) : [];
+		const isAnonymous = !(coreAccount.email && coreAccount.passwordHash) && !providerData?.length;
+		const stsTokenManager = new StsTokenManager();
+		stsTokenManager.updateFromIdToken(idToken);
+		const user = new UserImpl({
+			uid: coreAccount.localId,
+			auth,
+			stsTokenManager,
+			isAnonymous
+		});
+		const updates = {
+			uid: coreAccount.localId,
+			displayName: coreAccount.displayName || null,
+			photoURL: coreAccount.photoUrl || null,
+			email: coreAccount.email || null,
+			emailVerified: coreAccount.emailVerified || false,
+			phoneNumber: coreAccount.phoneNumber || null,
+			tenantId: coreAccount.tenantId || null,
+			providerData,
+			metadata: new UserMetadata(coreAccount.createdAt, coreAccount.lastLoginAt),
+			isAnonymous: !(coreAccount.email && coreAccount.passwordHash) && !providerData?.length
+		};
+		Object.assign(user, updates);
+		return user;
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var instanceCache = /* @__PURE__ */ new Map();
+function _getInstance(cls) {
+	debugAssert(cls instanceof Function, "Expected a class definition");
+	let instance = instanceCache.get(cls);
+	if (instance) {
+		debugAssert(instance instanceof cls, "Instance stored in cache mismatched with class");
+		return instance;
+	}
+	instance = new cls();
+	instanceCache.set(cls, instance);
+	return instance;
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var InMemoryPersistence = class {
+	constructor() {
+		this.type = "NONE";
+		this.storage = {};
+	}
+	async _isAvailable() {
+		return true;
+	}
+	async _set(key, value) {
+		this.storage[key] = value;
+	}
+	async _get(key) {
+		const value = this.storage[key];
+		return value === void 0 ? null : value;
+	}
+	async _remove(key) {
+		delete this.storage[key];
+	}
+	_addListener(_key, _listener) {}
+	_removeListener(_key, _listener) {}
+};
+InMemoryPersistence.type = "NONE";
+/**
+* An implementation of {@link Persistence} of type 'NONE'.
+*
+* @public
+*/
+var inMemoryPersistence = InMemoryPersistence;
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _persistenceKeyName(key, apiKey, appName) {
+	return `firebase:${key}:${apiKey}:${appName}`;
+}
+var PersistenceUserManager = class PersistenceUserManager {
+	constructor(persistence, auth, userKey) {
+		this.persistence = persistence;
+		this.auth = auth;
+		this.userKey = userKey;
+		const { config, name } = this.auth;
+		this.fullUserKey = _persistenceKeyName(this.userKey, config.apiKey, name);
+		this.fullPersistenceKey = _persistenceKeyName("persistence", config.apiKey, name);
+		this.boundEventHandler = auth._onStorageEvent.bind(auth);
+		try {
+			this.persistence._addListener(this.fullUserKey, this.boundEventHandler);
+		} catch {}
+	}
+	setCurrentUser(user) {
+		return this.persistence._set(this.fullUserKey, user.toJSON());
+	}
+	async getCurrentUser() {
+		const blob = await this.persistence._get(this.fullUserKey);
+		if (!blob) return null;
+		if (typeof blob === "string") {
+			const response = await getAccountInfo(this.auth, { idToken: blob }).catch(() => void 0);
+			if (!response) return null;
+			return UserImpl._fromGetAccountInfoResponse(this.auth, response, blob);
+		}
+		return UserImpl._fromJSON(this.auth, blob);
+	}
+	removeCurrentUser() {
+		return this.persistence._remove(this.fullUserKey);
+	}
+	savePersistenceForRedirect() {
+		return this.persistence._set(this.fullPersistenceKey, this.persistence.type);
+	}
+	async setPersistence(newPersistence) {
+		if (this.persistence === newPersistence) return;
+		const currentUser = await this.getCurrentUser();
+		await this.removeCurrentUser();
+		this.persistence = newPersistence;
+		if (currentUser) return this.setCurrentUser(currentUser);
+	}
+	delete() {
+		try {
+			this.persistence._removeListener(this.fullUserKey, this.boundEventHandler);
+		} catch {}
+	}
+	static async create(auth, persistenceHierarchy, userKey = "authUser") {
+		if (!persistenceHierarchy.length) return new PersistenceUserManager(_getInstance(inMemoryPersistence), auth, userKey);
+		const availablePersistences = (await Promise.all(persistenceHierarchy.map(async (persistence) => {
+			try {
+				if (await persistence._isAvailable()) return persistence;
+			} catch {
+				return;
+			}
+		}))).filter((persistence) => persistence);
+		let selectedPersistence = availablePersistences[0] || _getInstance(inMemoryPersistence);
+		const key = _persistenceKeyName(userKey, auth.config.apiKey, auth.name);
+		let userToMigrate = null;
+		for (const persistence of persistenceHierarchy) try {
+			const blob = await persistence._get(key);
+			if (blob) {
+				let user;
+				if (typeof blob === "string") {
+					const response = await getAccountInfo(auth, { idToken: blob }).catch(() => void 0);
+					if (!response) break;
+					user = await UserImpl._fromGetAccountInfoResponse(auth, response, blob);
+				} else user = UserImpl._fromJSON(auth, blob);
+				if (persistence !== selectedPersistence) userToMigrate = user;
+				selectedPersistence = persistence;
+				break;
+			}
+		} catch {}
+		const migrationHierarchy = availablePersistences.filter((p) => p._shouldAllowMigration);
+		if (!selectedPersistence._shouldAllowMigration || !migrationHierarchy.length) return new PersistenceUserManager(selectedPersistence, auth, userKey);
+		selectedPersistence = migrationHierarchy[0];
+		if (userToMigrate) await selectedPersistence._set(key, userToMigrate.toJSON());
+		await Promise.all(persistenceHierarchy.map(async (persistence) => {
+			if (persistence !== selectedPersistence) try {
+				await persistence._remove(key);
+			} catch {}
+		}));
+		return new PersistenceUserManager(selectedPersistence, auth, userKey);
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Determine the browser for the purposes of reporting usage to the API
+*/
+function _getBrowserName(userAgent) {
+	const ua = userAgent.toLowerCase();
+	if (ua.includes("opera/") || ua.includes("opr/") || ua.includes("opios/")) return "Opera";
+	else if (_isIEMobile(ua)) return "IEMobile";
+	else if (ua.includes("msie") || ua.includes("trident/")) return "IE";
+	else if (ua.includes("edge/")) return "Edge";
+	else if (_isFirefox(ua)) return "Firefox";
+	else if (ua.includes("silk/")) return "Silk";
+	else if (_isBlackBerry(ua)) return "Blackberry";
+	else if (_isWebOS(ua)) return "Webos";
+	else if (_isSafari(ua)) return "Safari";
+	else if ((ua.includes("chrome/") || _isChromeIOS(ua)) && !ua.includes("edge/")) return "Chrome";
+	else if (_isAndroid(ua)) return "Android";
+	else {
+		const matches = userAgent.match(/([a-zA-Z\d\.]+)\/[a-zA-Z\d\.]*$/);
+		if (matches?.length === 2) return matches[1];
+	}
+	return "Other";
+}
+function _isFirefox(ua = getUA()) {
+	return /firefox\//i.test(ua);
+}
+function _isSafari(userAgent = getUA()) {
+	const ua = userAgent.toLowerCase();
+	return ua.includes("safari/") && !ua.includes("chrome/") && !ua.includes("crios/") && !ua.includes("android");
+}
+function _isChromeIOS(ua = getUA()) {
+	return /crios\//i.test(ua);
+}
+function _isIEMobile(ua = getUA()) {
+	return /iemobile/i.test(ua);
+}
+function _isAndroid(ua = getUA()) {
+	return /android/i.test(ua);
+}
+function _isBlackBerry(ua = getUA()) {
+	return /blackberry/i.test(ua);
+}
+function _isWebOS(ua = getUA()) {
+	return /webos/i.test(ua);
+}
+function _isIOS(ua = getUA()) {
+	return /iphone|ipad|ipod/i.test(ua) || /macintosh/i.test(ua) && /mobile/i.test(ua);
+}
+function _isIOSStandalone(ua = getUA()) {
+	return _isIOS(ua) && !!window.navigator?.standalone;
+}
+function _isIE10() {
+	return isIE() && document.documentMode === 10;
+}
+function _isMobileBrowser(ua = getUA()) {
+	return _isIOS(ua) || _isAndroid(ua) || _isWebOS(ua) || _isBlackBerry(ua) || /windows phone/i.test(ua) || _isIEMobile(ua);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _getClientVersion(clientPlatform, frameworks = []) {
+	let reportedPlatform;
+	switch (clientPlatform) {
+		case "Browser":
+			reportedPlatform = _getBrowserName(getUA());
+			break;
+		case "Worker":
+			reportedPlatform = `${_getBrowserName(getUA())}-${clientPlatform}`;
+			break;
+		default: reportedPlatform = clientPlatform;
+	}
+	const reportedFrameworks = frameworks.length ? frameworks.join(",") : "FirebaseCore-web";
+	return `${reportedPlatform}/JsCore/${SDK_VERSION}/${reportedFrameworks}`;
+}
+/**
+* @license
+* Copyright 2022 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var AuthMiddlewareQueue = class {
+	constructor(auth) {
+		this.auth = auth;
+		this.queue = [];
+	}
+	pushCallback(callback, onAbort) {
+		const wrappedCallback = (user) => new Promise((resolve, reject) => {
+			try {
+				resolve(callback(user));
+			} catch (e) {
+				reject(e);
+			}
+		});
+		wrappedCallback.onAbort = onAbort;
+		this.queue.push(wrappedCallback);
+		const index = this.queue.length - 1;
+		return () => {
+			this.queue[index] = () => Promise.resolve();
+		};
+	}
+	async runMiddleware(nextUser) {
+		if (this.auth.currentUser === nextUser) return;
+		const onAbortStack = [];
+		try {
+			for (const beforeStateCallback of this.queue) {
+				await beforeStateCallback(nextUser);
+				if (beforeStateCallback.onAbort) onAbortStack.push(beforeStateCallback.onAbort);
+			}
+		} catch (e) {
+			onAbortStack.reverse();
+			for (const onAbort of onAbortStack) try {
+				onAbort();
+			} catch (_) {}
+			throw this.auth._errorFactory.create("login-blocked", { originalMessage: e?.message });
+		}
+	}
+};
+/**
+* @license
+* Copyright 2023 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Fetches the password policy for the currently set tenant or the project if no tenant is set.
+*
+* @param auth Auth object.
+* @param request Password policy request.
+* @returns Password policy response.
+*/
+async function _getPasswordPolicy(auth, request = {}) {
+	return _performApiRequest(auth, "GET", "/v2/passwordPolicy", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2023 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var MINIMUM_MIN_PASSWORD_LENGTH = 6;
+/**
+* Stores password policy requirements and provides password validation against the policy.
+*
+* @internal
+*/
+var PasswordPolicyImpl = class {
+	constructor(response) {
+		const responseOptions = response.customStrengthOptions;
+		this.customStrengthOptions = {};
+		this.customStrengthOptions.minPasswordLength = responseOptions.minPasswordLength ?? MINIMUM_MIN_PASSWORD_LENGTH;
+		if (responseOptions.maxPasswordLength) this.customStrengthOptions.maxPasswordLength = responseOptions.maxPasswordLength;
+		if (responseOptions.containsLowercaseCharacter !== void 0) this.customStrengthOptions.containsLowercaseLetter = responseOptions.containsLowercaseCharacter;
+		if (responseOptions.containsUppercaseCharacter !== void 0) this.customStrengthOptions.containsUppercaseLetter = responseOptions.containsUppercaseCharacter;
+		if (responseOptions.containsNumericCharacter !== void 0) this.customStrengthOptions.containsNumericCharacter = responseOptions.containsNumericCharacter;
+		if (responseOptions.containsNonAlphanumericCharacter !== void 0) this.customStrengthOptions.containsNonAlphanumericCharacter = responseOptions.containsNonAlphanumericCharacter;
+		this.enforcementState = response.enforcementState;
+		if (this.enforcementState === "ENFORCEMENT_STATE_UNSPECIFIED") this.enforcementState = "OFF";
+		this.allowedNonAlphanumericCharacters = response.allowedNonAlphanumericCharacters?.join("") ?? "";
+		this.forceUpgradeOnSignin = response.forceUpgradeOnSignin ?? false;
+		this.schemaVersion = response.schemaVersion;
+	}
+	validatePassword(password) {
+		const status = {
+			isValid: true,
+			passwordPolicy: this
+		};
+		this.validatePasswordLengthOptions(password, status);
+		this.validatePasswordCharacterOptions(password, status);
+		status.isValid && (status.isValid = status.meetsMinPasswordLength ?? true);
+		status.isValid && (status.isValid = status.meetsMaxPasswordLength ?? true);
+		status.isValid && (status.isValid = status.containsLowercaseLetter ?? true);
+		status.isValid && (status.isValid = status.containsUppercaseLetter ?? true);
+		status.isValid && (status.isValid = status.containsNumericCharacter ?? true);
+		status.isValid && (status.isValid = status.containsNonAlphanumericCharacter ?? true);
+		return status;
+	}
+	/**
+	* Validates that the password meets the length options for the policy.
+	*
+	* @param password Password to validate.
+	* @param status Validation status.
+	*/
+	validatePasswordLengthOptions(password, status) {
+		const minPasswordLength = this.customStrengthOptions.minPasswordLength;
+		const maxPasswordLength = this.customStrengthOptions.maxPasswordLength;
+		if (minPasswordLength) status.meetsMinPasswordLength = password.length >= minPasswordLength;
+		if (maxPasswordLength) status.meetsMaxPasswordLength = password.length <= maxPasswordLength;
+	}
+	/**
+	* Validates that the password meets the character options for the policy.
+	*
+	* @param password Password to validate.
+	* @param status Validation status.
+	*/
+	validatePasswordCharacterOptions(password, status) {
+		this.updatePasswordCharacterOptionsStatuses(status, false, false, false, false);
+		let passwordChar;
+		for (let i = 0; i < password.length; i++) {
+			passwordChar = password.charAt(i);
+			this.updatePasswordCharacterOptionsStatuses(status, passwordChar >= "a" && passwordChar <= "z", passwordChar >= "A" && passwordChar <= "Z", passwordChar >= "0" && passwordChar <= "9", this.allowedNonAlphanumericCharacters.includes(passwordChar));
+		}
+	}
+	/**
+	* Updates the running validation status with the statuses for the character options.
+	* Expected to be called each time a character is processed to update each option status
+	* based on the current character.
+	*
+	* @param status Validation status.
+	* @param containsLowercaseCharacter Whether the character is a lowercase letter.
+	* @param containsUppercaseCharacter Whether the character is an uppercase letter.
+	* @param containsNumericCharacter Whether the character is a numeric character.
+	* @param containsNonAlphanumericCharacter Whether the character is a non-alphanumeric character.
+	*/
+	updatePasswordCharacterOptionsStatuses(status, containsLowercaseCharacter, containsUppercaseCharacter, containsNumericCharacter, containsNonAlphanumericCharacter) {
+		if (this.customStrengthOptions.containsLowercaseLetter) status.containsLowercaseLetter || (status.containsLowercaseLetter = containsLowercaseCharacter);
+		if (this.customStrengthOptions.containsUppercaseLetter) status.containsUppercaseLetter || (status.containsUppercaseLetter = containsUppercaseCharacter);
+		if (this.customStrengthOptions.containsNumericCharacter) status.containsNumericCharacter || (status.containsNumericCharacter = containsNumericCharacter);
+		if (this.customStrengthOptions.containsNonAlphanumericCharacter) status.containsNonAlphanumericCharacter || (status.containsNonAlphanumericCharacter = containsNonAlphanumericCharacter);
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var AuthImpl = class {
+	constructor(app, heartbeatServiceProvider, appCheckServiceProvider, config) {
+		this.app = app;
+		this.heartbeatServiceProvider = heartbeatServiceProvider;
+		this.appCheckServiceProvider = appCheckServiceProvider;
+		this.config = config;
+		this.currentUser = null;
+		this.emulatorConfig = null;
+		this.operations = Promise.resolve();
+		this.authStateSubscription = new Subscription(this);
+		this.idTokenSubscription = new Subscription(this);
+		this.beforeStateQueue = new AuthMiddlewareQueue(this);
+		this.redirectUser = null;
+		this.isProactiveRefreshEnabled = false;
+		this.EXPECTED_PASSWORD_POLICY_SCHEMA_VERSION = 1;
+		this._canInitEmulator = true;
+		this._isInitialized = false;
+		this._deleted = false;
+		this._initializationPromise = null;
+		this._popupRedirectResolver = null;
+		this._errorFactory = _DEFAULT_AUTH_ERROR_FACTORY;
+		this._agentRecaptchaConfig = null;
+		this._tenantRecaptchaConfigs = {};
+		this._projectPasswordPolicy = null;
+		this._tenantPasswordPolicies = {};
+		this._resolvePersistenceManagerAvailable = void 0;
+		this.lastNotifiedUid = void 0;
+		this.languageCode = null;
+		this.tenantId = null;
+		this.settings = { appVerificationDisabledForTesting: false };
+		this.frameworks = [];
+		this.name = app.name;
+		this.clientVersion = config.sdkClientVersion;
+		this._persistenceManagerAvailable = new Promise((resolve) => this._resolvePersistenceManagerAvailable = resolve);
+	}
+	_initializeWithPersistence(persistenceHierarchy, popupRedirectResolver) {
+		if (popupRedirectResolver) this._popupRedirectResolver = _getInstance(popupRedirectResolver);
+		this._initializationPromise = this.queue(async () => {
+			if (this._deleted) return;
+			try {
+				this.persistenceManager = await PersistenceUserManager.create(this, persistenceHierarchy);
+			} catch (e) {
+				_logWarn(`Failed to initialize persistence: ${e}`);
+				this.persistenceManager = await PersistenceUserManager.create(this, []);
+			} finally {
+				this._resolvePersistenceManagerAvailable?.();
+			}
+			if (this._deleted) return;
+			if (this._popupRedirectResolver?._shouldInitProactively) try {
+				await this._popupRedirectResolver._initialize(this);
+			} catch (e) {}
+			try {
+				await this.initializeCurrentUser(popupRedirectResolver);
+			} catch (e) {
+				_logWarn(`Failed to initialize current user: ${e}`);
+				await this.directlySetCurrentUser(null).catch(() => {});
+			}
+			this.lastNotifiedUid = this.currentUser?.uid || null;
+			if (this._deleted) return;
+			this._isInitialized = true;
+		});
+		return this._initializationPromise;
+	}
+	/**
+	* If the persistence is changed in another window, the user manager will let us know
+	*/
+	async _onStorageEvent() {
+		if (this._deleted) return;
+		const user = await this.assertedPersistence.getCurrentUser();
+		if (!this.currentUser && !user) return;
+		if (this.currentUser && user && this.currentUser.uid === user.uid) {
+			this._currentUser._assign(user);
+			await this.currentUser.getIdToken();
+			return;
+		}
+		await this._updateCurrentUser(user, true);
+	}
+	async initializeCurrentUserFromIdToken(idToken) {
+		try {
+			const response = await getAccountInfo(this, { idToken });
+			const user = await UserImpl._fromGetAccountInfoResponse(this, response, idToken);
+			await this.directlySetCurrentUser(user);
+		} catch (err) {
+			console.warn("FirebaseServerApp could not login user with provided authIdToken: ", err);
+			await this.directlySetCurrentUser(null);
+		}
+	}
+	async initializeCurrentUser(popupRedirectResolver) {
+		if (_isFirebaseServerApp(this.app)) {
+			const idToken = this.app.settings.authIdToken;
+			if (idToken) return new Promise((resolve) => {
+				setTimeout(() => this.initializeCurrentUserFromIdToken(idToken).then(resolve, resolve));
+			});
+			else return this.directlySetCurrentUser(null);
+		}
+		const previouslyStoredUser = await this.assertedPersistence.getCurrentUser();
+		let futureCurrentUser = previouslyStoredUser;
+		let needsTocheckMiddleware = false;
+		if (popupRedirectResolver && this.config.authDomain) {
+			await this.getOrInitRedirectPersistenceManager();
+			const redirectUserEventId = this.redirectUser?._redirectEventId;
+			const storedUserEventId = futureCurrentUser?._redirectEventId;
+			const result = await this.tryRedirectSignIn(popupRedirectResolver);
+			if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && result?.user) {
+				futureCurrentUser = result.user;
+				needsTocheckMiddleware = true;
+			}
+		}
+		if (!futureCurrentUser) return this.directlySetCurrentUser(null);
+		if (!futureCurrentUser._redirectEventId) {
+			if (needsTocheckMiddleware) try {
+				await this.beforeStateQueue.runMiddleware(futureCurrentUser);
+			} catch (e) {
+				futureCurrentUser = previouslyStoredUser;
+				this._popupRedirectResolver._overrideRedirectResult(this, () => Promise.reject(e));
+			}
+			if (futureCurrentUser) return this.reloadAndSetCurrentUserOrClear(futureCurrentUser);
+			else return this.directlySetCurrentUser(null);
+		}
+		_assert(this._popupRedirectResolver, this, "argument-error");
+		await this.getOrInitRedirectPersistenceManager();
+		if (this.redirectUser && this.redirectUser._redirectEventId === futureCurrentUser._redirectEventId) return this.directlySetCurrentUser(futureCurrentUser);
+		return this.reloadAndSetCurrentUserOrClear(futureCurrentUser);
+	}
+	async tryRedirectSignIn(redirectResolver) {
+		let result = null;
+		try {
+			result = await this._popupRedirectResolver._completeRedirectFn(this, redirectResolver, true);
+		} catch (e) {
+			await this._setRedirectUser(null);
+		}
+		return result;
+	}
+	async reloadAndSetCurrentUserOrClear(user) {
+		try {
+			await _reloadWithoutSaving(user);
+		} catch (e) {
+			if (_isUserInvalidated(e)) return this.directlySetCurrentUser(null);
+		}
+		return this.directlySetCurrentUser(user);
+	}
+	useDeviceLanguage() {
+		this.languageCode = _getUserLanguage();
+	}
+	async _delete() {
+		this._deleted = true;
+	}
+	async updateCurrentUser(userExtern) {
+		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
+		const user = userExtern ? getModularInstance(userExtern) : null;
+		if (user) _assert(user.auth.config.apiKey === this.config.apiKey, this, "invalid-user-token");
+		return this._updateCurrentUser(user && user._clone(this));
+	}
+	async _updateCurrentUser(user, skipBeforeStateCallbacks = false) {
+		if (this._deleted) return;
+		if (user) _assert(this.tenantId === user.tenantId, this, "tenant-id-mismatch");
+		if (!skipBeforeStateCallbacks) await this.beforeStateQueue.runMiddleware(user);
+		return this.queue(async () => {
+			await this.directlySetCurrentUser(user);
+			this.notifyAuthListeners();
+		});
+	}
+	async signOut() {
+		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
+		await this.beforeStateQueue.runMiddleware(null);
+		if (this.redirectPersistenceManager || this._popupRedirectResolver) await this._setRedirectUser(null);
+		return this._updateCurrentUser(null, true);
+	}
+	setPersistence(persistence) {
+		if (_isFirebaseServerApp(this.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(this));
+		return this.queue(async () => {
+			await this.assertedPersistence.setPersistence(_getInstance(persistence));
+		});
+	}
+	_getRecaptchaConfig() {
+		if (this.tenantId == null) return this._agentRecaptchaConfig;
+		else return this._tenantRecaptchaConfigs[this.tenantId];
+	}
+	async validatePassword(password) {
+		if (!this._getPasswordPolicyInternal()) await this._updatePasswordPolicy();
+		const passwordPolicy = this._getPasswordPolicyInternal();
+		if (passwordPolicy.schemaVersion !== this.EXPECTED_PASSWORD_POLICY_SCHEMA_VERSION) return Promise.reject(this._errorFactory.create("unsupported-password-policy-schema-version", {}));
+		return passwordPolicy.validatePassword(password);
+	}
+	_getPasswordPolicyInternal() {
+		if (this.tenantId === null) return this._projectPasswordPolicy;
+		else return this._tenantPasswordPolicies[this.tenantId];
+	}
+	async _updatePasswordPolicy() {
+		const passwordPolicy = new PasswordPolicyImpl(await _getPasswordPolicy(this));
+		if (this.tenantId === null) this._projectPasswordPolicy = passwordPolicy;
+		else this._tenantPasswordPolicies[this.tenantId] = passwordPolicy;
+	}
+	_getPersistenceType() {
+		return this.assertedPersistence.persistence.type;
+	}
+	_getPersistence() {
+		return this.assertedPersistence.persistence;
+	}
+	_updateErrorMap(errorMap) {
+		this._errorFactory = new ErrorFactory("auth", "Firebase", errorMap());
+	}
+	onAuthStateChanged(nextOrObserver, error, completed) {
+		return this.registerStateListener(this.authStateSubscription, nextOrObserver, error, completed);
+	}
+	beforeAuthStateChanged(callback, onAbort) {
+		return this.beforeStateQueue.pushCallback(callback, onAbort);
+	}
+	onIdTokenChanged(nextOrObserver, error, completed) {
+		return this.registerStateListener(this.idTokenSubscription, nextOrObserver, error, completed);
+	}
+	authStateReady() {
+		return new Promise((resolve, reject) => {
+			if (this.currentUser) resolve();
+			else {
+				const unsubscribe = this.onAuthStateChanged(() => {
+					unsubscribe();
+					resolve();
+				}, reject);
+			}
+		});
+	}
+	/**
+	* Revokes the given access token. Currently only supports Apple OAuth access tokens.
+	*/
+	async revokeAccessToken(token) {
+		if (this.currentUser) {
+			const request = {
+				providerId: "apple.com",
+				tokenType: "ACCESS_TOKEN",
+				token,
+				idToken: await this.currentUser.getIdToken()
+			};
+			if (this.tenantId != null) request.tenantId = this.tenantId;
+			await revokeToken(this, request);
+		}
+	}
+	toJSON() {
+		return {
+			apiKey: this.config.apiKey,
+			authDomain: this.config.authDomain,
+			appName: this.name,
+			currentUser: this._currentUser?.toJSON()
+		};
+	}
+	async _setRedirectUser(user, popupRedirectResolver) {
+		const redirectManager = await this.getOrInitRedirectPersistenceManager(popupRedirectResolver);
+		return user === null ? redirectManager.removeCurrentUser() : redirectManager.setCurrentUser(user);
+	}
+	async getOrInitRedirectPersistenceManager(popupRedirectResolver) {
+		if (!this.redirectPersistenceManager) {
+			const resolver = popupRedirectResolver && _getInstance(popupRedirectResolver) || this._popupRedirectResolver;
+			_assert(resolver, this, "argument-error");
+			this.redirectPersistenceManager = await PersistenceUserManager.create(this, [_getInstance(resolver._redirectPersistence)], "redirectUser");
+			this.redirectUser = await this.redirectPersistenceManager.getCurrentUser();
+		}
+		return this.redirectPersistenceManager;
+	}
+	async _redirectUserForId(id) {
+		if (this._isInitialized) await this.queue(async () => {});
+		if (this._currentUser?._redirectEventId === id) return this._currentUser;
+		if (this.redirectUser?._redirectEventId === id) return this.redirectUser;
+		return null;
+	}
+	async _persistUserIfCurrent(user) {
+		if (user === this.currentUser) return this.queue(async () => this.directlySetCurrentUser(user));
+	}
+	/** Notifies listeners only if the user is current */
+	_notifyListenersIfCurrent(user) {
+		if (user === this.currentUser) this.notifyAuthListeners();
+	}
+	_key() {
+		return `${this.config.authDomain}:${this.config.apiKey}:${this.name}`;
+	}
+	_startProactiveRefresh() {
+		this.isProactiveRefreshEnabled = true;
+		if (this.currentUser) this._currentUser._startProactiveRefresh();
+	}
+	_stopProactiveRefresh() {
+		this.isProactiveRefreshEnabled = false;
+		if (this.currentUser) this._currentUser._stopProactiveRefresh();
+	}
+	/** Returns the current user cast as the internal type */
+	get _currentUser() {
+		return this.currentUser;
+	}
+	notifyAuthListeners() {
+		if (!this._isInitialized) return;
+		this.idTokenSubscription.next(this.currentUser);
+		const currentUid = this.currentUser?.uid ?? null;
+		if (this.lastNotifiedUid !== currentUid) {
+			this.lastNotifiedUid = currentUid;
+			this.authStateSubscription.next(this.currentUser);
+		}
+	}
+	registerStateListener(subscription, nextOrObserver, error, completed) {
+		if (this._deleted) return () => {};
+		const cb = typeof nextOrObserver === "function" ? nextOrObserver : nextOrObserver.next.bind(nextOrObserver);
+		let isUnsubscribed = false;
+		const promise = this._isInitialized ? Promise.resolve() : this._initializationPromise;
+		_assert(promise, this, "internal-error");
+		promise.then(() => {
+			if (isUnsubscribed) return;
+			cb(this.currentUser);
+		}).catch((err) => {
+			if (isUnsubscribed) return;
+			if (typeof nextOrObserver !== "function" && nextOrObserver.error) nextOrObserver.error(err);
+			else if (error) error(err);
+			else throw err;
+		});
+		if (typeof nextOrObserver === "function") {
+			const unsubscribe = subscription.addObserver(nextOrObserver, error, completed);
+			return () => {
+				isUnsubscribed = true;
+				unsubscribe();
+			};
+		} else {
+			const unsubscribe = subscription.addObserver(nextOrObserver);
+			return () => {
+				isUnsubscribed = true;
+				unsubscribe();
+			};
+		}
+	}
+	/**
+	* Unprotected (from race conditions) method to set the current user. This
+	* should only be called from within a queued callback. This is necessary
+	* because the queue shouldn't rely on another queued callback.
+	*/
+	async directlySetCurrentUser(user) {
+		if (this.currentUser && this.currentUser !== user) this._currentUser._stopProactiveRefresh();
+		if (user && this.isProactiveRefreshEnabled) user._startProactiveRefresh();
+		this.currentUser = user;
+		if (this.persistenceManager) try {
+			if (user) await this.persistenceManager.setCurrentUser(user);
+			else await this.persistenceManager.removeCurrentUser();
+		} catch (e) {
+			const originalMessage = e?.message || String(e);
+			const error = _errorWithCustomMessage(this, "internal-error", `An internal AuthError has occurred: ${originalMessage}`);
+			error.customData = { originalError: e };
+			throw error;
+		}
+	}
+	queue(action) {
+		this.operations = this.operations.then(action, action);
+		return this.operations;
+	}
+	get assertedPersistence() {
+		_assert(this.persistenceManager, this, "internal-error");
+		return this.persistenceManager;
+	}
+	_logFramework(framework) {
+		if (!framework || this.frameworks.includes(framework)) return;
+		this.frameworks.push(framework);
+		this.frameworks.sort();
+		this.clientVersion = _getClientVersion(this.config.clientPlatform, this._getFrameworks());
+	}
+	_getFrameworks() {
+		return this.frameworks;
+	}
+	async _getAdditionalHeaders() {
+		const headers = { ["X-Client-Version"]: this.clientVersion };
+		if (this.app.options.appId) headers["X-Firebase-gmpid"] = this.app.options.appId;
+		const heartbeatsHeader = await this.heartbeatServiceProvider.getImmediate({ optional: true })?.getHeartbeatsHeader();
+		if (heartbeatsHeader) headers["X-Firebase-Client"] = heartbeatsHeader;
+		const appCheckToken = await this._getAppCheckToken();
+		if (appCheckToken) headers["X-Firebase-AppCheck"] = appCheckToken;
+		return headers;
+	}
+	async _getAppCheckToken() {
+		if (_isFirebaseServerApp(this.app) && this.app.settings.appCheckToken) return this.app.settings.appCheckToken;
+		const appCheckTokenResult = await this.appCheckServiceProvider.getImmediate({ optional: true })?.getToken();
+		if (appCheckTokenResult?.error) _logWarn(`Error while retrieving App Check token: ${appCheckTokenResult.error}`);
+		return appCheckTokenResult?.token;
+	}
+};
+/**
+* Method to be used to cast down to our private implementation of Auth.
+* It will also handle unwrapping from the compat type if necessary
+*
+* @param auth Auth object passed in from developer
+*/
+function _castAuth(auth) {
+	return getModularInstance(auth);
+}
+/** Helper class to wrap subscriber logic */
+var Subscription = class {
+	constructor(auth) {
+		this.auth = auth;
+		this.observer = null;
+		this.addObserver = createSubscribe((observer) => this.observer = observer);
+	}
+	get next() {
+		_assert(this.observer, this.auth, "internal-error");
+		return this.observer.next.bind(this.observer);
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var externalJSProvider = {
+	async loadJS() {
+		throw new Error("Unable to load external scripts");
+	},
+	recaptchaV2Script: "",
+	recaptchaEnterpriseScript: "",
+	gapiScript: ""
+};
+function _setExternalJSProvider(p) {
+	externalJSProvider = p;
+}
+function _loadJS(url) {
+	return externalJSProvider.loadJS(url);
+}
+function _recaptchaEnterpriseScriptUrl() {
+	return externalJSProvider.recaptchaEnterpriseScript;
+}
+function _gapiScriptUrl() {
+	return externalJSProvider.gapiScript;
+}
+function _generateCallbackName(prefix) {
+	return `__${prefix}${Math.floor(Math.random() * 1e6)}`;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var MockGreCAPTCHATopLevel = class {
+	constructor() {
+		this.enterprise = new MockGreCAPTCHA();
+	}
+	ready(callback) {
+		callback();
+	}
+	execute(_siteKey, _options) {
+		return Promise.resolve("token");
+	}
+	render(_container, _parameters) {
+		return "";
+	}
+};
+var MockGreCAPTCHA = class {
+	ready(callback) {
+		callback();
+	}
+	execute(_siteKey, _options) {
+		return Promise.resolve("token");
+	}
+	render(_container, _parameters) {
+		return "";
+	}
+};
+/**
+* @license
+* Copyright 2022 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var RECAPTCHA_ENTERPRISE_VERIFIER_TYPE = "recaptcha-enterprise";
+var FAKE_TOKEN = "NO_RECAPTCHA";
+var RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME = "onFirebaseAuthREInstanceReady";
+var RecaptchaEnterpriseVerifier = class RecaptchaEnterpriseVerifier {
+	/**
+	*
+	* @param authExtern - The corresponding Firebase {@link Auth} instance.
+	*
+	*/
+	constructor(authExtern) {
+		/**
+		* Identifies the type of application verifier (e.g. "recaptcha-enterprise").
+		*/
+		this.type = RECAPTCHA_ENTERPRISE_VERIFIER_TYPE;
+		this.auth = _castAuth(authExtern);
+	}
+	/**
+	* Executes the verification process.
+	*
+	* @returns A Promise for a token that can be used to assert the validity of a request.
+	*/
+	async verify(action = "verify", forceRefresh = false) {
+		async function retrieveSiteKey(auth) {
+			if (!forceRefresh) {
+				if (auth.tenantId == null && auth._agentRecaptchaConfig != null) return auth._agentRecaptchaConfig.siteKey;
+				if (auth.tenantId != null && auth._tenantRecaptchaConfigs[auth.tenantId] !== void 0) return auth._tenantRecaptchaConfigs[auth.tenantId].siteKey;
+			}
+			return new Promise(async (resolve, reject) => {
+				getRecaptchaConfig(auth, {
+					clientType: "CLIENT_TYPE_WEB",
+					version: "RECAPTCHA_ENTERPRISE"
+				}).then((response) => {
+					if (response.recaptchaKey === void 0) reject(/* @__PURE__ */ new Error("recaptcha Enterprise site key undefined"));
+					else {
+						const config = new RecaptchaConfig(response);
+						if (auth.tenantId == null) auth._agentRecaptchaConfig = config;
+						else auth._tenantRecaptchaConfigs[auth.tenantId] = config;
+						return resolve(config.siteKey);
+					}
+				}).catch((error) => {
+					reject(error);
+				});
+			});
+		}
+		function retrieveRecaptchaToken(siteKey, resolve, reject) {
+			const grecaptcha = window.grecaptcha;
+			if (isEnterprise(grecaptcha)) grecaptcha.enterprise.ready(() => {
+				grecaptcha.enterprise.execute(siteKey, { action }).then((token) => {
+					resolve(token);
+				}).catch(() => {
+					resolve(FAKE_TOKEN);
+				});
+			});
+			else reject(Error("No reCAPTCHA enterprise script loaded."));
+		}
+		if (this.auth.settings.appVerificationDisabledForTesting) return new MockGreCAPTCHATopLevel().execute("siteKey", { action: "verify" });
+		return new Promise((resolve, reject) => {
+			retrieveSiteKey(this.auth).then(async (siteKey) => {
+				if (!forceRefresh && isEnterprise(window.grecaptcha) && RecaptchaEnterpriseVerifier.scriptInjectionDeferred) {
+					await RecaptchaEnterpriseVerifier.scriptInjectionDeferred.promise;
+					retrieveRecaptchaToken(siteKey, resolve, reject);
+				} else {
+					if (typeof window === "undefined") {
+						reject(/* @__PURE__ */ new Error("RecaptchaVerifier is only supported in browser"));
+						return;
+					}
+					let url = _recaptchaEnterpriseScriptUrl();
+					if (url.length !== 0) url += siteKey + `&onload=${RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME}`;
+					RecaptchaEnterpriseVerifier.scriptInjectionDeferred = new Deferred();
+					/**
+					* Script attached to global window object that will be called
+					* when the ReCAPTCHA Enterprise instance is ready.
+					* grecaptcha.ready() is not reliable when there are multiple
+					* scripts on the page, and script.onload only indicates the
+					* script has downloaded, not that it has initialized.
+					*/
+					window[RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME] = () => {
+						RecaptchaEnterpriseVerifier.scriptInjectionDeferred?.resolve();
+					};
+					_loadJS(url).then(() => RecaptchaEnterpriseVerifier.scriptInjectionDeferred?.promise).then(() => {
+						retrieveRecaptchaToken(siteKey, resolve, reject);
+					}).catch((error) => {
+						reject(error);
+					});
+				}
+			}).catch((error) => {
+				reject(error);
+			});
+		});
+	}
+};
+/**
+* Deferred that resolves when script tag has been injected onto the page
+* and the script is ready (grecaptcha.ready() and script.onload are not
+* reliable indicators, so this resolves when the global
+* `window[RECAPTCHA_ENTERPRISE_ONLOAD_CALLBACK_NAME]()` callback provided to the recaptcha url param "onload"
+* is triggered).
+* As a static variable this is applied to all instances of the class.
+* This will cause an error if users try to create multiple RecaptchaVerifiers
+* with different Recaptcha Enterprise sitekeys, which should be an
+* unuspported use case.
+*/
+RecaptchaEnterpriseVerifier.scriptInjectionDeferred = null;
+async function injectRecaptchaFields(auth, request, action, isCaptchaResp = false, isFakeToken = false) {
+	const verifier = new RecaptchaEnterpriseVerifier(auth);
+	let captchaResponse;
+	if (isFakeToken) captchaResponse = FAKE_TOKEN;
+	else try {
+		captchaResponse = await verifier.verify(action);
+	} catch (error) {
+		captchaResponse = await verifier.verify(action, true);
+	}
+	const newRequest = { ...request };
+	if (action === "mfaSmsEnrollment" || action === "mfaSmsSignIn") {
+		if ("phoneEnrollmentInfo" in newRequest) {
+			const phoneNumber = newRequest.phoneEnrollmentInfo.phoneNumber;
+			const recaptchaToken = newRequest.phoneEnrollmentInfo.recaptchaToken;
+			Object.assign(newRequest, { "phoneEnrollmentInfo": {
+				phoneNumber,
+				recaptchaToken,
+				captchaResponse,
+				"clientType": "CLIENT_TYPE_WEB",
+				"recaptchaVersion": "RECAPTCHA_ENTERPRISE"
+			} });
+		} else if ("phoneSignInInfo" in newRequest) {
+			const recaptchaToken = newRequest.phoneSignInInfo.recaptchaToken;
+			Object.assign(newRequest, { "phoneSignInInfo": {
+				recaptchaToken,
+				captchaResponse,
+				"clientType": "CLIENT_TYPE_WEB",
+				"recaptchaVersion": "RECAPTCHA_ENTERPRISE"
+			} });
+		}
+		return newRequest;
+	}
+	if (!isCaptchaResp) Object.assign(newRequest, { captchaResponse });
+	else Object.assign(newRequest, { "captchaResp": captchaResponse });
+	Object.assign(newRequest, { "clientType": "CLIENT_TYPE_WEB" });
+	Object.assign(newRequest, { "recaptchaVersion": "RECAPTCHA_ENTERPRISE" });
+	return newRequest;
+}
+async function handleRecaptchaFlow(authInstance, request, actionName, actionMethod, recaptchaAuthProvider) {
+	if (recaptchaAuthProvider === "EMAIL_PASSWORD_PROVIDER") {
+		if (authInstance._getRecaptchaConfig()?.isProviderEnabled("EMAIL_PASSWORD_PROVIDER")) return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, actionName === "getOobCode"));
+		else return actionMethod(authInstance, request).catch(async (error) => {
+			if (error.code === `auth/missing-recaptcha-token`) {
+				console.log(`${actionName} is protected by reCAPTCHA Enterprise for this project. Automatically triggering the reCAPTCHA flow and restarting the flow.`);
+				return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, actionName === "getOobCode"));
+			} else return Promise.reject(error);
+		});
+	} else if (recaptchaAuthProvider === "PHONE_PROVIDER") {
+		if (authInstance._getRecaptchaConfig()?.isProviderEnabled("PHONE_PROVIDER")) return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName)).catch(async (error) => {
+			if (authInstance._getRecaptchaConfig()?.getProviderEnforcementState("PHONE_PROVIDER") === "AUDIT") {
+				if (error.code === `auth/missing-recaptcha-token` || error.code === `auth/invalid-app-credential`) {
+					console.log(`Failed to verify with reCAPTCHA Enterprise. Automatically triggering the reCAPTCHA v2 flow to complete the ${actionName} flow.`);
+					return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, false, true));
+				}
+			}
+			return Promise.reject(error);
+		});
+		else return actionMethod(authInstance, await injectRecaptchaFields(authInstance, request, actionName, false, true));
+	} else return Promise.reject(recaptchaAuthProvider + " provider is not supported.");
+}
+async function _initializeRecaptchaConfig(auth) {
+	const authInternal = _castAuth(auth);
+	const config = new RecaptchaConfig(await getRecaptchaConfig(authInternal, {
+		clientType: "CLIENT_TYPE_WEB",
+		version: "RECAPTCHA_ENTERPRISE"
+	}));
+	if (authInternal.tenantId == null) authInternal._agentRecaptchaConfig = config;
+	else authInternal._tenantRecaptchaConfigs[authInternal.tenantId] = config;
+	if (config.isAnyProviderEnabled()) new RecaptchaEnterpriseVerifier(authInternal).verify().catch(() => {});
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Initializes an {@link Auth} instance with fine-grained control over
+* {@link Dependencies}.
+*
+* @remarks
+*
+* This function allows more control over the {@link Auth} instance than
+* {@link getAuth}. `getAuth` uses platform-specific defaults to supply
+* the {@link Dependencies}. In general, `getAuth` is the easiest way to
+* initialize Auth and works for most use cases. Use `initializeAuth` if you
+* need control over which persistence layer is used, or to minimize bundle
+* size if you're not using either `signInWithPopup` or `signInWithRedirect`.
+*
+* For example, if your app only uses anonymous accounts and you only want
+* accounts saved for the current session, initialize `Auth` with:
+*
+* ```js
+* const auth = initializeAuth(app, {
+*   persistence: browserSessionPersistence,
+*   popupRedirectResolver: undefined,
+* });
+* ```
+*
+* @public
+*/
+function initializeAuth(app, deps) {
+	const provider = _getProvider(app, "auth");
+	if (provider.isInitialized()) {
+		const auth = provider.getImmediate();
+		if (deepEqual(provider.getOptions(), deps ?? {})) return auth;
+		else _fail(auth, "already-initialized");
+	}
+	return provider.initialize({ options: deps });
+}
+function _initializeAuthInstance(auth, deps) {
+	const persistence = deps?.persistence || [];
+	const hierarchy = (Array.isArray(persistence) ? persistence : [persistence]).map(_getInstance);
+	if (deps?.errorMap) auth._updateErrorMap(deps.errorMap);
+	auth._initializeWithPersistence(hierarchy, deps?.popupRedirectResolver);
+}
+/**
+* Changes the {@link Auth} instance to communicate with the Firebase Auth Emulator, instead of production
+* Firebase Auth services.
+*
+* @remarks
+* This must be called synchronously immediately following the first call to
+* {@link initializeAuth}.  Do not use with production credentials as emulator
+* traffic is not encrypted.
+*
+*
+* @example
+* ```javascript
+* connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+* ```
+*
+* @param auth - The {@link Auth} instance.
+* @param url - The URL at which the emulator is running (eg, 'http://localhost:9099').
+* @param options - Optional. `options.disableWarnings` defaults to `false`. Set it to
+* `true` to disable the warning banner attached to the DOM.
+*
+* @public
+*/
+function connectAuthEmulator(auth, url, options) {
+	const authInternal = _castAuth(auth);
+	_assert(/^https?:\/\//.test(url), authInternal, "invalid-emulator-scheme");
+	const disableWarnings = !!options?.disableWarnings;
+	const protocol = extractProtocol(url);
+	const { host, port } = extractHostAndPort(url);
+	const portStr = port === null ? "" : `:${port}`;
+	const emulator = { url: `${protocol}//${host}${portStr}/` };
+	const emulatorConfig = Object.freeze({
+		host,
+		port,
+		protocol: protocol.replace(":", ""),
+		options: Object.freeze({ disableWarnings })
+	});
+	if (!authInternal._canInitEmulator) {
+		_assert(authInternal.config.emulator && authInternal.emulatorConfig, authInternal, "emulator-config-failed");
+		_assert(deepEqual(emulator, authInternal.config.emulator) && deepEqual(emulatorConfig, authInternal.emulatorConfig), authInternal, "emulator-config-failed");
+		return;
+	}
+	authInternal.config.emulator = emulator;
+	authInternal.emulatorConfig = emulatorConfig;
+	authInternal.settings.appVerificationDisabledForTesting = true;
+	if (isCloudWorkstation(host)) pingServer(`${protocol}//${host}${portStr}`);
+	else if (!disableWarnings) emitEmulatorWarning();
+}
+function extractProtocol(url) {
+	const protocolEnd = url.indexOf(":");
+	return protocolEnd < 0 ? "" : url.substr(0, protocolEnd + 1);
+}
+function extractHostAndPort(url) {
+	const protocol = extractProtocol(url);
+	const authority = /(\/\/)?([^?#/]+)/.exec(url.substr(protocol.length));
+	if (!authority) return {
+		host: "",
+		port: null
+	};
+	const hostAndPort = authority[2].split("@").pop() || "";
+	const bracketedIPv6 = /^(\[[^\]]+\])(:|$)/.exec(hostAndPort);
+	if (bracketedIPv6) {
+		const host = bracketedIPv6[1];
+		return {
+			host,
+			port: parsePort(hostAndPort.substr(host.length + 1))
+		};
+	} else {
+		const [host, port] = hostAndPort.split(":");
+		return {
+			host,
+			port: parsePort(port)
+		};
+	}
+}
+function parsePort(portStr) {
+	if (!portStr) return null;
+	const port = Number(portStr);
+	if (isNaN(port)) return null;
+	return port;
+}
+function emitEmulatorWarning() {
+	function attachBanner() {
+		const el = document.createElement("p");
+		const sty = el.style;
+		el.innerText = "Running in emulator mode. Do not use with production credentials.";
+		sty.position = "fixed";
+		sty.width = "100%";
+		sty.backgroundColor = "#ffffff";
+		sty.border = ".1em solid #000000";
+		sty.color = "#b50000";
+		sty.bottom = "0px";
+		sty.left = "0px";
+		sty.margin = "0px";
+		sty.zIndex = "10000";
+		sty.textAlign = "center";
+		el.classList.add("firebase-emulator-warning");
+		document.body.appendChild(el);
+	}
+	if (typeof console !== "undefined" && typeof console.info === "function") console.info("WARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.");
+	if (typeof window !== "undefined" && typeof document !== "undefined") {
+		if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", attachBanner);
+		else attachBanner();
+	}
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Interface that represents the credentials returned by an {@link AuthProvider}.
+*
+* @remarks
+* Implementations specify the details about each auth provider's credential requirements.
+*
+* @public
+*/
+var AuthCredential = class {
+	/** @internal */
+	constructor(providerId, signInMethod) {
+		this.providerId = providerId;
+		this.signInMethod = signInMethod;
+	}
+	/**
+	* Returns a JSON-serializable representation of this object.
+	*
+	* @returns a JSON-serializable representation of this object.
+	*/
+	toJSON() {
+		return debugFail("not implemented");
+	}
+	/** @internal */
+	_getIdTokenResponse(_auth) {
+		return debugFail("not implemented");
+	}
+	/** @internal */
+	_linkToIdToken(_auth, _idToken) {
+		return debugFail("not implemented");
+	}
+	/** @internal */
+	_getReauthenticationResolver(_auth) {
+		return debugFail("not implemented");
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function linkEmailPassword(auth, request) {
+	return _performApiRequest(auth, "POST", "/v1/accounts:signUp", request);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function signInWithPassword(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPassword", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function signInWithEmailLink$1(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithEmailLink", _addTidIfNecessary(auth, request));
+}
+async function signInWithEmailLinkForLinking(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithEmailLink", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Interface that represents the credentials returned by {@link EmailAuthProvider} for
+* {@link ProviderId}.PASSWORD
+*
+* @remarks
+* Covers both {@link SignInMethod}.EMAIL_PASSWORD and
+* {@link SignInMethod}.EMAIL_LINK.
+*
+* @public
+*/
+var EmailAuthCredential = class EmailAuthCredential extends AuthCredential {
+	/** @internal */
+	constructor(_email, _password, signInMethod, _tenantId = null) {
+		super("password", signInMethod);
+		this._email = _email;
+		this._password = _password;
+		this._tenantId = _tenantId;
+	}
+	/** @internal */
+	static _fromEmailAndPassword(email, password) {
+		return new EmailAuthCredential(email, password, "password");
+	}
+	/** @internal */
+	static _fromEmailAndCode(email, oobCode, tenantId = null) {
+		return new EmailAuthCredential(email, oobCode, "emailLink", tenantId);
+	}
+	/** {@inheritdoc AuthCredential.toJSON} */
+	toJSON() {
+		return {
+			email: this._email,
+			password: this._password,
+			signInMethod: this.signInMethod,
+			tenantId: this._tenantId
+		};
+	}
+	/**
+	* Static method to deserialize a JSON representation of an object into an {@link  AuthCredential}.
+	*
+	* @param json - Either `object` or the stringified representation of the object. When string is
+	* provided, `JSON.parse` would be called first.
+	*
+	* @returns If the JSON input does not represent an {@link AuthCredential}, null is returned.
+	*/
+	static fromJSON(json) {
+		const obj = typeof json === "string" ? JSON.parse(json) : json;
+		if (obj?.email && obj?.password) {
+			if (obj.signInMethod === "password") return this._fromEmailAndPassword(obj.email, obj.password);
+			else if (obj.signInMethod === "emailLink") return this._fromEmailAndCode(obj.email, obj.password, obj.tenantId);
+		}
+		return null;
+	}
+	/** @internal */
+	async _getIdTokenResponse(auth) {
+		switch (this.signInMethod) {
+			case "password": return handleRecaptchaFlow(auth, {
+				returnSecureToken: true,
+				email: this._email,
+				password: this._password,
+				clientType: "CLIENT_TYPE_WEB"
+			}, "signInWithPassword", signInWithPassword, "EMAIL_PASSWORD_PROVIDER");
+			case "emailLink": return signInWithEmailLink$1(auth, {
+				email: this._email,
+				oobCode: this._password
+			});
+			default: _fail(auth, "internal-error");
+		}
+	}
+	/** @internal */
+	async _linkToIdToken(auth, idToken) {
+		switch (this.signInMethod) {
+			case "password": return handleRecaptchaFlow(auth, {
+				idToken,
+				returnSecureToken: true,
+				email: this._email,
+				password: this._password,
+				clientType: "CLIENT_TYPE_WEB"
+			}, "signUpPassword", linkEmailPassword, "EMAIL_PASSWORD_PROVIDER");
+			case "emailLink": return signInWithEmailLinkForLinking(auth, {
+				idToken,
+				email: this._email,
+				oobCode: this._password
+			});
+			default: _fail(auth, "internal-error");
+		}
+	}
+	/** @internal */
+	_getReauthenticationResolver(auth) {
+		return this._getIdTokenResponse(auth);
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function signInWithIdp(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithIdp", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var IDP_REQUEST_URI$1 = "http://localhost";
+/**
+* Represents the OAuth credentials returned by an {@link OAuthProvider}.
+*
+* @remarks
+* Implementations specify the details about each auth provider's credential requirements.
+*
+* @public
+*/
+var OAuthCredential = class OAuthCredential extends AuthCredential {
+	constructor() {
+		super(...arguments);
+		this.pendingToken = null;
+	}
+	/** @internal */
+	static _fromParams(params) {
+		const cred = new OAuthCredential(params.providerId, params.signInMethod);
+		if (params.idToken || params.accessToken) {
+			if (params.idToken) cred.idToken = params.idToken;
+			if (params.accessToken) cred.accessToken = params.accessToken;
+			if (params.nonce && !params.pendingToken) cred.nonce = params.nonce;
+			if (params.pendingToken) cred.pendingToken = params.pendingToken;
+		} else if (params.oauthToken && params.oauthTokenSecret) {
+			cred.accessToken = params.oauthToken;
+			cred.secret = params.oauthTokenSecret;
+		} else _fail("argument-error");
+		return cred;
+	}
+	/** {@inheritdoc AuthCredential.toJSON}  */
+	toJSON() {
+		return {
+			idToken: this.idToken,
+			accessToken: this.accessToken,
+			secret: this.secret,
+			nonce: this.nonce,
+			pendingToken: this.pendingToken,
+			providerId: this.providerId,
+			signInMethod: this.signInMethod
+		};
+	}
+	/**
+	* Static method to deserialize a JSON representation of an object into an
+	* {@link  AuthCredential}.
+	*
+	* @param json - Input can be either Object or the stringified representation of the object.
+	* When string is provided, JSON.parse would be called first.
+	*
+	* @returns If the JSON input does not represent an {@link  AuthCredential}, null is returned.
+	*/
+	static fromJSON(json) {
+		const { providerId, signInMethod, ...rest } = typeof json === "string" ? JSON.parse(json) : json;
+		if (!providerId || !signInMethod) return null;
+		const cred = new OAuthCredential(providerId, signInMethod);
+		cred.idToken = rest.idToken || void 0;
+		cred.accessToken = rest.accessToken || void 0;
+		cred.secret = rest.secret;
+		cred.nonce = rest.nonce;
+		cred.pendingToken = rest.pendingToken || null;
+		return cred;
+	}
+	/** @internal */
+	_getIdTokenResponse(auth) {
+		return signInWithIdp(auth, this.buildRequest());
+	}
+	/** @internal */
+	_linkToIdToken(auth, idToken) {
+		const request = this.buildRequest();
+		request.idToken = idToken;
+		return signInWithIdp(auth, request);
+	}
+	/** @internal */
+	_getReauthenticationResolver(auth) {
+		const request = this.buildRequest();
+		request.autoCreate = false;
+		return signInWithIdp(auth, request);
+	}
+	buildRequest() {
+		const request = {
+			requestUri: IDP_REQUEST_URI$1,
+			returnSecureToken: true
+		};
+		if (this.pendingToken) request.pendingToken = this.pendingToken;
+		else {
+			const postBody = {};
+			if (this.idToken) postBody["id_token"] = this.idToken;
+			if (this.accessToken) postBody["access_token"] = this.accessToken;
+			if (this.secret) postBody["oauth_token_secret"] = this.secret;
+			postBody["providerId"] = this.providerId;
+			if (this.nonce && !this.pendingToken) postBody["nonce"] = this.nonce;
+			request.postBody = querystring(postBody);
+		}
+		return request;
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function sendPhoneVerificationCode(auth, request) {
+	return _performApiRequest(auth, "POST", "/v1/accounts:sendVerificationCode", _addTidIfNecessary(auth, request));
+}
+async function signInWithPhoneNumber$1(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, request));
+}
+async function linkWithPhoneNumber$1(auth, request) {
+	const response = await _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, request));
+	if (response.temporaryProof) throw _makeTaggedError(auth, "account-exists-with-different-credential", response);
+	return response;
+}
+var VERIFY_PHONE_NUMBER_FOR_EXISTING_ERROR_MAP_ = { ["USER_NOT_FOUND"]: "user-not-found" };
+async function verifyPhoneNumberForExisting(auth, request) {
+	return _performSignInRequest(auth, "POST", "/v1/accounts:signInWithPhoneNumber", _addTidIfNecessary(auth, {
+		...request,
+		operation: "REAUTH"
+	}), VERIFY_PHONE_NUMBER_FOR_EXISTING_ERROR_MAP_);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Represents the credentials returned by {@link PhoneAuthProvider}.
+*
+* @public
+*/
+var PhoneAuthCredential = class PhoneAuthCredential extends AuthCredential {
+	constructor(params) {
+		super("phone", "phone");
+		this.params = params;
+	}
+	/** @internal */
+	static _fromVerification(verificationId, verificationCode) {
+		return new PhoneAuthCredential({
+			verificationId,
+			verificationCode
+		});
+	}
+	/** @internal */
+	static _fromTokenResponse(phoneNumber, temporaryProof) {
+		return new PhoneAuthCredential({
+			phoneNumber,
+			temporaryProof
+		});
+	}
+	/** @internal */
+	_getIdTokenResponse(auth) {
+		return signInWithPhoneNumber$1(auth, this._makeVerificationRequest());
+	}
+	/** @internal */
+	_linkToIdToken(auth, idToken) {
+		return linkWithPhoneNumber$1(auth, {
+			idToken,
+			...this._makeVerificationRequest()
+		});
+	}
+	/** @internal */
+	_getReauthenticationResolver(auth) {
+		return verifyPhoneNumberForExisting(auth, this._makeVerificationRequest());
+	}
+	/** @internal */
+	_makeVerificationRequest() {
+		const { temporaryProof, phoneNumber, verificationId, verificationCode } = this.params;
+		if (temporaryProof && phoneNumber) return {
+			temporaryProof,
+			phoneNumber
+		};
+		return {
+			sessionInfo: verificationId,
+			code: verificationCode
+		};
+	}
+	/** {@inheritdoc AuthCredential.toJSON} */
+	toJSON() {
+		const obj = { providerId: this.providerId };
+		if (this.params.phoneNumber) obj.phoneNumber = this.params.phoneNumber;
+		if (this.params.temporaryProof) obj.temporaryProof = this.params.temporaryProof;
+		if (this.params.verificationCode) obj.verificationCode = this.params.verificationCode;
+		if (this.params.verificationId) obj.verificationId = this.params.verificationId;
+		return obj;
+	}
+	/** Generates a phone credential based on a plain object or a JSON string. */
+	static fromJSON(json) {
+		if (typeof json === "string") json = JSON.parse(json);
+		const { verificationId, verificationCode, phoneNumber, temporaryProof } = json;
+		if (!verificationCode && !verificationId && !phoneNumber && !temporaryProof) return null;
+		return new PhoneAuthCredential({
+			verificationId,
+			verificationCode,
+			phoneNumber,
+			temporaryProof
+		});
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Maps the mode string in action code URL to Action Code Info operation.
+*
+* @param mode
+*/
+function parseMode(mode) {
+	switch (mode) {
+		case "recoverEmail": return "RECOVER_EMAIL";
+		case "resetPassword": return "PASSWORD_RESET";
+		case "signIn": return "EMAIL_SIGNIN";
+		case "verifyEmail": return "VERIFY_EMAIL";
+		case "verifyAndChangeEmail": return "VERIFY_AND_CHANGE_EMAIL";
+		case "revertSecondFactorAddition": return "REVERT_SECOND_FACTOR_ADDITION";
+		default: return null;
+	}
+}
+/**
+* Helper to parse FDL links
+*
+* @param url
+*/
+function parseDeepLink(url) {
+	const link = querystringDecode(extractQuerystring(url))["link"];
+	const doubleDeepLink = link ? querystringDecode(extractQuerystring(link))["deep_link_id"] : null;
+	const iOSDeepLink = querystringDecode(extractQuerystring(url))["deep_link_id"];
+	return (iOSDeepLink ? querystringDecode(extractQuerystring(iOSDeepLink))["link"] : null) || iOSDeepLink || doubleDeepLink || link || url;
+}
+/**
+* A utility class to parse email action URLs such as password reset, email verification,
+* email link sign in, etc.
+*
+* @public
+*/
+var ActionCodeURL = class ActionCodeURL {
+	/**
+	* @param actionLink - The link from which to extract the URL.
+	* @returns The {@link ActionCodeURL} object, or null if the link is invalid.
+	*
+	* @internal
+	*/
+	constructor(actionLink) {
+		const searchParams = querystringDecode(extractQuerystring(actionLink));
+		const apiKey = searchParams["apiKey"] ?? null;
+		const code = searchParams["oobCode"] ?? null;
+		const operation = parseMode(searchParams["mode"] ?? null);
+		_assert(apiKey && code && operation, "argument-error");
+		this.apiKey = apiKey;
+		this.operation = operation;
+		this.code = code;
+		this.continueUrl = searchParams["continueUrl"] ?? null;
+		this.languageCode = searchParams["lang"] ?? null;
+		this.tenantId = searchParams["tenantId"] ?? null;
+	}
+	/**
+	* Parses the email action link string and returns an {@link ActionCodeURL} if the link is valid,
+	* otherwise returns null.
+	*
+	* @param link  - The email action link string.
+	* @returns The {@link ActionCodeURL} object, or null if the link is invalid.
+	*
+	* @public
+	*/
+	static parseLink(link) {
+		const actionLink = parseDeepLink(link);
+		try {
+			return new ActionCodeURL(actionLink);
+		} catch {
+			return null;
+		}
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating {@link EmailAuthCredential}.
+*
+* @public
+*/
+var EmailAuthProvider = class EmailAuthProvider {
+	constructor() {
+		/**
+		* Always set to {@link ProviderId}.PASSWORD, even for email link.
+		*/
+		this.providerId = EmailAuthProvider.PROVIDER_ID;
+	}
+	/**
+	* Initialize an {@link AuthCredential} using an email and password.
+	*
+	* @example
+	* ```javascript
+	* const authCredential = EmailAuthProvider.credential(email, password);
+	* const userCredential = await signInWithCredential(auth, authCredential);
+	* ```
+	*
+	* @example
+	* ```javascript
+	* const userCredential = await signInWithEmailAndPassword(auth, email, password);
+	* ```
+	*
+	* @param email - Email address.
+	* @param password - User account password.
+	* @returns The auth provider credential.
+	*/
+	static credential(email, password) {
+		return EmailAuthCredential._fromEmailAndPassword(email, password);
+	}
+	/**
+	* Initialize an {@link AuthCredential} using an email and an email link after a sign in with
+	* email link operation.
+	*
+	* @example
+	* ```javascript
+	* const authCredential = EmailAuthProvider.credentialWithLink(auth, email, emailLink);
+	* const userCredential = await signInWithCredential(auth, authCredential);
+	* ```
+	*
+	* @example
+	* ```javascript
+	* await sendSignInLinkToEmail(auth, email);
+	* // Obtain emailLink from user.
+	* const userCredential = await signInWithEmailLink(auth, email, emailLink);
+	* ```
+	*
+	* @param auth - The {@link Auth} instance used to verify the link.
+	* @param email - Email address.
+	* @param emailLink - Sign-in email link.
+	* @returns - The auth provider credential.
+	*/
+	static credentialWithLink(email, emailLink) {
+		const actionCodeUrl = ActionCodeURL.parseLink(emailLink);
+		_assert(actionCodeUrl, "argument-error");
+		return EmailAuthCredential._fromEmailAndCode(email, actionCodeUrl.code, actionCodeUrl.tenantId);
+	}
+};
+/**
+* Always set to {@link ProviderId}.PASSWORD, even for email link.
+*/
+EmailAuthProvider.PROVIDER_ID = "password";
+/**
+* Always set to {@link SignInMethod}.EMAIL_PASSWORD.
+*/
+EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD = "password";
+/**
+* Always set to {@link SignInMethod}.EMAIL_LINK.
+*/
+EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD = "emailLink";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* The base class for all Federated providers (OAuth (including OIDC), SAML).
+*
+* This class is not meant to be instantiated directly.
+*
+* @public
+*/
+var FederatedAuthProvider = class {
+	/**
+	* Constructor for generic OAuth providers.
+	*
+	* @param providerId - Provider for which credentials should be generated.
+	*/
+	constructor(providerId) {
+		this.providerId = providerId;
+		/** @internal */
+		this.defaultLanguageCode = null;
+		/** @internal */
+		this.customParameters = {};
+	}
+	/**
+	* Set the language gode.
+	*
+	* @param languageCode - language code
+	*/
+	setDefaultLanguage(languageCode) {
+		this.defaultLanguageCode = languageCode;
+	}
+	/**
+	* Sets the OAuth custom parameters to pass in an OAuth request for popup and redirect sign-in
+	* operations.
+	*
+	* @remarks
+	* For a detailed list, check the reserved required OAuth 2.0 parameters such as `client_id`,
+	* `redirect_uri`, `scope`, `response_type`, and `state` are not allowed and will be ignored.
+	*
+	* @param customOAuthParameters - The custom OAuth parameters to pass in the OAuth request.
+	*/
+	setCustomParameters(customOAuthParameters) {
+		this.customParameters = customOAuthParameters;
+		return this;
+	}
+	/**
+	* Retrieve the current list of {@link CustomParameters}.
+	*/
+	getCustomParameters() {
+		return this.customParameters;
+	}
+};
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Common code to all OAuth providers. This is separate from the
+* {@link OAuthProvider} so that child providers (like
+* {@link GoogleAuthProvider}) don't inherit the `credential` instance method.
+* Instead, they rely on a static `credential` method.
+*/
+var BaseOAuthProvider = class extends FederatedAuthProvider {
+	constructor() {
+		super(...arguments);
+		/** @internal */
+		this.scopes = [];
+	}
+	/**
+	* Add an OAuth scope to the credential.
+	*
+	* @param scope - Provider OAuth scope to add.
+	*/
+	addScope(scope) {
+		if (!this.scopes.includes(scope)) this.scopes.push(scope);
+		return this;
+	}
+	/**
+	* Retrieve the current list of OAuth scopes.
+	*/
+	getScopes() {
+		return [...this.scopes];
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.FACEBOOK.
+*
+* @example
+* ```javascript
+* // Sign in using a redirect.
+* const provider = new FacebookAuthProvider();
+* // Start a sign in process for an unauthenticated user.
+* provider.addScope('user_birthday');
+* await signInWithRedirect(auth, provider);
+* // This will trigger a full page redirect away from your app
+*
+* // After returning from the redirect when your app initializes you can obtain the result
+* const result = await getRedirectResult(auth);
+* if (result) {
+*   // This is the signed-in user
+*   const user = result.user;
+*   // This gives you a Facebook Access Token.
+*   const credential = FacebookAuthProvider.credentialFromResult(result);
+*   const token = credential.accessToken;
+* }
+* ```
+*
+* @example
+* ```javascript
+* // Sign in using a popup.
+* const provider = new FacebookAuthProvider();
+* provider.addScope('user_birthday');
+* const result = await signInWithPopup(auth, provider);
+*
+* // The signed-in user info.
+* const user = result.user;
+* // This gives you a Facebook Access Token.
+* const credential = FacebookAuthProvider.credentialFromResult(result);
+* const token = credential.accessToken;
+* ```
+*
+* @public
+*/
+var FacebookAuthProvider = class FacebookAuthProvider extends BaseOAuthProvider {
+	constructor() {
+		super("facebook.com");
+	}
+	/**
+	* Creates a credential for Facebook.
+	*
+	* @example
+	* ```javascript
+	* // `event` from the Facebook auth.authResponseChange callback.
+	* const credential = FacebookAuthProvider.credential(event.authResponse.accessToken);
+	* const result = await signInWithCredential(credential);
+	* ```
+	*
+	* @param accessToken - Facebook access token.
+	*/
+	static credential(accessToken) {
+		return OAuthCredential._fromParams({
+			providerId: FacebookAuthProvider.PROVIDER_ID,
+			signInMethod: FacebookAuthProvider.FACEBOOK_SIGN_IN_METHOD,
+			accessToken
+		});
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromResult(userCredential) {
+		return FacebookAuthProvider.credentialFromTaggedObject(userCredential);
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
+	* thrown during a sign-in, link, or reauthenticate operation.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromError(error) {
+		return FacebookAuthProvider.credentialFromTaggedObject(error.customData || {});
+	}
+	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
+		if (!tokenResponse || !("oauthAccessToken" in tokenResponse)) return null;
+		if (!tokenResponse.oauthAccessToken) return null;
+		try {
+			return FacebookAuthProvider.credential(tokenResponse.oauthAccessToken);
+		} catch {
+			return null;
+		}
+	}
+};
+/** Always set to {@link SignInMethod}.FACEBOOK. */
+FacebookAuthProvider.FACEBOOK_SIGN_IN_METHOD = "facebook.com";
+/** Always set to {@link ProviderId}.FACEBOOK. */
+FacebookAuthProvider.PROVIDER_ID = "facebook.com";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.GOOGLE.
+*
+* @example
+* ```javascript
+* // Sign in using a redirect.
+* const provider = new GoogleAuthProvider();
+* // Start a sign in process for an unauthenticated user.
+* provider.addScope('profile');
+* provider.addScope('email');
+* await signInWithRedirect(auth, provider);
+* // This will trigger a full page redirect away from your app
+*
+* // After returning from the redirect when your app initializes you can obtain the result
+* const result = await getRedirectResult(auth);
+* if (result) {
+*   // This is the signed-in user
+*   const user = result.user;
+*   // This gives you a Google Access Token.
+*   const credential = GoogleAuthProvider.credentialFromResult(result);
+*   const token = credential.accessToken;
+* }
+* ```
+*
+* @example
+* ```javascript
+* // Sign in using a popup.
+* const provider = new GoogleAuthProvider();
+* provider.addScope('profile');
+* provider.addScope('email');
+* const result = await signInWithPopup(auth, provider);
+*
+* // The signed-in user info.
+* const user = result.user;
+* // This gives you a Google Access Token.
+* const credential = GoogleAuthProvider.credentialFromResult(result);
+* const token = credential.accessToken;
+* ```
+*
+* @public
+*/
+var GoogleAuthProvider = class GoogleAuthProvider extends BaseOAuthProvider {
+	constructor() {
+		super("google.com");
+		this.addScope("profile");
+	}
+	/**
+	* Creates a credential for Google. At least one of ID token and access token is required.
+	*
+	* @example
+	* ```javascript
+	* // \`googleUser\` from the onsuccess Google Sign In callback.
+	* const credential = GoogleAuthProvider.credential(googleUser.getAuthResponse().id_token);
+	* const result = await signInWithCredential(credential);
+	* ```
+	*
+	* @param idToken - Google ID token.
+	* @param accessToken - Google access token.
+	*/
+	static credential(idToken, accessToken) {
+		return OAuthCredential._fromParams({
+			providerId: GoogleAuthProvider.PROVIDER_ID,
+			signInMethod: GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD,
+			idToken,
+			accessToken
+		});
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromResult(userCredential) {
+		return GoogleAuthProvider.credentialFromTaggedObject(userCredential);
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
+	* thrown during a sign-in, link, or reauthenticate operation.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromError(error) {
+		return GoogleAuthProvider.credentialFromTaggedObject(error.customData || {});
+	}
+	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
+		if (!tokenResponse) return null;
+		const { oauthIdToken, oauthAccessToken } = tokenResponse;
+		if (!oauthIdToken && !oauthAccessToken) return null;
+		try {
+			return GoogleAuthProvider.credential(oauthIdToken, oauthAccessToken);
+		} catch {
+			return null;
+		}
+	}
+};
+/** Always set to {@link SignInMethod}.GOOGLE. */
+GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD = "google.com";
+/** Always set to {@link ProviderId}.GOOGLE. */
+GoogleAuthProvider.PROVIDER_ID = "google.com";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.GITHUB.
+*
+* @remarks
+* GitHub requires an OAuth 2.0 redirect, so you can either handle the redirect directly, or use
+* the {@link signInWithPopup} handler:
+*
+* @example
+* ```javascript
+* // Sign in using a redirect.
+* const provider = new GithubAuthProvider();
+* // Start a sign in process for an unauthenticated user.
+* provider.addScope('repo');
+* await signInWithRedirect(auth, provider);
+* // This will trigger a full page redirect away from your app
+*
+* // After returning from the redirect when your app initializes you can obtain the result
+* const result = await getRedirectResult(auth);
+* if (result) {
+*   // This is the signed-in user
+*   const user = result.user;
+*   // This gives you a GitHub Access Token.
+*   const credential = GithubAuthProvider.credentialFromResult(result);
+*   const token = credential.accessToken;
+* }
+* ```
+*
+* @example
+* ```javascript
+* // Sign in using a popup.
+* const provider = new GithubAuthProvider();
+* provider.addScope('repo');
+* const result = await signInWithPopup(auth, provider);
+*
+* // The signed-in user info.
+* const user = result.user;
+* // This gives you a GitHub Access Token.
+* const credential = GithubAuthProvider.credentialFromResult(result);
+* const token = credential.accessToken;
+* ```
+* @public
+*/
+var GithubAuthProvider = class GithubAuthProvider extends BaseOAuthProvider {
+	constructor() {
+		super("github.com");
+	}
+	/**
+	* Creates a credential for GitHub.
+	*
+	* @param accessToken - GitHub access token.
+	*/
+	static credential(accessToken) {
+		return OAuthCredential._fromParams({
+			providerId: GithubAuthProvider.PROVIDER_ID,
+			signInMethod: GithubAuthProvider.GITHUB_SIGN_IN_METHOD,
+			accessToken
+		});
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromResult(userCredential) {
+		return GithubAuthProvider.credentialFromTaggedObject(userCredential);
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
+	* thrown during a sign-in, link, or reauthenticate operation.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromError(error) {
+		return GithubAuthProvider.credentialFromTaggedObject(error.customData || {});
+	}
+	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
+		if (!tokenResponse || !("oauthAccessToken" in tokenResponse)) return null;
+		if (!tokenResponse.oauthAccessToken) return null;
+		try {
+			return GithubAuthProvider.credential(tokenResponse.oauthAccessToken);
+		} catch {
+			return null;
+		}
+	}
+};
+/** Always set to {@link SignInMethod}.GITHUB. */
+GithubAuthProvider.GITHUB_SIGN_IN_METHOD = "github.com";
+/** Always set to {@link ProviderId}.GITHUB. */
+GithubAuthProvider.PROVIDER_ID = "github.com";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating an {@link OAuthCredential} for {@link ProviderId}.TWITTER.
+*
+* @example
+* ```javascript
+* // Sign in using a redirect.
+* const provider = new TwitterAuthProvider();
+* // Start a sign in process for an unauthenticated user.
+* await signInWithRedirect(auth, provider);
+* // This will trigger a full page redirect away from your app
+*
+* // After returning from the redirect when your app initializes you can obtain the result
+* const result = await getRedirectResult(auth);
+* if (result) {
+*   // This is the signed-in user
+*   const user = result.user;
+*   // This gives you a Twitter Access Token and Secret.
+*   const credential = TwitterAuthProvider.credentialFromResult(result);
+*   const token = credential.accessToken;
+*   const secret = credential.secret;
+* }
+* ```
+*
+* @example
+* ```javascript
+* // Sign in using a popup.
+* const provider = new TwitterAuthProvider();
+* const result = await signInWithPopup(auth, provider);
+*
+* // The signed-in user info.
+* const user = result.user;
+* // This gives you a Twitter Access Token and Secret.
+* const credential = TwitterAuthProvider.credentialFromResult(result);
+* const token = credential.accessToken;
+* const secret = credential.secret;
+* ```
+*
+* @public
+*/
+var TwitterAuthProvider = class TwitterAuthProvider extends BaseOAuthProvider {
+	constructor() {
+		super("twitter.com");
+	}
+	/**
+	* Creates a credential for Twitter.
+	*
+	* @param token - Twitter access token.
+	* @param secret - Twitter secret.
+	*/
+	static credential(token, secret) {
+		return OAuthCredential._fromParams({
+			providerId: TwitterAuthProvider.PROVIDER_ID,
+			signInMethod: TwitterAuthProvider.TWITTER_SIGN_IN_METHOD,
+			oauthToken: token,
+			oauthTokenSecret: secret
+		});
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link UserCredential}.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromResult(userCredential) {
+		return TwitterAuthProvider.credentialFromTaggedObject(userCredential);
+	}
+	/**
+	* Used to extract the underlying {@link OAuthCredential} from a {@link AuthError} which was
+	* thrown during a sign-in, link, or reauthenticate operation.
+	*
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromError(error) {
+		return TwitterAuthProvider.credentialFromTaggedObject(error.customData || {});
+	}
+	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
+		if (!tokenResponse) return null;
+		const { oauthAccessToken, oauthTokenSecret } = tokenResponse;
+		if (!oauthAccessToken || !oauthTokenSecret) return null;
+		try {
+			return TwitterAuthProvider.credential(oauthAccessToken, oauthTokenSecret);
+		} catch {
+			return null;
+		}
+	}
+};
+/** Always set to {@link SignInMethod}.TWITTER. */
+TwitterAuthProvider.TWITTER_SIGN_IN_METHOD = "twitter.com";
+/** Always set to {@link ProviderId}.TWITTER. */
+TwitterAuthProvider.PROVIDER_ID = "twitter.com";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var UserCredentialImpl = class UserCredentialImpl {
+	constructor(params) {
+		this.user = params.user;
+		this.providerId = params.providerId;
+		this._tokenResponse = params._tokenResponse;
+		this.operationType = params.operationType;
+	}
+	static async _fromIdTokenResponse(auth, operationType, idTokenResponse, isAnonymous = false) {
+		const user = await UserImpl._fromIdTokenResponse(auth, idTokenResponse, isAnonymous);
+		const providerId = providerIdForResponse(idTokenResponse);
+		return new UserCredentialImpl({
+			user,
+			providerId,
+			_tokenResponse: idTokenResponse,
+			operationType
+		});
+	}
+	static async _forOperation(user, operationType, response) {
+		await user._updateTokensIfNecessary(response, true);
+		const providerId = providerIdForResponse(response);
+		return new UserCredentialImpl({
+			user,
+			providerId,
+			_tokenResponse: response,
+			operationType
+		});
+	}
+};
+function providerIdForResponse(response) {
+	if (response.providerId) return response.providerId;
+	if ("phoneNumber" in response) return "phone";
+	return null;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var MultiFactorError = class MultiFactorError extends FirebaseError {
+	constructor(auth, error, operationType, user) {
+		super(error.code, error.message);
+		this.operationType = operationType;
+		this.user = user;
+		Object.setPrototypeOf(this, MultiFactorError.prototype);
+		this.customData = {
+			appName: auth.name,
+			tenantId: auth.tenantId ?? void 0,
+			_serverResponse: error.customData._serverResponse,
+			operationType
+		};
+	}
+	static _fromErrorAndOperation(auth, error, operationType, user) {
+		return new MultiFactorError(auth, error, operationType, user);
+	}
+};
+function _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential, user) {
+	return (operationType === "reauthenticate" ? credential._getReauthenticationResolver(auth) : credential._getIdTokenResponse(auth)).catch((error) => {
+		if (error.code === `auth/multi-factor-auth-required`) throw MultiFactorError._fromErrorAndOperation(auth, error, operationType, user);
+		throw error;
+	});
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _link$1(user, credential, bypassAuthState = false) {
+	const response = await _logoutIfInvalidated(user, credential._linkToIdToken(user.auth, await user.getIdToken()), bypassAuthState);
+	return UserCredentialImpl._forOperation(user, "link", response);
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _reauthenticate(user, credential, bypassAuthState = false) {
+	const { auth } = user;
+	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
+	const operationType = "reauthenticate";
+	try {
+		const response = await _logoutIfInvalidated(user, _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential, user), bypassAuthState);
+		_assert(response.idToken, auth, "internal-error");
+		const parsed = _parseToken(response.idToken);
+		_assert(parsed, auth, "internal-error");
+		const { sub: localId } = parsed;
+		_assert(user.uid === localId, auth, "user-mismatch");
+		return UserCredentialImpl._forOperation(user, operationType, response);
+	} catch (e) {
+		if (e?.code === `auth/user-not-found`) _fail(auth, "user-mismatch");
+		throw e;
+	}
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _signInWithCredential(auth, credential, bypassAuthState = false) {
+	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
+	const operationType = "signIn";
+	const response = await _processCredentialSavingMfaContextIfNecessary(auth, operationType, credential);
+	const userCredential = await UserCredentialImpl._fromIdTokenResponse(auth, operationType, response);
+	if (!bypassAuthState) await auth._updateCurrentUser(userCredential.user);
+	return userCredential;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Adds an observer for changes to the signed-in user's ID token.
+*
+* @remarks
+* This includes sign-in, sign-out, and token refresh events.
+* This will not be triggered automatically upon ID token expiration. Use {@link User.getIdToken} to refresh the ID token.
+*
+* @param auth - The {@link Auth} instance.
+* @param nextOrObserver - callback triggered on change.
+* @param error - Deprecated. This callback is never triggered. Errors
+* on signing in/out can be caught in promises returned from
+* sign-in/sign-out functions.
+* @param completed - Deprecated. This callback is never triggered.
+*
+* @public
+*/
+function onIdTokenChanged(auth, nextOrObserver, error, completed) {
+	return getModularInstance(auth).onIdTokenChanged(nextOrObserver, error, completed);
+}
+/**
+* Adds a blocking callback that runs before an auth state change
+* sets a new user.
+*
+* @param auth - The {@link Auth} instance.
+* @param callback - callback triggered before new user value is set.
+*   If this throws, it blocks the user from being set.
+* @param onAbort - callback triggered if a later `beforeAuthStateChanged()`
+*   callback throws, allowing you to undo any side effects.
+*/
+function beforeAuthStateChanged(auth, callback, onAbort) {
+	return getModularInstance(auth).beforeAuthStateChanged(callback, onAbort);
+}
+/**
+* Adds an observer for changes to the user's sign-in state.
+*
+* @remarks
+* To keep the old behavior, see {@link onIdTokenChanged}.
+*
+* @param auth - The {@link Auth} instance.
+* @param nextOrObserver - callback triggered on change.
+* @param error - Deprecated. This callback is never triggered. Errors
+* on signing in/out can be caught in promises returned from
+* sign-in/sign-out functions.
+* @param completed - Deprecated. This callback is never triggered.
+*
+* @public
+*/
+function onAuthStateChanged(auth, nextOrObserver, error, completed) {
+	return getModularInstance(auth).onAuthStateChanged(nextOrObserver, error, completed);
+}
+/**
+* Signs out the current user.
+*
+* @remarks
+* This method is not supported by {@link Auth} instances created with a
+* {@link @firebase/app#FirebaseServerApp}.
+*
+* @param auth - The {@link Auth} instance.
+*
+* @public
+*/
+function signOut(auth) {
+	return getModularInstance(auth).signOut();
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function startEnrollPhoneMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:start", _addTidIfNecessary(auth, request));
+}
+function finalizeEnrollPhoneMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:finalize", _addTidIfNecessary(auth, request));
+}
+function startEnrollTotpMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:start", _addTidIfNecessary(auth, request));
+}
+function finalizeEnrollTotpMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaEnrollment:finalize", _addTidIfNecessary(auth, request));
+}
+var STORAGE_AVAILABLE_KEY = "__sak";
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var BrowserPersistenceClass = class {
+	constructor(storageRetriever, type) {
+		this.storageRetriever = storageRetriever;
+		this.type = type;
+	}
+	_isAvailable() {
+		try {
+			if (!this.storage) return Promise.resolve(false);
+			this.storage.setItem(STORAGE_AVAILABLE_KEY, "1");
+			this.storage.removeItem(STORAGE_AVAILABLE_KEY);
+			return Promise.resolve(true);
+		} catch {
+			return Promise.resolve(false);
+		}
+	}
+	_set(key, value) {
+		this.storage.setItem(key, JSON.stringify(value));
+		return Promise.resolve();
+	}
+	_get(key) {
+		const json = this.storage.getItem(key);
+		return Promise.resolve(json ? JSON.parse(json) : null);
+	}
+	_remove(key) {
+		this.storage.removeItem(key);
+		return Promise.resolve();
+	}
+	get storage() {
+		return this.storageRetriever();
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var _POLLING_INTERVAL_MS$1 = 1e3;
+var IE10_LOCAL_STORAGE_SYNC_DELAY = 10;
+var BrowserLocalPersistence = class extends BrowserPersistenceClass {
+	constructor() {
+		super(() => window.localStorage, "LOCAL");
+		this.boundEventHandler = (event, poll) => this.onStorageEvent(event, poll);
+		this.listeners = {};
+		this.localCache = {};
+		this.pollTimer = null;
+		this.fallbackToPolling = _isMobileBrowser();
+		this._shouldAllowMigration = true;
+	}
+	forAllChangedKeys(cb) {
+		for (const key of Object.keys(this.listeners)) {
+			const newValue = this.storage.getItem(key);
+			const oldValue = this.localCache[key];
+			if (newValue !== oldValue) cb(key, oldValue, newValue);
+		}
+	}
+	onStorageEvent(event, poll = false) {
+		if (!event.key) {
+			this.forAllChangedKeys((key, _oldValue, newValue) => {
+				this.notifyListeners(key, newValue);
+			});
+			return;
+		}
+		const key = event.key;
+		if (poll) this.detachListener();
+		else this.stopPolling();
+		const triggerListeners = () => {
+			const storedValue = this.storage.getItem(key);
+			if (!poll && this.localCache[key] === storedValue) return;
+			this.notifyListeners(key, storedValue);
+		};
+		const storedValue = this.storage.getItem(key);
+		if (_isIE10() && storedValue !== event.newValue && event.newValue !== event.oldValue) setTimeout(triggerListeners, IE10_LOCAL_STORAGE_SYNC_DELAY);
+		else triggerListeners();
+	}
+	notifyListeners(key, value) {
+		this.localCache[key] = value;
+		const listeners = this.listeners[key];
+		if (listeners) for (const listener of Array.from(listeners)) listener(value ? JSON.parse(value) : value);
+	}
+	startPolling() {
+		this.stopPolling();
+		this.pollTimer = setInterval(() => {
+			this.forAllChangedKeys((key, oldValue, newValue) => {
+				this.onStorageEvent(new StorageEvent("storage", {
+					key,
+					oldValue,
+					newValue
+				}), true);
+			});
+		}, _POLLING_INTERVAL_MS$1);
+	}
+	stopPolling() {
+		if (this.pollTimer) {
+			clearInterval(this.pollTimer);
+			this.pollTimer = null;
+		}
+	}
+	attachListener() {
+		window.addEventListener("storage", this.boundEventHandler);
+	}
+	detachListener() {
+		window.removeEventListener("storage", this.boundEventHandler);
+	}
+	_addListener(key, listener) {
+		if (Object.keys(this.listeners).length === 0) {
+			if (this.fallbackToPolling) this.startPolling();
+			else this.attachListener();
+		}
+		if (!this.listeners[key]) {
+			this.listeners[key] = /* @__PURE__ */ new Set();
+			this.localCache[key] = this.storage.getItem(key);
+		}
+		this.listeners[key].add(listener);
+	}
+	_removeListener(key, listener) {
+		if (this.listeners[key]) {
+			this.listeners[key].delete(listener);
+			if (this.listeners[key].size === 0) delete this.listeners[key];
+		}
+		if (Object.keys(this.listeners).length === 0) {
+			this.detachListener();
+			this.stopPolling();
+		}
+	}
+	async _set(key, value) {
+		await super._set(key, value);
+		this.localCache[key] = JSON.stringify(value);
+	}
+	async _get(key) {
+		const value = await super._get(key);
+		this.localCache[key] = JSON.stringify(value);
+		return value;
+	}
+	async _remove(key) {
+		await super._remove(key);
+		delete this.localCache[key];
+	}
+};
+BrowserLocalPersistence.type = "LOCAL";
+/**
+* An implementation of {@link Persistence} of type `LOCAL` using `localStorage`
+* for the underlying storage.
+*
+* @public
+*/
+var browserLocalPersistence = BrowserLocalPersistence;
+/**
+* @license
+* Copyright 2025 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var POLLING_INTERVAL_MS = 1e3;
+function getDocumentCookie(name) {
+	const escapedName = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+	const matcher = RegExp(`${escapedName}=([^;]+)`);
+	return document.cookie.match(matcher)?.[1] ?? null;
+}
+function getCookieName(key) {
+	return `${window.location.protocol === "http:" ? "__dev_" : "__HOST-"}FIREBASE_${key.split(":")[3]}`;
+}
+var CookiePersistence = class {
+	constructor() {
+		this.type = "COOKIE";
+		this.listenerUnsubscribes = /* @__PURE__ */ new Map();
+	}
+	_getFinalTarget(originalUrl) {
+		const url = new URL(`${window.location.origin}/__cookies__`);
+		url.searchParams.set("finalTarget", originalUrl);
+		return url;
+	}
+	async _isAvailable() {
+		if (typeof isSecureContext === "boolean" && !isSecureContext) return false;
+		if (typeof navigator === "undefined" || typeof document === "undefined") return false;
+		return navigator.cookieEnabled ?? true;
+	}
+	async _set(_key, _value) {}
+	async _get(key) {
+		if (!this._isAvailable()) return null;
+		const name = getCookieName(key);
+		if (window.cookieStore) return (await window.cookieStore.get(name))?.value;
+		return getDocumentCookie(name);
+	}
+	async _remove(key) {
+		if (!this._isAvailable()) return;
+		if (!await this._get(key)) return;
+		const name = getCookieName(key);
+		document.cookie = `${name}=;Max-Age=34560000;Partitioned;Secure;SameSite=Strict;Path=/;Priority=High`;
+		await fetch(`/__cookies__`, { method: "DELETE" }).catch(() => void 0);
+	}
+	_addListener(key, listener) {
+		if (!this._isAvailable()) return;
+		const name = getCookieName(key);
+		if (window.cookieStore) {
+			const cb = ((event) => {
+				const changedCookie = event.changed.find((change) => change.name === name);
+				if (changedCookie) listener(changedCookie.value);
+				if (event.deleted.find((change) => change.name === name)) listener(null);
+			});
+			const unsubscribe = () => window.cookieStore.removeEventListener("change", cb);
+			this.listenerUnsubscribes.set(listener, unsubscribe);
+			return window.cookieStore.addEventListener("change", cb);
+		}
+		let lastValue = getDocumentCookie(name);
+		const interval = setInterval(() => {
+			const currentValue = getDocumentCookie(name);
+			if (currentValue !== lastValue) {
+				listener(currentValue);
+				lastValue = currentValue;
+			}
+		}, POLLING_INTERVAL_MS);
+		const unsubscribe = () => clearInterval(interval);
+		this.listenerUnsubscribes.set(listener, unsubscribe);
+	}
+	_removeListener(_key, listener) {
+		const unsubscribe = this.listenerUnsubscribes.get(listener);
+		if (!unsubscribe) return;
+		unsubscribe();
+		this.listenerUnsubscribes.delete(listener);
+	}
+};
+CookiePersistence.type = "COOKIE";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var BrowserSessionPersistence = class extends BrowserPersistenceClass {
+	constructor() {
+		super(() => window.sessionStorage, "SESSION");
+	}
+	_addListener(_key, _listener) {}
+	_removeListener(_key, _listener) {}
+};
+BrowserSessionPersistence.type = "SESSION";
+/**
+* An implementation of {@link Persistence} of `SESSION` using `sessionStorage`
+* for the underlying storage.
+*
+* @public
+*/
+var browserSessionPersistence = BrowserSessionPersistence;
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Shim for Promise.allSettled, note the slightly different format of `fulfilled` vs `status`.
+*
+* @param promises - Array of promises to wait on.
+*/
+function _allSettled(promises) {
+	return Promise.all(promises.map(async (promise) => {
+		try {
+			return {
+				fulfilled: true,
+				value: await promise
+			};
+		} catch (reason) {
+			return {
+				fulfilled: false,
+				reason
+			};
+		}
+	}));
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Interface class for receiving messages.
+*
+*/
+var Receiver = class Receiver {
+	constructor(eventTarget) {
+		this.eventTarget = eventTarget;
+		this.handlersMap = {};
+		this.boundEventHandler = this.handleEvent.bind(this);
+	}
+	/**
+	* Obtain an instance of a Receiver for a given event target, if none exists it will be created.
+	*
+	* @param eventTarget - An event target (such as window or self) through which the underlying
+	* messages will be received.
+	*/
+	static _getInstance(eventTarget) {
+		const existingInstance = this.receivers.find((receiver) => receiver.isListeningto(eventTarget));
+		if (existingInstance) return existingInstance;
+		const newInstance = new Receiver(eventTarget);
+		this.receivers.push(newInstance);
+		return newInstance;
+	}
+	isListeningto(eventTarget) {
+		return this.eventTarget === eventTarget;
+	}
+	/**
+	* Fans out a MessageEvent to the appropriate listeners.
+	*
+	* @remarks
+	* Sends an {@link Status.ACK} upon receipt and a {@link Status.DONE} once all handlers have
+	* finished processing.
+	*
+	* @param event - The MessageEvent.
+	*
+	*/
+	async handleEvent(event) {
+		const messageEvent = event;
+		const { eventId, eventType, data } = messageEvent.data;
+		const handlers = this.handlersMap[eventType];
+		if (!handlers?.size) return;
+		messageEvent.ports[0].postMessage({
+			status: "ack",
+			eventId,
+			eventType
+		});
+		const response = await _allSettled(Array.from(handlers).map(async (handler) => handler(messageEvent.origin, data)));
+		messageEvent.ports[0].postMessage({
+			status: "done",
+			eventId,
+			eventType,
+			response
+		});
+	}
+	/**
+	* Subscribe an event handler for a particular event.
+	*
+	* @param eventType - Event name to subscribe to.
+	* @param eventHandler - The event handler which should receive the events.
+	*
+	*/
+	_subscribe(eventType, eventHandler) {
+		if (Object.keys(this.handlersMap).length === 0) this.eventTarget.addEventListener("message", this.boundEventHandler);
+		if (!this.handlersMap[eventType]) this.handlersMap[eventType] = /* @__PURE__ */ new Set();
+		this.handlersMap[eventType].add(eventHandler);
+	}
+	/**
+	* Unsubscribe an event handler from a particular event.
+	*
+	* @param eventType - Event name to unsubscribe from.
+	* @param eventHandler - Optional event handler, if none provided, unsubscribe all handlers on this event.
+	*
+	*/
+	_unsubscribe(eventType, eventHandler) {
+		if (this.handlersMap[eventType] && eventHandler) this.handlersMap[eventType].delete(eventHandler);
+		if (!eventHandler || this.handlersMap[eventType].size === 0) delete this.handlersMap[eventType];
+		if (Object.keys(this.handlersMap).length === 0) this.eventTarget.removeEventListener("message", this.boundEventHandler);
+	}
+};
+Receiver.receivers = [];
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _generateEventId(prefix = "", digits = 10) {
+	let random = "";
+	for (let i = 0; i < digits; i++) random += Math.floor(Math.random() * 10);
+	return prefix + random;
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Interface for sending messages and waiting for a completion response.
+*
+*/
+var Sender = class {
+	constructor(target) {
+		this.target = target;
+		this.handlers = /* @__PURE__ */ new Set();
+	}
+	/**
+	* Unsubscribe the handler and remove it from our tracking Set.
+	*
+	* @param handler - The handler to unsubscribe.
+	*/
+	removeMessageHandler(handler) {
+		if (handler.messageChannel) {
+			handler.messageChannel.port1.removeEventListener("message", handler.onMessage);
+			handler.messageChannel.port1.close();
+		}
+		this.handlers.delete(handler);
+	}
+	/**
+	* Send a message to the Receiver located at {@link target}.
+	*
+	* @remarks
+	* We'll first wait a bit for an ACK , if we get one we will wait significantly longer until the
+	* receiver has had a chance to fully process the event.
+	*
+	* @param eventType - Type of event to send.
+	* @param data - The payload of the event.
+	* @param timeout - Timeout for waiting on an ACK from the receiver.
+	*
+	* @returns An array of settled promises from all the handlers that were listening on the receiver.
+	*/
+	async _send(eventType, data, timeout = 50) {
+		const messageChannel = typeof MessageChannel !== "undefined" ? new MessageChannel() : null;
+		if (!messageChannel) throw new Error("connection_unavailable");
+		let completionTimer;
+		let handler;
+		return new Promise((resolve, reject) => {
+			const eventId = _generateEventId("", 20);
+			messageChannel.port1.start();
+			const ackTimer = setTimeout(() => {
+				reject(/* @__PURE__ */ new Error("unsupported_event"));
+			}, timeout);
+			handler = {
+				messageChannel,
+				onMessage(event) {
+					const messageEvent = event;
+					if (messageEvent.data.eventId !== eventId) return;
+					switch (messageEvent.data.status) {
+						case "ack":
+							clearTimeout(ackTimer);
+							completionTimer = setTimeout(() => {
+								reject(/* @__PURE__ */ new Error("timeout"));
+							}, 3e3);
+							break;
+						case "done":
+							clearTimeout(completionTimer);
+							resolve(messageEvent.data.response);
+							break;
+						default:
+							clearTimeout(ackTimer);
+							clearTimeout(completionTimer);
+							reject(/* @__PURE__ */ new Error("invalid_response"));
+					}
+				}
+			};
+			this.handlers.add(handler);
+			messageChannel.port1.addEventListener("message", handler.onMessage);
+			this.target.postMessage({
+				eventType,
+				eventId,
+				data
+			}, [messageChannel.port2]);
+		}).finally(() => {
+			if (handler) this.removeMessageHandler(handler);
+		});
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Lazy accessor for window, since the compat layer won't tree shake this out,
+* we need to make sure not to mess with window unless we have to
+*/
+function _window() {
+	return window;
+}
+function _setWindowLocation(url) {
+	_window().location.href = url;
+}
+/**
+* @license
+* Copyright 2020 Google LLC.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function _isWorker() {
+	return typeof _window()["WorkerGlobalScope"] !== "undefined" && typeof _window()["importScripts"] === "function";
+}
+async function _getActiveServiceWorker() {
+	if (!navigator?.serviceWorker) return null;
+	try {
+		return (await navigator.serviceWorker.ready).active;
+	} catch {
+		return null;
+	}
+}
+function _getServiceWorkerController() {
+	return navigator?.serviceWorker?.controller || null;
+}
+function _getWorkerGlobalScope() {
+	return _isWorker() ? self : null;
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var DB_NAME = "firebaseLocalStorageDb";
+var DB_VERSION = 1;
+var DB_OBJECTSTORE_NAME = "firebaseLocalStorage";
+var DB_DATA_KEYPATH = "fbase_key";
+/**
+* Promise wrapper for IDBRequest
+*
+* Unfortunately we can't cleanly extend Promise<T> since promises are not callable in ES6
+*
+*/
+var DBPromise = class {
+	constructor(request) {
+		this.request = request;
+	}
+	toPromise() {
+		return new Promise((resolve, reject) => {
+			this.request.addEventListener("success", () => {
+				resolve(this.request.result);
+			});
+			this.request.addEventListener("error", () => {
+				reject(this.request.error);
+			});
+		});
+	}
+};
+function getObjectStore(db, isReadWrite) {
+	return db.transaction([DB_OBJECTSTORE_NAME], isReadWrite ? "readwrite" : "readonly").objectStore(DB_OBJECTSTORE_NAME);
+}
+function _deleteDatabase() {
+	return new DBPromise(indexedDB.deleteDatabase(DB_NAME)).toPromise();
+}
+function _openDatabase() {
+	const request = indexedDB.open(DB_NAME, DB_VERSION);
+	return new Promise((resolve, reject) => {
+		request.addEventListener("error", () => {
+			reject(request.error);
+		});
+		request.addEventListener("upgradeneeded", () => {
+			const db = request.result;
+			try {
+				db.createObjectStore(DB_OBJECTSTORE_NAME, { keyPath: DB_DATA_KEYPATH });
+			} catch (e) {
+				reject(e);
+			}
+		});
+		request.addEventListener("success", async () => {
+			const db = request.result;
+			if (!db.objectStoreNames.contains(DB_OBJECTSTORE_NAME)) {
+				db.close();
+				await _deleteDatabase();
+				resolve(await _openDatabase());
+			} else resolve(db);
+		});
+	});
+}
+async function _putObject(db, key, value) {
+	return new DBPromise(getObjectStore(db, true).put({
+		[DB_DATA_KEYPATH]: key,
+		value
+	})).toPromise();
+}
+async function getObject(db, key) {
+	const data = await new DBPromise(getObjectStore(db, false).get(key)).toPromise();
+	return data === void 0 ? null : data.value;
+}
+function _deleteObject(db, key) {
+	return new DBPromise(getObjectStore(db, true).delete(key)).toPromise();
+}
+var _POLLING_INTERVAL_MS = 800;
+var _TRANSACTION_RETRY_COUNT = 3;
+var IndexedDBLocalPersistence = class {
+	registerLifecycleListeners() {
+		if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+			window.addEventListener("pagehide", this.onPageHide);
+			window.addEventListener("pageshow", this.onPageShow);
+		}
+	}
+	unregisterLifecycleListeners() {
+		if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+			window.removeEventListener("pagehide", this.onPageHide);
+			window.removeEventListener("pageshow", this.onPageShow);
+		}
+	}
+	constructor() {
+		this.type = "LOCAL";
+		this.dbPromise = null;
+		this._shouldAllowMigration = true;
+		this.listeners = {};
+		this.localCache = {};
+		this.pollTimer = null;
+		this.isClosing = false;
+		this.pendingWrites = 0;
+		this.receiver = null;
+		this.sender = null;
+		this.serviceWorkerReceiverAvailable = false;
+		this.activeServiceWorker = null;
+		this.onPageHide = () => {
+			this.isClosing = true;
+			this.stopPolling();
+			if (this.dbPromise) {
+				this.dbPromise.then((db) => db.close()).catch(() => {});
+				this.dbPromise = null;
+			}
+		};
+		this.onPageShow = () => {
+			if (this.isClosing) {
+				this.isClosing = false;
+				if (Object.keys(this.listeners).length > 0) this.startPolling();
+			}
+		};
+		this._workerInitializationPromise = this.initializeServiceWorkerMessaging().then(() => {}, () => {});
+	}
+	async _openDb() {
+		if (this.dbPromise) return this.dbPromise;
+		this.dbPromise = _openDatabase();
+		this.dbPromise.catch(() => {
+			this.dbPromise = null;
+		});
+		return this.dbPromise;
+	}
+	async _withRetries(op) {
+		let numAttempts = 0;
+		while (true) try {
+			return await op(await this._openDb());
+		} catch (e) {
+			if (numAttempts++ > _TRANSACTION_RETRY_COUNT) throw e;
+			if (this.dbPromise) {
+				const dbPromise = this.dbPromise;
+				this.dbPromise = null;
+				try {
+					(await dbPromise).close();
+				} catch {}
+			}
+		}
+	}
+	/**
+	* IndexedDB events do not propagate from the main window to the worker context.  We rely on a
+	* postMessage interface to send these events to the worker ourselves.
+	*/
+	async initializeServiceWorkerMessaging() {
+		return _isWorker() ? this.initializeReceiver() : this.initializeSender();
+	}
+	/**
+	* As the worker we should listen to events from the main window.
+	*/
+	async initializeReceiver() {
+		this.receiver = Receiver._getInstance(_getWorkerGlobalScope());
+		this.receiver._subscribe("keyChanged", async (_origin, data) => {
+			return { keyProcessed: (await this._poll()).includes(data.key) };
+		});
+		this.receiver._subscribe("ping", async (_origin, _data) => {
+			return ["keyChanged"];
+		});
+	}
+	/**
+	* As the main window, we should let the worker know when keys change (set and remove).
+	*
+	* @remarks
+	* {@link https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/ready | ServiceWorkerContainer.ready}
+	* may not resolve.
+	*/
+	async initializeSender() {
+		this.activeServiceWorker = await _getActiveServiceWorker();
+		if (!this.activeServiceWorker) return;
+		this.sender = new Sender(this.activeServiceWorker);
+		const results = await this.sender._send("ping", {}, 800);
+		if (!results) return;
+		if (results[0]?.fulfilled && results[0]?.value.includes("keyChanged")) this.serviceWorkerReceiverAvailable = true;
+	}
+	/**
+	* Let the worker know about a changed key, the exact key doesn't technically matter since the
+	* worker will just trigger a full sync anyway.
+	*
+	* @remarks
+	* For now, we only support one service worker per page.
+	*
+	* @param key - Storage key which changed.
+	*/
+	async notifyServiceWorker(key) {
+		if (!this.sender || !this.activeServiceWorker || _getServiceWorkerController() !== this.activeServiceWorker) return;
+		try {
+			await this.sender._send("keyChanged", { key }, this.serviceWorkerReceiverAvailable ? 800 : 50);
+		} catch {}
+	}
+	async _isAvailable() {
+		try {
+			if (!indexedDB) return false;
+			await this._withRetries(async (db) => {
+				await _putObject(db, STORAGE_AVAILABLE_KEY, "1");
+				await _deleteObject(db, STORAGE_AVAILABLE_KEY);
+			});
+			return true;
+		} catch {}
+		return false;
+	}
+	async _withPendingWrite(write) {
+		this.pendingWrites++;
+		try {
+			await write();
+		} finally {
+			this.pendingWrites--;
+		}
+	}
+	async _set(key, value) {
+		return this._withPendingWrite(async () => {
+			await this._withRetries((db) => _putObject(db, key, value));
+			this.localCache[key] = value;
+			return this.notifyServiceWorker(key);
+		});
+	}
+	async _get(key) {
+		const obj = await this._withRetries((db) => getObject(db, key));
+		this.localCache[key] = obj;
+		return obj;
+	}
+	async _remove(key) {
+		return this._withPendingWrite(async () => {
+			await this._withRetries((db) => _deleteObject(db, key));
+			delete this.localCache[key];
+			return this.notifyServiceWorker(key);
+		});
+	}
+	async _poll() {
+		if (this.isClosing) return [];
+		try {
+			const result = await this._withRetries((db) => {
+				return new DBPromise(getObjectStore(db, false).getAll()).toPromise();
+			});
+			if (this.isClosing) return [];
+			if (!result) return [];
+			if (this.pendingWrites !== 0) return [];
+			const keys = [];
+			const keysInResult = /* @__PURE__ */ new Set();
+			if (result.length !== 0) for (const { fbase_key: key, value } of result) {
+				keysInResult.add(key);
+				if (JSON.stringify(this.localCache[key]) !== JSON.stringify(value)) {
+					this.notifyListeners(key, value);
+					keys.push(key);
+				}
+			}
+			for (const localKey of Object.keys(this.localCache)) if (this.localCache[localKey] && !keysInResult.has(localKey)) {
+				this.notifyListeners(localKey, null);
+				keys.push(localKey);
+			}
+			return keys;
+		} catch (e) {
+			if (!this.isClosing) _logWarn(`Firebase Auth cross-tab polling failed with error: ${e}`);
+			return [];
+		}
+	}
+	notifyListeners(key, newValue) {
+		this.localCache[key] = newValue;
+		const listeners = this.listeners[key];
+		if (listeners) for (const listener of Array.from(listeners)) listener(newValue);
+	}
+	startPolling() {
+		this.stopPolling();
+		this.pollTimer = setInterval(async () => this._poll(), _POLLING_INTERVAL_MS);
+	}
+	stopPolling() {
+		if (this.pollTimer) {
+			clearInterval(this.pollTimer);
+			this.pollTimer = null;
+		}
+	}
+	_addListener(key, listener) {
+		if (Object.keys(this.listeners).length === 0) {
+			this.startPolling();
+			this.registerLifecycleListeners();
+		}
+		if (!this.listeners[key]) {
+			this.listeners[key] = /* @__PURE__ */ new Set();
+			this._get(key).catch(() => {});
+		}
+		this.listeners[key].add(listener);
+	}
+	_removeListener(key, listener) {
+		if (this.listeners[key]) {
+			this.listeners[key].delete(listener);
+			if (this.listeners[key].size === 0) delete this.listeners[key];
+		}
+		if (Object.keys(this.listeners).length === 0) {
+			this.stopPolling();
+			this.unregisterLifecycleListeners();
+		}
+	}
+};
+IndexedDBLocalPersistence.type = "LOCAL";
+/**
+* An implementation of {@link Persistence} of type `LOCAL` using `indexedDB`
+* for the underlying storage.
+*
+* @public
+*/
+var indexedDBLocalPersistence = IndexedDBLocalPersistence;
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function startSignInPhoneMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:start", _addTidIfNecessary(auth, request));
+}
+function finalizeSignInPhoneMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:finalize", _addTidIfNecessary(auth, request));
+}
+function finalizeSignInTotpMfa(auth, request) {
+	return _performApiRequest(auth, "POST", "/v2/accounts/mfaSignIn:finalize", _addTidIfNecessary(auth, request));
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+_generateCallbackName("rcb");
+new Delay(3e4, 6e4);
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var RECAPTCHA_VERIFIER_TYPE = "recaptcha";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Returns a verification ID to be used in conjunction with the SMS code that is sent.
+*
+*/
+async function _verifyPhoneNumber(auth, options, verifier) {
+	if (!auth._getRecaptchaConfig()) try {
+		await _initializeRecaptchaConfig(auth);
+	} catch (error) {
+		console.log("Failed to initialize reCAPTCHA Enterprise config. Triggering the reCAPTCHA v2 verification.");
+	}
+	try {
+		let phoneInfoOptions;
+		if (typeof options === "string") phoneInfoOptions = { phoneNumber: options };
+		else phoneInfoOptions = options;
+		if ("session" in phoneInfoOptions) {
+			const session = phoneInfoOptions.session;
+			if ("phoneNumber" in phoneInfoOptions) {
+				_assert(session.type === "enroll", auth, "internal-error");
+				const startPhoneMfaEnrollmentRequest = {
+					idToken: session.credential,
+					phoneEnrollmentInfo: {
+						phoneNumber: phoneInfoOptions.phoneNumber,
+						clientType: "CLIENT_TYPE_WEB"
+					}
+				};
+				const startEnrollPhoneMfaActionCallback = async (authInstance, request) => {
+					if (request.phoneEnrollmentInfo.captchaResponse === FAKE_TOKEN) {
+						_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
+						return startEnrollPhoneMfa(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
+					}
+					return startEnrollPhoneMfa(authInstance, request);
+				};
+				return (await handleRecaptchaFlow(auth, startPhoneMfaEnrollmentRequest, "mfaSmsEnrollment", startEnrollPhoneMfaActionCallback, "PHONE_PROVIDER").catch((error) => {
+					return Promise.reject(error);
+				})).phoneSessionInfo.sessionInfo;
+			} else {
+				_assert(session.type === "signin", auth, "internal-error");
+				const mfaEnrollmentId = phoneInfoOptions.multiFactorHint?.uid || phoneInfoOptions.multiFactorUid;
+				_assert(mfaEnrollmentId, auth, "missing-multi-factor-info");
+				const startPhoneMfaSignInRequest = {
+					mfaPendingCredential: session.credential,
+					mfaEnrollmentId,
+					phoneSignInInfo: { clientType: "CLIENT_TYPE_WEB" }
+				};
+				const startSignInPhoneMfaActionCallback = async (authInstance, request) => {
+					if (request.phoneSignInInfo.captchaResponse === FAKE_TOKEN) {
+						_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
+						return startSignInPhoneMfa(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
+					}
+					return startSignInPhoneMfa(authInstance, request);
+				};
+				return (await handleRecaptchaFlow(auth, startPhoneMfaSignInRequest, "mfaSmsSignIn", startSignInPhoneMfaActionCallback, "PHONE_PROVIDER").catch((error) => {
+					return Promise.reject(error);
+				})).phoneResponseInfo.sessionInfo;
+			}
+		} else {
+			const sendPhoneVerificationCodeRequest = {
+				phoneNumber: phoneInfoOptions.phoneNumber,
+				clientType: "CLIENT_TYPE_WEB"
+			};
+			const sendPhoneVerificationCodeActionCallback = async (authInstance, request) => {
+				if (request.captchaResponse === FAKE_TOKEN) {
+					_assert(verifier?.type === RECAPTCHA_VERIFIER_TYPE, authInstance, "argument-error");
+					return sendPhoneVerificationCode(authInstance, await injectRecaptchaV2Token(authInstance, request, verifier));
+				}
+				return sendPhoneVerificationCode(authInstance, request);
+			};
+			return (await handleRecaptchaFlow(auth, sendPhoneVerificationCodeRequest, "sendVerificationCode", sendPhoneVerificationCodeActionCallback, "PHONE_PROVIDER").catch((error) => {
+				return Promise.reject(error);
+			})).sessionInfo;
+		}
+	} finally {
+		verifier?._reset();
+	}
+}
+async function injectRecaptchaV2Token(auth, request, recaptchaV2Verifier) {
+	_assert(recaptchaV2Verifier.type === RECAPTCHA_VERIFIER_TYPE, auth, "argument-error");
+	const recaptchaV2Token = await recaptchaV2Verifier.verify();
+	_assert(typeof recaptchaV2Token === "string", auth, "argument-error");
+	const newRequest = { ...request };
+	if ("phoneEnrollmentInfo" in newRequest) {
+		const phoneNumber = newRequest.phoneEnrollmentInfo.phoneNumber;
+		const captchaResponse = newRequest.phoneEnrollmentInfo.captchaResponse;
+		const clientType = newRequest.phoneEnrollmentInfo.clientType;
+		const recaptchaVersion = newRequest.phoneEnrollmentInfo.recaptchaVersion;
+		Object.assign(newRequest, { "phoneEnrollmentInfo": {
+			phoneNumber,
+			recaptchaToken: recaptchaV2Token,
+			captchaResponse,
+			clientType,
+			recaptchaVersion
+		} });
+		return newRequest;
+	} else if ("phoneSignInInfo" in newRequest) {
+		const captchaResponse = newRequest.phoneSignInInfo.captchaResponse;
+		const clientType = newRequest.phoneSignInInfo.clientType;
+		const recaptchaVersion = newRequest.phoneSignInInfo.recaptchaVersion;
+		Object.assign(newRequest, { "phoneSignInInfo": {
+			recaptchaToken: recaptchaV2Token,
+			captchaResponse,
+			clientType,
+			recaptchaVersion
+		} });
+		return newRequest;
+	} else {
+		Object.assign(newRequest, { "recaptchaToken": recaptchaV2Token });
+		return newRequest;
+	}
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Provider for generating an {@link PhoneAuthCredential}.
+*
+* @remarks
+* `PhoneAuthProvider` does not work in a Node.js environment.
+*
+* @example
+* ```javascript
+* // 'recaptcha-container' is the ID of an element in the DOM.
+* const applicationVerifier = new RecaptchaVerifier('recaptcha-container');
+* const provider = new PhoneAuthProvider(auth);
+* const verificationId = await provider.verifyPhoneNumber('+16505550101', applicationVerifier);
+* // Obtain the verificationCode from the user.
+* const phoneCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
+* const userCredential = await signInWithCredential(auth, phoneCredential);
+* ```
+*
+* @public
+*/
+var PhoneAuthProvider = class PhoneAuthProvider {
+	/**
+	* @param auth - The Firebase {@link Auth} instance in which sign-ins should occur.
+	*
+	*/
+	constructor(auth) {
+		/** Always set to {@link ProviderId}.PHONE. */
+		this.providerId = PhoneAuthProvider.PROVIDER_ID;
+		this.auth = _castAuth(auth);
+	}
+	/**
+	*
+	* Starts a phone number authentication flow by sending a verification code to the given phone
+	* number.
+	*
+	* @example
+	* ```javascript
+	* const provider = new PhoneAuthProvider(auth);
+	* const verificationId = await provider.verifyPhoneNumber(phoneNumber, applicationVerifier);
+	* // Obtain verificationCode from the user.
+	* const authCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
+	* const userCredential = await signInWithCredential(auth, authCredential);
+	* ```
+	*
+	* @example
+	* An alternative flow is provided using the `signInWithPhoneNumber` method.
+	* ```javascript
+	* const confirmationResult = signInWithPhoneNumber(auth, phoneNumber, applicationVerifier);
+	* // Obtain verificationCode from the user.
+	* const userCredential = confirmationResult.confirm(verificationCode);
+	* ```
+	*
+	* @param phoneInfoOptions - The user's {@link PhoneInfoOptions}. The phone number should be in
+	* E.164 format (e.g. +16505550101).
+	* @param applicationVerifier - An {@link ApplicationVerifier}, which prevents
+	* requests from unauthorized clients. This SDK includes an implementation
+	* based on reCAPTCHA v2, {@link RecaptchaVerifier}. If you've enabled
+	* reCAPTCHA Enterprise bot protection in Enforce mode, this parameter is
+	* optional; in all other configurations, the parameter is required.
+	*
+	* @returns A Promise for a verification ID that can be passed to
+	* {@link PhoneAuthProvider.credential} to identify this flow.
+	*/
+	verifyPhoneNumber(phoneOptions, applicationVerifier) {
+		return _verifyPhoneNumber(this.auth, phoneOptions, getModularInstance(applicationVerifier));
+	}
+	/**
+	* Creates a phone auth credential, given the verification ID from
+	* {@link PhoneAuthProvider.verifyPhoneNumber} and the code that was sent to the user's
+	* mobile device.
+	*
+	* @example
+	* ```javascript
+	* const provider = new PhoneAuthProvider(auth);
+	* const verificationId = provider.verifyPhoneNumber(phoneNumber, applicationVerifier);
+	* // Obtain verificationCode from the user.
+	* const authCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
+	* const userCredential = signInWithCredential(auth, authCredential);
+	* ```
+	*
+	* @example
+	* An alternative flow is provided using the `signInWithPhoneNumber` method.
+	* ```javascript
+	* const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, applicationVerifier);
+	* // Obtain verificationCode from the user.
+	* const userCredential = await confirmationResult.confirm(verificationCode);
+	* ```
+	*
+	* @param verificationId - The verification ID returned from {@link PhoneAuthProvider.verifyPhoneNumber}.
+	* @param verificationCode - The verification code sent to the user's mobile device.
+	*
+	* @returns The auth provider credential.
+	*/
+	static credential(verificationId, verificationCode) {
+		return PhoneAuthCredential._fromVerification(verificationId, verificationCode);
+	}
+	/**
+	* Generates an {@link AuthCredential} from a {@link UserCredential}.
+	* @param userCredential - The user credential.
+	*/
+	static credentialFromResult(userCredential) {
+		const credential = userCredential;
+		return PhoneAuthProvider.credentialFromTaggedObject(credential);
+	}
+	/**
+	* Returns an {@link AuthCredential} when passed an error.
+	*
+	* @remarks
+	*
+	* This method works for errors like
+	* `auth/account-exists-with-different-credentials`. This is useful for
+	* recovering when attempting to set a user's phone number but the number
+	* in question is already tied to another account. For example, the following
+	* code tries to update the current user's phone number, and if that
+	* fails, links the user with the account associated with that number:
+	*
+	* ```js
+	* const provider = new PhoneAuthProvider(auth);
+	* const verificationId = await provider.verifyPhoneNumber(number, verifier);
+	* try {
+	*   const code = ''; // Prompt the user for the verification code
+	*   await updatePhoneNumber(
+	*       auth.currentUser,
+	*       PhoneAuthProvider.credential(verificationId, code));
+	* } catch (e) {
+	*   if ((e as FirebaseError)?.code === 'auth/account-exists-with-different-credential') {
+	*     const cred = PhoneAuthProvider.credentialFromError(e);
+	*     await linkWithCredential(auth.currentUser, cred);
+	*   }
+	* }
+	*
+	* // At this point, auth.currentUser.phoneNumber === number.
+	* ```
+	*
+	* @param error - The error to generate a credential from.
+	*/
+	static credentialFromError(error) {
+		return PhoneAuthProvider.credentialFromTaggedObject(error.customData || {});
+	}
+	static credentialFromTaggedObject({ _tokenResponse: tokenResponse }) {
+		if (!tokenResponse) return null;
+		const { phoneNumber, temporaryProof } = tokenResponse;
+		if (phoneNumber && temporaryProof) return PhoneAuthCredential._fromTokenResponse(phoneNumber, temporaryProof);
+		return null;
+	}
+};
+/** Always set to {@link ProviderId}.PHONE. */
+PhoneAuthProvider.PROVIDER_ID = "phone";
+/** Always set to {@link SignInMethod}.PHONE. */
+PhoneAuthProvider.PHONE_SIGN_IN_METHOD = "phone";
+/**
+* @license
+* Copyright 2021 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Chooses a popup/redirect resolver to use. This prefers the override (which
+* is directly passed in), and falls back to the property set on the auth
+* object. If neither are available, this function errors w/ an argument error.
+*/
+function _withDefaultResolver(auth, resolverOverride) {
+	if (resolverOverride) return _getInstance(resolverOverride);
+	_assert(auth._popupRedirectResolver, auth, "argument-error");
+	return auth._popupRedirectResolver;
+}
+/**
+* @license
+* Copyright 2019 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var IdpCredential = class extends AuthCredential {
+	constructor(params) {
+		super("custom", "custom");
+		this.params = params;
+	}
+	_getIdTokenResponse(auth) {
+		return signInWithIdp(auth, this._buildIdpRequest());
+	}
+	_linkToIdToken(auth, idToken) {
+		return signInWithIdp(auth, this._buildIdpRequest(idToken));
+	}
+	_getReauthenticationResolver(auth) {
+		return signInWithIdp(auth, this._buildIdpRequest());
+	}
+	_buildIdpRequest(idToken) {
+		const request = {
+			requestUri: this.params.requestUri,
+			sessionId: this.params.sessionId,
+			postBody: this.params.postBody,
+			tenantId: this.params.tenantId,
+			pendingToken: this.params.pendingToken,
+			returnSecureToken: true,
+			returnIdpCredential: true
+		};
+		if (idToken) request.idToken = idToken;
+		return request;
+	}
+};
+function _signIn(params) {
+	return _signInWithCredential(params.auth, new IdpCredential(params), params.bypassAuthState);
+}
+function _reauth(params) {
+	const { auth, user } = params;
+	_assert(user, auth, "internal-error");
+	return _reauthenticate(user, new IdpCredential(params), params.bypassAuthState);
+}
+async function _link(params) {
+	const { auth, user } = params;
+	_assert(user, auth, "internal-error");
+	return _link$1(user, new IdpCredential(params), params.bypassAuthState);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* Popup event manager. Handles the popup's entire lifecycle; listens to auth
+* events
+*/
+var AbstractPopupRedirectOperation = class {
+	constructor(auth, filter, resolver, user, bypassAuthState = false) {
+		this.auth = auth;
+		this.resolver = resolver;
+		this.user = user;
+		this.bypassAuthState = bypassAuthState;
+		this.pendingPromise = null;
+		this.eventManager = null;
+		this.filter = Array.isArray(filter) ? filter : [filter];
+	}
+	execute() {
+		return new Promise(async (resolve, reject) => {
+			this.pendingPromise = {
+				resolve,
+				reject
+			};
+			try {
+				this.eventManager = await this.resolver._initialize(this.auth);
+				if (!this.pendingPromise) return;
+				await this.onExecution();
+				if (!this.pendingPromise) return;
+				this.eventManager.registerConsumer(this);
+			} catch (e) {
+				if (this.pendingPromise) this.reject(e);
+			}
+		});
+	}
+	async onAuthEvent(event) {
+		if (!this.pendingPromise) return;
+		const { urlResponse, sessionId, postBody, tenantId, error, type } = event;
+		if (error) {
+			this.reject(error);
+			return;
+		}
+		const params = {
+			auth: this.auth,
+			requestUri: urlResponse,
+			sessionId,
+			tenantId: tenantId || void 0,
+			postBody: postBody || void 0,
+			user: this.user,
+			bypassAuthState: this.bypassAuthState
+		};
+		try {
+			this.resolve(await this.getIdpTask(type)(params));
+		} catch (e) {
+			this.reject(e);
+		}
+	}
+	onError(error) {
+		this.reject(error);
+	}
+	getIdpTask(type) {
+		switch (type) {
+			case "signInViaPopup":
+			case "signInViaRedirect": return _signIn;
+			case "linkViaPopup":
+			case "linkViaRedirect": return _link;
+			case "reauthViaPopup":
+			case "reauthViaRedirect": return _reauth;
+			default: _fail(this.auth, "internal-error");
+		}
+	}
+	resolve(cred) {
+		debugAssert(this.pendingPromise, "Pending promise was never set");
+		this.pendingPromise.resolve(cred);
+		this.unregisterAndCleanUp();
+	}
+	reject(error) {
+		debugAssert(this.pendingPromise, "Pending promise was never set");
+		this.pendingPromise.reject(error);
+		this.unregisterAndCleanUp();
+	}
+	unregisterAndCleanUp() {
+		if (this.eventManager) this.eventManager.unregisterConsumer(this);
+		this.pendingPromise = null;
+		this.cleanUp();
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var _POLL_WINDOW_CLOSE_TIMEOUT = new Delay(2e3, 1e4);
+/**
+* Authenticates a Firebase client using a popup-based OAuth authentication flow.
+*
+* @remarks
+* If succeeds, returns the signed in user along with the provider's credential. If sign in was
+* unsuccessful, returns an error object containing additional information about the error.
+*
+* This method does not work in a Node.js environment or with {@link Auth} instances created with a
+* {@link @firebase/app#FirebaseServerApp}.
+*
+* @example
+* ```javascript
+* // Sign in using a popup.
+* const provider = new FacebookAuthProvider();
+* const result = await signInWithPopup(auth, provider);
+*
+* // The signed-in user info.
+* const user = result.user;
+* // This gives you a Facebook Access Token.
+* const credential = provider.credentialFromResult(auth, result);
+* const token = credential.accessToken;
+* ```
+*
+* @param auth - The {@link Auth} instance.
+* @param provider - The provider to authenticate. The provider has to be an {@link OAuthProvider}.
+* Non-OAuth providers like {@link EmailAuthProvider} will throw an error.
+* @param resolver - An instance of {@link PopupRedirectResolver}, optional
+* if already supplied to {@link initializeAuth} or provided by {@link getAuth}.
+*
+* @public
+*/
+async function signInWithPopup(auth, provider, resolver) {
+	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_createError(auth, "operation-not-supported-in-this-environment"));
+	const authInternal = _castAuth(auth);
+	_assertInstanceOf(auth, provider, FederatedAuthProvider);
+	return new PopupOperation(authInternal, "signInViaPopup", provider, _withDefaultResolver(authInternal, resolver)).executeNotNull();
+}
+/**
+* Popup event manager. Handles the popup's entire lifecycle; listens to auth
+* events
+*
+*/
+var PopupOperation = class PopupOperation extends AbstractPopupRedirectOperation {
+	constructor(auth, filter, provider, resolver, user) {
+		super(auth, filter, resolver, user);
+		this.provider = provider;
+		this.authWindow = null;
+		this.pollId = null;
+		if (PopupOperation.currentPopupAction) PopupOperation.currentPopupAction.cancel();
+		PopupOperation.currentPopupAction = this;
+	}
+	async executeNotNull() {
+		const result = await this.execute();
+		_assert(result, this.auth, "internal-error");
+		return result;
+	}
+	async onExecution() {
+		debugAssert(this.filter.length === 1, "Popup operations only handle one event");
+		const eventId = _generateEventId();
+		this.authWindow = await this.resolver._openPopup(this.auth, this.provider, this.filter[0], eventId);
+		this.authWindow.associatedEvent = eventId;
+		this.resolver._originValidation(this.auth).catch((e) => {
+			this.reject(e);
+		});
+		this.resolver._isIframeWebStorageSupported(this.auth, (isSupported) => {
+			if (!isSupported) this.reject(_createError(this.auth, "web-storage-unsupported"));
+		});
+		this.pollUserCancellation();
+	}
+	get eventId() {
+		return this.authWindow?.associatedEvent || null;
+	}
+	cancel() {
+		this.reject(_createError(this.auth, "cancelled-popup-request"));
+	}
+	cleanUp() {
+		if (this.authWindow) this.authWindow.close();
+		if (this.pollId) window.clearTimeout(this.pollId);
+		this.authWindow = null;
+		this.pollId = null;
+		PopupOperation.currentPopupAction = null;
+	}
+	pollUserCancellation() {
+		const poll = () => {
+			if (this.authWindow?.window?.closed) {
+				this.pollId = window.setTimeout(() => {
+					this.pollId = null;
+					this.reject(_createError(this.auth, "popup-closed-by-user"));
+				}, 8e3);
+				return;
+			}
+			this.pollId = window.setTimeout(poll, _POLL_WINDOW_CLOSE_TIMEOUT.get());
+		};
+		poll();
+	}
+};
+PopupOperation.currentPopupAction = null;
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var PENDING_REDIRECT_KEY = "pendingRedirect";
+var redirectOutcomeMap = /* @__PURE__ */ new Map();
+var RedirectAction = class extends AbstractPopupRedirectOperation {
+	constructor(auth, resolver, bypassAuthState = false) {
+		super(auth, [
+			"signInViaRedirect",
+			"linkViaRedirect",
+			"reauthViaRedirect",
+			"unknown"
+		], resolver, void 0, bypassAuthState);
+		this.eventId = null;
+	}
+	/**
+	* Override the execute function; if we already have a redirect result, then
+	* just return it.
+	*/
+	async execute() {
+		let readyOutcome = redirectOutcomeMap.get(this.auth._key());
+		if (!readyOutcome) {
+			try {
+				const result = await _getAndClearPendingRedirectStatus(this.resolver, this.auth) ? await super.execute() : null;
+				readyOutcome = () => Promise.resolve(result);
+			} catch (e) {
+				readyOutcome = () => Promise.reject(e);
+			}
+			redirectOutcomeMap.set(this.auth._key(), readyOutcome);
+		}
+		if (!this.bypassAuthState) redirectOutcomeMap.set(this.auth._key(), () => Promise.resolve(null));
+		return readyOutcome();
+	}
+	async onAuthEvent(event) {
+		if (event.type === "signInViaRedirect") return super.onAuthEvent(event);
+		else if (event.type === "unknown") {
+			this.resolve(null);
+			return;
+		}
+		if (event.eventId) {
+			const user = await this.auth._redirectUserForId(event.eventId);
+			if (user) {
+				this.user = user;
+				return super.onAuthEvent(event);
+			} else this.resolve(null);
+		}
+	}
+	async onExecution() {}
+	cleanUp() {}
+};
+async function _getAndClearPendingRedirectStatus(resolver, auth) {
+	const key = pendingRedirectKey(auth);
+	const persistence = resolverPersistence(resolver);
+	if (!await persistence._isAvailable()) return false;
+	const hasPendingRedirect = await persistence._get(key) === "true";
+	await persistence._remove(key);
+	return hasPendingRedirect;
+}
+function _overrideRedirectResult(auth, result) {
+	redirectOutcomeMap.set(auth._key(), result);
+}
+function resolverPersistence(resolver) {
+	return _getInstance(resolver._redirectPersistence);
+}
+function pendingRedirectKey(auth) {
+	return _persistenceKeyName(PENDING_REDIRECT_KEY, auth.config.apiKey, auth.name);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _getRedirectResult(auth, resolverExtern, bypassAuthState = false) {
+	if (_isFirebaseServerApp(auth.app)) return Promise.reject(_serverAppCurrentUserOperationNotSupportedError(auth));
+	const authInternal = _castAuth(auth);
+	const result = await new RedirectAction(authInternal, _withDefaultResolver(authInternal, resolverExtern), bypassAuthState).execute();
+	if (result && !bypassAuthState) {
+		delete result.user._redirectEventId;
+		await authInternal._persistUserIfCurrent(result.user);
+		await authInternal._setRedirectUser(null, resolverExtern);
+	}
+	return result;
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var EVENT_DUPLICATION_CACHE_DURATION_MS = 6e5;
+var AuthEventManager = class {
+	constructor(auth) {
+		this.auth = auth;
+		this.cachedEventUids = /* @__PURE__ */ new Set();
+		this.consumers = /* @__PURE__ */ new Set();
+		this.queuedRedirectEvent = null;
+		this.hasHandledPotentialRedirect = false;
+		this.lastProcessedEventTime = Date.now();
+	}
+	registerConsumer(authEventConsumer) {
+		this.consumers.add(authEventConsumer);
+		if (this.queuedRedirectEvent && this.isEventForConsumer(this.queuedRedirectEvent, authEventConsumer)) {
+			this.sendToConsumer(this.queuedRedirectEvent, authEventConsumer);
+			this.saveEventToCache(this.queuedRedirectEvent);
+			this.queuedRedirectEvent = null;
+		}
+	}
+	unregisterConsumer(authEventConsumer) {
+		this.consumers.delete(authEventConsumer);
+	}
+	onEvent(event) {
+		if (this.hasEventBeenHandled(event)) return false;
+		let handled = false;
+		this.consumers.forEach((consumer) => {
+			if (this.isEventForConsumer(event, consumer)) {
+				handled = true;
+				this.sendToConsumer(event, consumer);
+				this.saveEventToCache(event);
+			}
+		});
+		if (this.hasHandledPotentialRedirect || !isRedirectEvent(event)) return handled;
+		this.hasHandledPotentialRedirect = true;
+		if (!handled) {
+			this.queuedRedirectEvent = event;
+			handled = true;
+		}
+		return handled;
+	}
+	sendToConsumer(event, consumer) {
+		if (event.error && !isNullRedirectEvent(event)) {
+			const code = event.error.code?.split("auth/")[1] || "internal-error";
+			consumer.onError(_createError(this.auth, code));
+		} else consumer.onAuthEvent(event);
+	}
+	isEventForConsumer(event, consumer) {
+		const eventIdMatches = consumer.eventId === null || !!event.eventId && event.eventId === consumer.eventId;
+		return consumer.filter.includes(event.type) && eventIdMatches;
+	}
+	hasEventBeenHandled(event) {
+		if (Date.now() - this.lastProcessedEventTime >= EVENT_DUPLICATION_CACHE_DURATION_MS) this.cachedEventUids.clear();
+		return this.cachedEventUids.has(eventUid(event));
+	}
+	saveEventToCache(event) {
+		this.cachedEventUids.add(eventUid(event));
+		this.lastProcessedEventTime = Date.now();
+	}
+};
+function eventUid(e) {
+	return [
+		e.type,
+		e.eventId,
+		e.sessionId,
+		e.tenantId
+	].filter((v) => v).join("-");
+}
+function isNullRedirectEvent({ type, error }) {
+	return type === "unknown" && error?.code === `auth/no-auth-event`;
+}
+function isRedirectEvent(event) {
+	switch (event.type) {
+		case "signInViaRedirect":
+		case "linkViaRedirect":
+		case "reauthViaRedirect": return true;
+		case "unknown": return isNullRedirectEvent(event);
+		default: return false;
+	}
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+async function _getProjectConfig(auth, request = {}) {
+	return _performApiRequest(auth, "GET", "/v1/projects", request);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var IP_ADDRESS_REGEX = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+var HTTP_REGEX = /^https?/;
+async function _validateOrigin(auth) {
+	if (auth.config.emulator) return;
+	const { authorizedDomains } = await _getProjectConfig(auth);
+	for (const domain of authorizedDomains) try {
+		if (matchDomain(domain)) return;
+	} catch {}
+	_fail(auth, "unauthorized-domain");
+}
+function matchDomain(expected) {
+	const currentUrl = _getCurrentUrl();
+	const { protocol, hostname } = new URL(currentUrl);
+	if (expected.startsWith("chrome-extension://")) {
+		const ceUrl = new URL(expected);
+		if (ceUrl.hostname === "" && hostname === "") return protocol === "chrome-extension:" && expected.replace("chrome-extension://", "") === currentUrl.replace("chrome-extension://", "");
+		return protocol === "chrome-extension:" && ceUrl.hostname === hostname;
+	}
+	if (!HTTP_REGEX.test(protocol)) return false;
+	if (IP_ADDRESS_REGEX.test(expected)) return hostname === expected;
+	const escapedDomainPattern = expected.replace(/\./g, "\\.");
+	return new RegExp("^(.+\\." + escapedDomainPattern + "|" + escapedDomainPattern + ")$", "i").test(hostname);
+}
+/**
+* @license
+* Copyright 2020 Google LLC.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var NETWORK_TIMEOUT = new Delay(3e4, 6e4);
+/**
+* Reset unloaded GApi modules. If gapi.load fails due to a network error,
+* it will stop working after a retrial. This is a hack to fix this issue.
+*/
+function resetUnloadedGapiModules() {
+	const beacon = _window().___jsl;
+	if (beacon?.H) for (const hint of Object.keys(beacon.H)) {
+		beacon.H[hint].r = beacon.H[hint].r || [];
+		beacon.H[hint].L = beacon.H[hint].L || [];
+		beacon.H[hint].r = [...beacon.H[hint].L];
+		if (beacon.CP) for (let i = 0; i < beacon.CP.length; i++) beacon.CP[i] = null;
+	}
+}
+function loadGapi(auth) {
+	return new Promise((resolve, reject) => {
+		function loadGapiIframe() {
+			resetUnloadedGapiModules();
+			gapi.load("gapi.iframes", {
+				callback: () => {
+					resolve(gapi.iframes.getContext());
+				},
+				ontimeout: () => {
+					resetUnloadedGapiModules();
+					reject(_createError(auth, "network-request-failed"));
+				},
+				timeout: NETWORK_TIMEOUT.get()
+			});
+		}
+		if (_window().gapi?.iframes?.Iframe) resolve(gapi.iframes.getContext());
+		else if (!!_window().gapi?.load) loadGapiIframe();
+		else {
+			const cbName = _generateCallbackName("iframefcb");
+			_window()[cbName] = () => {
+				if (!!gapi.load) loadGapiIframe();
+				else reject(_createError(auth, "network-request-failed"));
+			};
+			return _loadJS(`${_gapiScriptUrl()}?onload=${cbName}`).catch((e) => reject(e));
+		}
+	}).catch((error) => {
+		cachedGApiLoader = null;
+		throw error;
+	});
+}
+var cachedGApiLoader = null;
+function _loadGapi(auth) {
+	cachedGApiLoader = cachedGApiLoader || loadGapi(auth);
+	return cachedGApiLoader;
+}
+/**
+* @license
+* Copyright 2020 Google LLC.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var PING_TIMEOUT = new Delay(5e3, 15e3);
+var IFRAME_PATH = "__/auth/iframe";
+var EMULATED_IFRAME_PATH = "emulator/auth/iframe";
+var IFRAME_ATTRIBUTES = {
+	style: {
+		position: "absolute",
+		top: "-100px",
+		width: "1px",
+		height: "1px"
+	},
+	"aria-hidden": "true",
+	tabindex: "-1"
+};
+var EID_FROM_APIHOST = /* @__PURE__ */ new Map([
+	["identitytoolkit.googleapis.com", "p"],
+	["staging-identitytoolkit.sandbox.googleapis.com", "s"],
+	["test-identitytoolkit.sandbox.googleapis.com", "t"]
+]);
+function getIframeUrl(auth) {
+	const config = auth.config;
+	_assert(config.authDomain, auth, "auth-domain-config-required");
+	const url = config.emulator ? _emulatorUrl(config, EMULATED_IFRAME_PATH) : `https://${auth.config.authDomain}/${IFRAME_PATH}`;
+	const params = {
+		apiKey: config.apiKey,
+		appName: auth.name,
+		v: SDK_VERSION
+	};
+	const eid = EID_FROM_APIHOST.get(auth.config.apiHost);
+	if (eid) params.eid = eid;
+	const frameworks = auth._getFrameworks();
+	if (frameworks.length) params.fw = frameworks.join(",");
+	return `${url}?${querystring(params).slice(1)}`;
+}
+async function _openIframe(auth) {
+	const context = await _loadGapi(auth);
+	const gapi = _window().gapi;
+	_assert(gapi, auth, "internal-error");
+	return context.open({
+		where: document.body,
+		url: getIframeUrl(auth),
+		messageHandlersFilter: gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER,
+		attributes: IFRAME_ATTRIBUTES,
+		dontclear: true
+	}, (iframe) => new Promise(async (resolve, reject) => {
+		await iframe.restyle({ setHideOnLeave: false });
+		const networkError = _createError(auth, "network-request-failed");
+		const networkErrorTimer = _window().setTimeout(() => {
+			reject(networkError);
+		}, PING_TIMEOUT.get());
+		function clearTimerAndResolve() {
+			_window().clearTimeout(networkErrorTimer);
+			resolve(iframe);
+		}
+		iframe.ping(clearTimerAndResolve).then(clearTimerAndResolve, () => {
+			reject(networkError);
+		});
+	}));
+}
+/**
+* @license
+* Copyright 2020 Google LLC.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var BASE_POPUP_OPTIONS = {
+	location: "yes",
+	resizable: "yes",
+	statusbar: "yes",
+	toolbar: "no"
+};
+var DEFAULT_WIDTH = 500;
+var DEFAULT_HEIGHT = 600;
+var TARGET_BLANK = "_blank";
+var FIREFOX_EMPTY_URL = "http://localhost";
+var AuthPopup = class {
+	constructor(window) {
+		this.window = window;
+		this.associatedEvent = null;
+	}
+	close() {
+		if (this.window) try {
+			this.window.close();
+		} catch (e) {}
+	}
+};
+function _open(auth, url, name, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
+	const top = Math.max((window.screen.availHeight - height) / 2, 0).toString();
+	const left = Math.max((window.screen.availWidth - width) / 2, 0).toString();
+	let target = "";
+	const options = {
+		...BASE_POPUP_OPTIONS,
+		width: width.toString(),
+		height: height.toString(),
+		top,
+		left
+	};
+	const ua = getUA().toLowerCase();
+	if (name) target = _isChromeIOS(ua) ? TARGET_BLANK : name;
+	if (_isFirefox(ua)) {
+		url = url || FIREFOX_EMPTY_URL;
+		options.scrollbars = "yes";
+	}
+	const optionsString = Object.entries(options).reduce((accum, [key, value]) => `${accum}${key}=${value},`, "");
+	if (_isIOSStandalone(ua) && target !== "_self") {
+		openAsNewWindowIOS(url || "", target);
+		return new AuthPopup(null);
+	}
+	const newWin = window.open(url || "", target, optionsString);
+	_assert(newWin, auth, "popup-blocked");
+	try {
+		newWin.focus();
+	} catch (e) {}
+	return new AuthPopup(newWin);
+}
+function openAsNewWindowIOS(url, target) {
+	const el = document.createElement("a");
+	el.href = url;
+	el.target = target;
+	const click = document.createEvent("MouseEvent");
+	click.initMouseEvent("click", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 1, null);
+	el.dispatchEvent(click);
+}
+/**
+* @license
+* Copyright 2021 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* URL for Authentication widget which will initiate the OAuth handshake
+*
+* @internal
+*/
+var WIDGET_PATH = "__/auth/handler";
+/**
+* URL for emulated environment
+*
+* @internal
+*/
+var EMULATOR_WIDGET_PATH = "emulator/auth/handler";
+/**
+* Fragment name for the App Check token that gets passed to the widget
+*
+* @internal
+*/
+var FIREBASE_APP_CHECK_FRAGMENT_ID = encodeURIComponent("fac");
+async function _getRedirectUrl(auth, provider, authType, redirectUrl, eventId, additionalParams) {
+	_assert(auth.config.authDomain, auth, "auth-domain-config-required");
+	_assert(auth.config.apiKey, auth, "invalid-api-key");
+	const params = {
+		apiKey: auth.config.apiKey,
+		appName: auth.name,
+		authType,
+		redirectUrl,
+		v: SDK_VERSION,
+		eventId
+	};
+	if (provider instanceof FederatedAuthProvider) {
+		provider.setDefaultLanguage(auth.languageCode);
+		params.providerId = provider.providerId || "";
+		if (!isEmpty$1(provider.getCustomParameters())) params.customParameters = JSON.stringify(provider.getCustomParameters());
+		for (const [key, value] of Object.entries(additionalParams || {})) params[key] = value;
+	}
+	if (provider instanceof BaseOAuthProvider) {
+		const scopes = provider.getScopes().filter((scope) => scope !== "");
+		if (scopes.length > 0) params.scopes = scopes.join(",");
+	}
+	if (auth.tenantId) params.tid = auth.tenantId;
+	const paramsDict = params;
+	for (const key of Object.keys(paramsDict)) if (paramsDict[key] === void 0) delete paramsDict[key];
+	const appCheckToken = await auth._getAppCheckToken();
+	const appCheckTokenFragment = appCheckToken ? `#${FIREBASE_APP_CHECK_FRAGMENT_ID}=${encodeURIComponent(appCheckToken)}` : "";
+	return `${getHandlerBase(auth)}?${querystring(paramsDict).slice(1)}${appCheckTokenFragment}`;
+}
+function getHandlerBase({ config }) {
+	if (!config.emulator) return `https://${config.authDomain}/${WIDGET_PATH}`;
+	return _emulatorUrl(config, EMULATOR_WIDGET_PATH);
+}
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+/**
+* The special web storage event
+*
+*/
+var WEB_STORAGE_SUPPORT_KEY = "webStorageSupport";
+var BrowserPopupRedirectResolver = class {
+	constructor() {
+		this.eventManagers = {};
+		this.iframes = {};
+		this.originValidationPromises = {};
+		this._redirectPersistence = browserSessionPersistence;
+		this._completeRedirectFn = _getRedirectResult;
+		this._overrideRedirectResult = _overrideRedirectResult;
+	}
+	async _openPopup(auth, provider, authType, eventId) {
+		debugAssert(this.eventManagers[auth._key()]?.manager, "_initialize() not called before _openPopup()");
+		return _open(auth, await _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId), _generateEventId());
+	}
+	async _openRedirect(auth, provider, authType, eventId) {
+		await this._originValidation(auth);
+		_setWindowLocation(await _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId));
+		return new Promise(() => {});
+	}
+	_initialize(auth) {
+		const key = auth._key();
+		if (this.eventManagers[key]) {
+			const { manager, promise } = this.eventManagers[key];
+			if (manager) return Promise.resolve(manager);
+			else {
+				debugAssert(promise, "If manager is not set, promise should be");
+				return promise;
+			}
+		}
+		const promise = this.initAndGetManager(auth);
+		this.eventManagers[key] = { promise };
+		promise.catch(() => {
+			delete this.eventManagers[key];
+		});
+		return promise;
+	}
+	async initAndGetManager(auth) {
+		const iframe = await _openIframe(auth);
+		const manager = new AuthEventManager(auth);
+		iframe.register("authEvent", (iframeEvent) => {
+			_assert(iframeEvent?.authEvent, auth, "invalid-auth-event");
+			return { status: manager.onEvent(iframeEvent.authEvent) ? "ACK" : "ERROR" };
+		}, gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER);
+		this.eventManagers[auth._key()] = { manager };
+		this.iframes[auth._key()] = iframe;
+		return manager;
+	}
+	_isIframeWebStorageSupported(auth, cb) {
+		this.iframes[auth._key()].send(WEB_STORAGE_SUPPORT_KEY, { type: WEB_STORAGE_SUPPORT_KEY }, (result) => {
+			const isSupported = result?.[0]?.[WEB_STORAGE_SUPPORT_KEY];
+			if (isSupported !== void 0) cb(!!isSupported);
+			_fail(auth, "internal-error");
+		}, gapi.iframes.CROSS_ORIGIN_IFRAMES_FILTER);
+	}
+	_originValidation(auth) {
+		const key = auth._key();
+		if (!this.originValidationPromises[key]) this.originValidationPromises[key] = _validateOrigin(auth);
+		return this.originValidationPromises[key];
+	}
+	get _shouldInitProactively() {
+		return _isMobileBrowser() || _isSafari() || _isIOS();
+	}
+};
+/**
+* An implementation of {@link PopupRedirectResolver} suitable for browser
+* based applications.
+*
+* @remarks
+* This method does not work in a Node.js environment.
+*
+* @public
+*/
+var browserPopupRedirectResolver = BrowserPopupRedirectResolver;
+var MultiFactorAssertionImpl = class {
+	constructor(factorId) {
+		this.factorId = factorId;
+	}
+	_process(auth, session, displayName) {
+		switch (session.type) {
+			case "enroll": return this._finalizeEnroll(auth, session.credential, displayName);
+			case "signin": return this._finalizeSignIn(auth, session.credential);
+			default: return debugFail("unexpected MultiFactorSessionType");
+		}
+	}
+};
+/**
+* {@inheritdoc PhoneMultiFactorAssertion}
+*
+* @public
+*/
+var PhoneMultiFactorAssertionImpl = class PhoneMultiFactorAssertionImpl extends MultiFactorAssertionImpl {
+	constructor(credential) {
+		super("phone");
+		this.credential = credential;
+	}
+	/** @internal */
+	static _fromCredential(credential) {
+		return new PhoneMultiFactorAssertionImpl(credential);
+	}
+	/** @internal */
+	_finalizeEnroll(auth, idToken, displayName) {
+		return finalizeEnrollPhoneMfa(auth, {
+			idToken,
+			displayName,
+			phoneVerificationInfo: this.credential._makeVerificationRequest()
+		});
+	}
+	/** @internal */
+	_finalizeSignIn(auth, mfaPendingCredential) {
+		return finalizeSignInPhoneMfa(auth, {
+			mfaPendingCredential,
+			phoneVerificationInfo: this.credential._makeVerificationRequest()
+		});
+	}
+};
+/**
+* Provider for generating a {@link PhoneMultiFactorAssertion}.
+*
+* @public
+*/
+var PhoneMultiFactorGenerator = class {
+	constructor() {}
+	/**
+	* Provides a {@link PhoneMultiFactorAssertion} to confirm ownership of the phone second factor.
+	*
+	* @remarks
+	* This method does not work in a Node.js environment.
+	*
+	* @param phoneAuthCredential - A credential provided by {@link PhoneAuthProvider.credential}.
+	* @returns A {@link PhoneMultiFactorAssertion} which can be used with
+	* {@link MultiFactorResolver.resolveSignIn}
+	*/
+	static assertion(credential) {
+		return PhoneMultiFactorAssertionImpl._fromCredential(credential);
+	}
+};
+/**
+* The identifier of the phone second factor: `phone`.
+*/
+PhoneMultiFactorGenerator.FACTOR_ID = "phone";
+/**
+* Provider for generating a {@link TotpMultiFactorAssertion}.
+*
+* @public
+*/
+var TotpMultiFactorGenerator = class {
+	/**
+	* Provides a {@link TotpMultiFactorAssertion} to confirm ownership of
+	* the TOTP (time-based one-time password) second factor.
+	* This assertion is used to complete enrollment in TOTP second factor.
+	*
+	* @param secret A {@link TotpSecret} containing the shared secret key and other TOTP parameters.
+	* @param oneTimePassword One-time password from TOTP App.
+	* @returns A {@link TotpMultiFactorAssertion} which can be used with
+	* {@link MultiFactorUser.enroll}.
+	*/
+	static assertionForEnrollment(secret, oneTimePassword) {
+		return TotpMultiFactorAssertionImpl._fromSecret(secret, oneTimePassword);
+	}
+	/**
+	* Provides a {@link TotpMultiFactorAssertion} to confirm ownership of the TOTP second factor.
+	* This assertion is used to complete signIn with TOTP as the second factor.
+	*
+	* @param enrollmentId identifies the enrolled TOTP second factor.
+	* @param oneTimePassword One-time password from TOTP App.
+	* @returns A {@link TotpMultiFactorAssertion} which can be used with
+	* {@link MultiFactorResolver.resolveSignIn}.
+	*/
+	static assertionForSignIn(enrollmentId, oneTimePassword) {
+		return TotpMultiFactorAssertionImpl._fromEnrollmentId(enrollmentId, oneTimePassword);
+	}
+	/**
+	* Returns a promise to {@link TotpSecret} which contains the TOTP shared secret key and other parameters.
+	* Creates a TOTP secret as part of enrolling a TOTP second factor.
+	* Used for generating a QR code URL or inputting into a TOTP app.
+	* This method uses the auth instance corresponding to the user in the multiFactorSession.
+	*
+	* @param session The {@link MultiFactorSession} that the user is part of.
+	* @returns A promise to {@link TotpSecret}.
+	*/
+	static async generateSecret(session) {
+		const mfaSession = session;
+		_assert(typeof mfaSession.user?.auth !== "undefined", "internal-error");
+		const response = await startEnrollTotpMfa(mfaSession.user.auth, {
+			idToken: mfaSession.credential,
+			totpEnrollmentInfo: {}
+		});
+		return TotpSecret._fromStartTotpMfaEnrollmentResponse(response, mfaSession.user.auth);
+	}
+};
+/**
+* The identifier of the TOTP second factor: `totp`.
+*/
+TotpMultiFactorGenerator.FACTOR_ID = "totp";
+var TotpMultiFactorAssertionImpl = class TotpMultiFactorAssertionImpl extends MultiFactorAssertionImpl {
+	constructor(otp, enrollmentId, secret) {
+		super("totp");
+		this.otp = otp;
+		this.enrollmentId = enrollmentId;
+		this.secret = secret;
+	}
+	/** @internal */
+	static _fromSecret(secret, otp) {
+		return new TotpMultiFactorAssertionImpl(otp, void 0, secret);
+	}
+	/** @internal */
+	static _fromEnrollmentId(enrollmentId, otp) {
+		return new TotpMultiFactorAssertionImpl(otp, enrollmentId);
+	}
+	/** @internal */
+	async _finalizeEnroll(auth, idToken, displayName) {
+		_assert(typeof this.secret !== "undefined", auth, "argument-error");
+		return finalizeEnrollTotpMfa(auth, {
+			idToken,
+			displayName,
+			totpVerificationInfo: this.secret._makeTotpVerificationInfo(this.otp)
+		});
+	}
+	/** @internal */
+	async _finalizeSignIn(auth, mfaPendingCredential) {
+		_assert(this.enrollmentId !== void 0 && this.otp !== void 0, auth, "argument-error");
+		const totpVerificationInfo = { verificationCode: this.otp };
+		return finalizeSignInTotpMfa(auth, {
+			mfaPendingCredential,
+			mfaEnrollmentId: this.enrollmentId,
+			totpVerificationInfo
+		});
+	}
+};
+/**
+* Provider for generating a {@link TotpMultiFactorAssertion}.
+*
+* Stores the shared secret key and other parameters to generate time-based OTPs.
+* Implements methods to retrieve the shared secret key and generate a QR code URL.
+* @public
+*/
+var TotpSecret = class TotpSecret {
+	constructor(secretKey, hashingAlgorithm, codeLength, codeIntervalSeconds, enrollmentCompletionDeadline, sessionInfo, auth) {
+		this.sessionInfo = sessionInfo;
+		this.auth = auth;
+		this.secretKey = secretKey;
+		this.hashingAlgorithm = hashingAlgorithm;
+		this.codeLength = codeLength;
+		this.codeIntervalSeconds = codeIntervalSeconds;
+		this.enrollmentCompletionDeadline = enrollmentCompletionDeadline;
+	}
+	/** @internal */
+	static _fromStartTotpMfaEnrollmentResponse(response, auth) {
+		return new TotpSecret(response.totpSessionInfo.sharedSecretKey, response.totpSessionInfo.hashingAlgorithm, response.totpSessionInfo.verificationCodeLength, response.totpSessionInfo.periodSec, new Date(response.totpSessionInfo.finalizeEnrollmentTime).toUTCString(), response.totpSessionInfo.sessionInfo, auth);
+	}
+	/** @internal */
+	_makeTotpVerificationInfo(otp) {
+		return {
+			sessionInfo: this.sessionInfo,
+			verificationCode: otp
+		};
+	}
+	/**
+	* Returns a QR code URL as described in
+	* https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+	* This can be displayed to the user as a QR code to be scanned into a TOTP app like Google Authenticator.
+	* If the optional parameters are unspecified, an accountName of <userEmail> and issuer of <firebaseAppName> are used.
+	*
+	* @param accountName the name of the account/app along with a user identifier.
+	* @param issuer issuer of the TOTP (likely the app name).
+	* @returns A QR code URL string.
+	*/
+	generateQrCodeUrl(accountName, issuer) {
+		let useDefaults = false;
+		if (_isEmptyString(accountName) || _isEmptyString(issuer)) useDefaults = true;
+		if (useDefaults) {
+			if (_isEmptyString(accountName)) accountName = this.auth.currentUser?.email || "unknownuser";
+			if (_isEmptyString(issuer)) issuer = this.auth.name;
+		}
+		return `otpauth://totp/${issuer}:${accountName}?secret=${this.secretKey}&issuer=${issuer}&algorithm=${this.hashingAlgorithm}&digits=${this.codeLength}`;
+	}
+};
+/** @internal */
+function _isEmptyString(input) {
+	return typeof input === "undefined" || input?.length === 0;
+}
+var name = "@firebase/auth";
+var version = "1.13.9";
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var AuthInterop = class {
+	constructor(auth) {
+		this.auth = auth;
+		this.internalListeners = /* @__PURE__ */ new Map();
+	}
+	getUid() {
+		this.assertAuthConfigured();
+		return this.auth.currentUser?.uid || null;
+	}
+	async getToken(forceRefresh) {
+		this.assertAuthConfigured();
+		await this.auth._initializationPromise;
+		if (!this.auth.currentUser) return null;
+		return { accessToken: await this.auth.currentUser.getIdToken(forceRefresh) };
+	}
+	addAuthTokenListener(listener) {
+		this.assertAuthConfigured();
+		if (this.internalListeners.has(listener)) return;
+		const unsubscribe = this.auth.onIdTokenChanged((user) => {
+			listener(user?.stsTokenManager.accessToken || null);
+		});
+		this.internalListeners.set(listener, unsubscribe);
+		this.updateProactiveRefresh();
+	}
+	removeAuthTokenListener(listener) {
+		this.assertAuthConfigured();
+		const unsubscribe = this.internalListeners.get(listener);
+		if (!unsubscribe) return;
+		this.internalListeners.delete(listener);
+		unsubscribe();
+		this.updateProactiveRefresh();
+	}
+	assertAuthConfigured() {
+		_assert(this.auth._initializationPromise, "dependent-sdk-initialized-before-auth");
+	}
+	updateProactiveRefresh() {
+		if (this.internalListeners.size > 0) this.auth._startProactiveRefresh();
+		else this.auth._stopProactiveRefresh();
+	}
+};
+/**
+* @license
+* Copyright 2020 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+function getVersionForPlatform(clientPlatform) {
+	switch (clientPlatform) {
+		case "Node": return "node";
+		case "ReactNative": return "rn";
+		case "Worker": return "webworker";
+		case "Cordova": return "cordova";
+		case "WebExtension": return "web-extension";
+		default: return;
+	}
+}
+/** @internal */
+function registerAuth(clientPlatform) {
+	_registerComponent(new Component("auth", (container, { options: deps }) => {
+		const app = container.getProvider("app").getImmediate();
+		const heartbeatServiceProvider = container.getProvider("heartbeat");
+		const appCheckServiceProvider = container.getProvider("app-check-internal");
+		const { apiKey, authDomain } = app.options;
+		_assert(apiKey && !apiKey.includes(":"), "invalid-api-key", { appName: app.name });
+		const authInstance = new AuthImpl(app, heartbeatServiceProvider, appCheckServiceProvider, {
+			apiKey,
+			authDomain,
+			clientPlatform,
+			apiHost: "identitytoolkit.googleapis.com",
+			tokenApiHost: "securetoken.googleapis.com",
+			apiScheme: "https",
+			sdkClientVersion: _getClientVersion(clientPlatform)
+		});
+		_initializeAuthInstance(authInstance, deps);
+		return authInstance;
+	}, "PUBLIC").setInstantiationMode("EXPLICIT").setInstanceCreatedCallback((container, _instanceIdentifier, _instance) => {
+		container.getProvider("auth-internal").initialize();
+	}));
+	_registerComponent(new Component("auth-internal", (container) => {
+		return ((auth) => new AuthInterop(auth))(_castAuth(container.getProvider("auth").getImmediate()));
+	}, "PRIVATE").setInstantiationMode("EXPLICIT"));
+	registerVersion(name, version, getVersionForPlatform(clientPlatform));
+	registerVersion(name, version, "esm2020");
+}
+/**
+* @license
+* Copyright 2021 Google LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+var authIdTokenMaxAge = getExperimentalSetting("authIdTokenMaxAge") || 300;
+var lastPostedIdToken = null;
+var mintCookieFactory = (url) => async (user) => {
+	const idTokenResult = user && await user.getIdTokenResult();
+	const idTokenAge = idTokenResult && ((/* @__PURE__ */ new Date()).getTime() - Date.parse(idTokenResult.issuedAtTime)) / 1e3;
+	if (idTokenAge && idTokenAge > authIdTokenMaxAge) return;
+	const idToken = idTokenResult?.token;
+	if (lastPostedIdToken === idToken) return;
+	lastPostedIdToken = idToken;
+	await fetch(url, {
+		method: idToken ? "POST" : "DELETE",
+		headers: idToken ? { "Authorization": `Bearer ${idToken}` } : {}
+	});
+};
+/**
+* Returns the Auth instance associated with the provided {@link @firebase/app#FirebaseApp}.
+* If no instance exists, initializes an Auth instance with platform-specific default dependencies.
+*
+* @param app - The Firebase App.
+*
+* @public
+*/
+function getAuth(app = getApp()) {
+	const provider = _getProvider(app, "auth");
+	if (provider.isInitialized()) return provider.getImmediate();
+	const auth = initializeAuth(app, {
+		popupRedirectResolver: browserPopupRedirectResolver,
+		persistence: [
+			indexedDBLocalPersistence,
+			browserLocalPersistence,
+			browserSessionPersistence
+		]
+	});
+	const authTokenSyncPath = getExperimentalSetting("authTokenSyncURL");
+	if (authTokenSyncPath && typeof isSecureContext === "boolean" && isSecureContext) {
+		const authTokenSyncUrl = new URL(authTokenSyncPath, location.origin);
+		if (location.origin === authTokenSyncUrl.origin) {
+			const mintCookie = mintCookieFactory(authTokenSyncUrl.toString());
+			beforeAuthStateChanged(auth, mintCookie, () => mintCookie(auth.currentUser));
+			onIdTokenChanged(auth, (user) => mintCookie(user));
+		}
+	}
+	const authEmulatorHost = getDefaultEmulatorHost("auth");
+	if (authEmulatorHost) connectAuthEmulator(auth, `http://${authEmulatorHost}`);
+	return auth;
+}
+function getScriptParentElement() {
+	return document.getElementsByTagName("head")?.[0] ?? document;
+}
+_setExternalJSProvider({
+	loadJS(url) {
+		return new Promise((resolve, reject) => {
+			const el = document.createElement("script");
+			el.setAttribute("src", url);
+			el.onload = resolve;
+			el.onerror = (e) => {
+				const error = _createError("internal-error");
+				error.customData = e;
+				reject(error);
+			};
+			el.type = "text/javascript";
+			el.charset = "UTF-8";
+			getScriptParentElement().appendChild(el);
+		});
+	},
+	gapiScript: "https://apis.google.com/js/api.js",
+	recaptchaV2Script: "https://www.google.com/recaptcha/api.js",
+	recaptchaEnterpriseScript: "https://www.google.com/recaptcha/enterprise.js?render="
+});
+registerAuth("Browser");
 var firebase_applet_config_default = {
 	projectId: "resonant-chariot-rlj64",
 	appId: "1:1061089829167:web:d4be327e1f0d3f3cbfc1da",
@@ -53745,6 +53402,30 @@ async function testConnection() {
 testConnection();
 // src/services/cloudSync.ts
 var SHARED_STORE_OWNER_ID = "four_gifts_store_main";
+var CLOUD_STORAGE_KEYS = {
+	LAST_SYNC: "fgs_pos_last_sync_v1",
+	LOCAL_CUSTOMIZED: "fgs_pos_local_customized_v1",
+	GAS_WEBHOOK_URL: "fgs_pos_gas_webhook_url_v1"
+};
+/**
+* Strips verbose parenthetical timezone suffixes (e.g.
+* "Sat Oct 17 2026 00:00:00 GMT+0800 (Standard na Oras sa Singapore)")
+* and normalizes date strings cleanly.
+*/
+function sanitizeLocaleDateString(raw, fallbackIso) {
+	if (!raw) return fallbackIso || (/* @__PURE__ */ new Date()).toISOString();
+	const stripped = String(raw).replace(/\s*\([^)]*\)\s*$/, "").trim();
+	if (/^\d{4}-\d{2}-\d{2}$/.test(stripped)) return stripped;
+	const parsed = new Date(stripped);
+	if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+	return stripped || fallbackIso || (/* @__PURE__ */ new Date()).toISOString();
+}
+function normalizeDayKeyString(raw) {
+	if (!raw) return toLocalDayKey(/* @__PURE__ */ new Date());
+	const stripped = String(raw).replace(/\s*\([^)]*\)\s*$/, "").trim();
+	if (/^\d{4}-\d{2}-\d{2}$/.test(stripped)) return stripped;
+	return toLocalDayKey(new Date(stripped));
+}
 function toLocalDayKey(date) {
 	const d = Number.isNaN(date.getTime()) ? /* @__PURE__ */ new Date() : date;
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -53762,6 +53443,107 @@ function clampString(val, maxLen, fallback = "") {
 function clampNumber(val, min, max) {
 	if (!Number.isFinite(val)) return min;
 	return Math.min(max, Math.max(min, val));
+}
+async function fetchDocFresh(ref) {
+	try {
+		return await getDocFromServer(ref);
+	} catch {
+		return await getDoc(ref);
+	}
+}
+async function fetchDocsFresh(q) {
+	try {
+		return await getDocsFromServer(q);
+	} catch {
+		return await getDocs(q);
+	}
+}
+/**
+* Detects whether a store state is still the untouched default 6-product + 7-day sample simulation.
+* Used by the Empty-Overwrite & First-Boot Customization Guard so a device with real user changes
+* always pushes its data over default sample simulation data.
+*/
+function isUntouchedDefaultSimulation(state) {
+	if (state.parkedCarts.length > 0) return false;
+	if (state.products.length !== INITIAL_PRODUCTS.length) return false;
+	const sortedLocal = [...state.products].sort((a, b) => a.barcode.localeCompare(b.barcode));
+	const sortedInit = [...INITIAL_PRODUCTS].sort((a, b) => a.barcode.localeCompare(b.barcode));
+	for (let i = 0; i < sortedInit.length; i++) if (sortedLocal[i].barcode !== sortedInit[i].barcode || sortedLocal[i].name !== sortedInit[i].name || Number(sortedLocal[i].sellingPrice) !== Number(sortedInit[i].sellingPrice) || Number(sortedLocal[i].capitalPrice) !== Number(sortedInit[i].capitalPrice) || Number(sortedLocal[i].stock) !== Number(sortedInit[i].stock)) return false;
+	if (state.sales.length !== 15) return false;
+	if (state.sales.some((s) => !String(s.id).startsWith("sim-sale-"))) return false;
+	const voidedIds = state.sales.filter((s) => s.voided).map((s) => s.id);
+	if (voidedIds.length !== 1 || voidedIds[0] !== "sim-sale-8") return false;
+	if (state.utangPayments.length !== 3) return false;
+	if (state.utangPayments.some((u) => !String(u.id).startsWith("sim-utang-pay-"))) return false;
+	if (state.adjustments.length !== 3) return false;
+	if (state.adjustments.some((a) => !String(a.id).startsWith("sim-adj-"))) return false;
+	return true;
+}
+/**
+* Creates a deterministic canonical JSON signature for Deep-Equality Diffing (JSON.stringify comparison)
+* so background polling only updates React state and shows the toast when a real data change occurred.
+*/
+function createCanonicalStateSignature(state) {
+	const canonical = {
+		settings: {
+			storeName: String(state.settings.storeName || "").trim(),
+			subtitle: String(state.settings.subtitle || "").trim(),
+			address: String(state.settings.address || "").trim(),
+			contactNumber: String(state.settings.contactNumber || "").trim(),
+			footerMessage: String(state.settings.footerMessage || "").trim(),
+			paperSize: state.settings.paperSize === "80mm" ? "80mm" : "58mm",
+			autoPrint: Boolean(state.settings.autoPrint)
+		},
+		products: [...state.products].map((p) => ({
+			id: sanitizeSafeId(p.id, 100),
+			barcode: String(p.barcode || "").trim(),
+			name: String(p.name || "").trim(),
+			category: String(p.category || "").trim(),
+			capitalPrice: Number(p.capitalPrice || 0),
+			sellingPrice: Number(p.sellingPrice || 0),
+			stock: Number(p.stock || 0)
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		sales: [...state.sales].map((s) => ({
+			id: sanitizeSafeId(s.id, 100),
+			receiptNo: String(s.receiptNo || "").trim(),
+			grandTotal: Number(s.grandTotal || 0),
+			subtotal: Number(s.subtotal || 0),
+			discount: Number(s.discount || 0),
+			paymentType: s.paymentType,
+			amountTendered: Number(s.amountTendered || 0),
+			utangAmount: Number(s.utangAmount || 0),
+			customerName: String(s.customerName || "").trim(),
+			voided: Boolean(s.voided),
+			totalItems: Number(s.totalItems || 0)
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		utangPayments: [...state.utangPayments].map((u) => ({
+			id: sanitizeSafeId(u.id, 100),
+			receiptNo: String(u.receiptNo || "").trim(),
+			customerName: String(u.customerName || "").trim(),
+			paymentMethod: u.paymentMethod,
+			amountPaid: Number(u.amountPaid || 0),
+			remainingBalance: Number(u.remainingBalance || 0)
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		shifts: [...state.shifts].map((sh) => ({
+			dateKey: normalizeDayKeyString(sh.dateKey),
+			openingFloat: Number(sh.openingFloat || 0),
+			actualClosingCashCounted: sh.actualClosingCashCounted !== void 0 ? Number(sh.actualClosingCashCounted) : null,
+			closingNote: String(sh.closingNote || "").trim()
+		})).sort((a, b) => a.dateKey.localeCompare(b.dateKey)),
+		adjustments: [...state.adjustments].map((adj) => ({
+			id: sanitizeSafeId(adj.id, 100),
+			type: adj.type,
+			amount: Number(adj.amount || 0),
+			reason: String(adj.reason || "").trim()
+		})).sort((a, b) => a.id.localeCompare(b.id)),
+		parkedCarts: [...state.parkedCarts].map((pk) => ({
+			id: sanitizeSafeId(pk.id, 100),
+			label: String(pk.label || "").trim(),
+			discount: Number(pk.discount || 0),
+			itemCount: (pk.items || []).reduce((acc, it) => acc + Number(it.quantity || 0), 0)
+		})).sort((a, b) => a.id.localeCompare(b.id))
+	};
+	return JSON.stringify(canonical);
 }
 async function saveSettingsToCloud(uid, settings) {
 	const path = `pos_settings/${uid}`;
@@ -53792,10 +53574,10 @@ async function saveSettingsToCloud(uid, settings) {
 	}
 }
 async function saveProductToCloud(uid, product) {
-	const docId = makeCloudDocId(uid, product.id);
+	const safeId = sanitizeSafeId(product.id, 100);
+	const docId = makeCloudDocId(uid, safeId);
 	const path = `pos_products/${docId}`;
 	const ref = doc(db, "pos_products", docId);
-	const safeId = sanitizeSafeId(product.id, 100);
 	const editableFields = {
 		barcode: clampString(product.barcode, 64, safeId) || safeId,
 		name: clampString(product.name, 160, "Unnamed Product") || "Unnamed Product",
@@ -53820,21 +53602,11 @@ async function saveProductToCloud(uid, product) {
 		handleFirestoreError(error, OperationType.WRITE, path);
 	}
 }
-async function deleteProductFromCloud(uid, productId) {
-	const docId = makeCloudDocId(uid, productId);
-	const path = `pos_products/${docId}`;
-	const ref = doc(db, "pos_products", docId);
-	try {
-		await deleteDoc(ref);
-	} catch (error) {
-		handleFirestoreError(error, OperationType.DELETE, path);
-	}
-}
 async function saveSaleToCloud(uid, sale) {
-	const docId = makeCloudDocId(uid, sale.id);
+	const safeId = sanitizeSafeId(sale.id, 100);
+	const docId = makeCloudDocId(uid, safeId);
 	const path = `pos_sales/${docId}`;
 	const ref = doc(db, "pos_sales", docId);
-	const safeId = sanitizeSafeId(sale.id, 100);
 	const boundedItems = (sale.items || []).slice(0, 50).map((item) => ({
 		productId: sanitizeSafeId(item.productId, 100),
 		barcode: clampString(item.barcode, 64, "0000") || "0000",
@@ -53863,14 +53635,14 @@ async function saveSaleToCloud(uid, sale) {
 		if (snap.exists()) {
 			if (snap.data().status !== "VOIDED" && sale.voided) await updateDoc(ref, {
 				status: "VOIDED",
-				voidedAt: clampString(sale.voidedAt || (/* @__PURE__ */ new Date()).toISOString(), 64),
+				voidedAt: clampString(sanitizeLocaleDateString(sale.voidedAt), 64),
 				updatedAt: serverTimestamp()
 			});
 		} else await setDoc(ref, {
 			ownerId: uid,
 			id: safeId,
 			receiptNo: clampString(sale.receiptNo, 64, "#FGS-0001") || "#FGS-0001",
-			timestamp: clampString(sale.createdAt, 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
+			timestamp: clampString(sanitizeLocaleDateString(sale.createdAt), 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
 			items: boundedItems,
 			subtotal: clampNumber(sale.subtotal, 0, 1e7),
 			discount: clampNumber(sale.discount, 0, 1e7),
@@ -53885,7 +53657,7 @@ async function saveSaleToCloud(uid, sale) {
 			gcashRef: clampString(sale.gcashRefNo, 80),
 			dueDateNote: clampString(sale.dueDateOrNote, 200),
 			status: sale.voided ? "VOIDED" : "COMPLETED",
-			voidedAt: clampString(sale.voidedAt, 64),
+			voidedAt: sale.voided ? clampString(sanitizeLocaleDateString(sale.voidedAt), 64) : "",
 			createdAt: serverTimestamp(),
 			updatedAt: serverTimestamp()
 		});
@@ -53894,10 +53666,10 @@ async function saveSaleToCloud(uid, sale) {
 	}
 }
 async function saveUtangPaymentToCloud(uid, payment) {
-	const docId = makeCloudDocId(uid, payment.id);
+	const safeId = sanitizeSafeId(payment.id, 100);
+	const docId = makeCloudDocId(uid, safeId);
 	const path = `pos_utang_payments/${docId}`;
 	const ref = doc(db, "pos_utang_payments", docId);
-	const safeId = sanitizeSafeId(payment.id, 100);
 	try {
 		if ((await getDoc(ref)).exists()) await updateDoc(ref, {
 			gcashRef: clampString(payment.gcashRefNo, 80),
@@ -53908,7 +53680,7 @@ async function saveUtangPaymentToCloud(uid, payment) {
 			ownerId: uid,
 			id: safeId,
 			receiptNo: clampString(payment.receiptNo, 64, "#UTG-0001") || "#UTG-0001",
-			timestamp: clampString(payment.createdAt, 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
+			timestamp: clampString(sanitizeLocaleDateString(payment.createdAt), 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
 			customerName: clampString(payment.customerName, 120, "Customer") || "Customer",
 			paymentMethod: payment.paymentMethod === "GCASH" ? "GCASH" : "CASH",
 			gcashRef: clampString(payment.gcashRefNo, 80),
@@ -53924,20 +53696,20 @@ async function saveUtangPaymentToCloud(uid, payment) {
 	}
 }
 async function saveShiftToCloud(uid, shift) {
-	const validDayKey = /^\d{4}-\d{2}-\d{2}$/.test(shift.dateKey) ? shift.dateKey : toLocalDayKey(/* @__PURE__ */ new Date());
+	const validDayKey = normalizeDayKeyString(shift.dateKey);
 	const docId = makeCloudDocId(uid, validDayKey);
 	const path = `pos_shifts/${docId}`;
 	const ref = doc(db, "pos_shifts", docId);
 	const isClosed = shift.actualClosingCashCounted !== void 0;
 	const editableFields = {
 		openingFloat: clampNumber(shift.openingFloat, 0, 1e7),
-		openedAt: clampString(shift.openedAt, 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
+		openedAt: clampString(sanitizeLocaleDateString(shift.openedAt), 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
 		status: isClosed ? "CLOSED" : "OPEN",
 		closingCountedCash: clampNumber(shift.actualClosingCashCounted ?? 0, 0, 1e7),
 		expectedCashAtClose: 0,
 		variance: 0,
 		closingNote: clampString(shift.closingNote, 200),
-		closedAt: clampString(shift.closedAt, 64)
+		closedAt: isClosed ? clampString(sanitizeLocaleDateString(shift.closedAt), 64) : ""
 	};
 	try {
 		if ((await getDoc(ref)).exists()) await updateDoc(ref, {
@@ -53956,12 +53728,11 @@ async function saveShiftToCloud(uid, shift) {
 	}
 }
 async function saveAdjustmentToCloud(uid, adj) {
-	const docId = makeCloudDocId(uid, adj.id);
+	const safeId = sanitizeSafeId(adj.id, 100);
+	const docId = makeCloudDocId(uid, safeId);
 	const path = `pos_adjustments/${docId}`;
 	const ref = doc(db, "pos_adjustments", docId);
-	const safeId = sanitizeSafeId(adj.id, 100);
-	const derivedDayKey = toLocalDayKey(new Date(adj.createdAt));
-	const validDayKey = /^\d{4}-\d{2}-\d{2}$/.test(derivedDayKey) ? derivedDayKey : toLocalDayKey(/* @__PURE__ */ new Date());
+	const validDayKey = normalizeDayKeyString(adj.createdAt);
 	const cloudType = adj.type === "CASH_IN" ? "CASH_IN" : "CASH_OUT";
 	try {
 		if ((await getDoc(ref)).exists()) await updateDoc(ref, {
@@ -53974,7 +53745,7 @@ async function saveAdjustmentToCloud(uid, adj) {
 			ownerId: uid,
 			id: safeId,
 			dayKey: validDayKey,
-			timestamp: clampString(adj.createdAt, 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
+			timestamp: clampString(sanitizeLocaleDateString(adj.createdAt), 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
 			type: cloudType,
 			amount: clampNumber(adj.amount, .01, 1e7),
 			reason: clampString(adj.reason, 200, "Store adjustment") || "Store adjustment",
@@ -53985,21 +53756,11 @@ async function saveAdjustmentToCloud(uid, adj) {
 		handleFirestoreError(error, OperationType.WRITE, path);
 	}
 }
-async function deleteAdjustmentFromCloud(uid, adjustmentId) {
-	const docId = makeCloudDocId(uid, adjustmentId);
-	const path = `pos_adjustments/${docId}`;
-	const ref = doc(db, "pos_adjustments", docId);
-	try {
-		await deleteDoc(ref);
-	} catch (error) {
-		handleFirestoreError(error, OperationType.DELETE, path);
-	}
-}
 async function saveParkedCartToCloud(uid, parked) {
-	const docId = makeCloudDocId(uid, parked.id);
+	const safeId = sanitizeSafeId(parked.id, 100);
+	const docId = makeCloudDocId(uid, safeId);
 	const path = `pos_parked_carts/${docId}`;
 	const ref = doc(db, "pos_parked_carts", docId);
-	const safeId = sanitizeSafeId(parked.id, 100);
 	const boundedItems = (parked.items || []).slice(0, 50).map((item) => ({
 		productId: sanitizeSafeId(item.productId, 100),
 		barcode: clampString(item.barcode, 64, "0000") || "0000",
@@ -54026,7 +53787,7 @@ async function saveParkedCartToCloud(uid, parked) {
 			label: clampString(parked.label, 120, "Parked Cart") || "Parked Cart",
 			note: clampString(parked.note || parked.customerName, 200),
 			discount: clampNumber(parked.discount, 0, 1e7),
-			parkedAt: clampString(parked.createdAt, 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
+			parkedAt: clampString(sanitizeLocaleDateString(parked.createdAt), 64, (/* @__PURE__ */ new Date()).toISOString()) || (/* @__PURE__ */ new Date()).toISOString(),
 			items: boundedItems,
 			createdAt: serverTimestamp(),
 			updatedAt: serverTimestamp()
@@ -54035,103 +53796,204 @@ async function saveParkedCartToCloud(uid, parked) {
 		handleFirestoreError(error, OperationType.WRITE, path);
 	}
 }
-async function deleteParkedCartFromCloud(uid, parkedId) {
-	const docId = makeCloudDocId(uid, parkedId);
-	const path = `pos_parked_carts/${docId}`;
-	const ref = doc(db, "pos_parked_carts", docId);
+/**
+* Optional Google Apps Script Web App Webhook Push (CORS preflight bypass via text/plain;charset=utf-8 + no-cors fallback)
+*/
+async function pushToGoogleAppsScriptWebhook(state) {
+	let scriptUrl = "";
 	try {
-		await deleteDoc(ref);
-	} catch (error) {
-		handleFirestoreError(error, OperationType.DELETE, path);
+		scriptUrl = (localStorage.getItem(CLOUD_STORAGE_KEYS.GAS_WEBHOOK_URL) || "").trim();
+	} catch {
+		return;
 	}
-}
-async function clearCollectionForUser(collectionName, uid) {
-	const q = query(collection(db, collectionName), where("ownerId", "==", uid));
+	if (!scriptUrl || !scriptUrl.startsWith("https://script.google.com/")) return;
+	const payload = JSON.stringify({
+		action: "SYNC_ALL",
+		...state,
+		timestamp: (/* @__PURE__ */ new Date()).toISOString()
+	});
 	try {
-		const snap = await getDocs(q);
-		await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-	} catch (error) {
-		handleFirestoreError(error, OperationType.LIST, collectionName);
-	}
-}
-async function syncFullStoreStateToCloud(uid, state, replaceExisting = false) {
-	if (replaceExisting) await Promise.all([
-		clearCollectionForUser("pos_products", uid),
-		clearCollectionForUser("pos_sales", uid),
-		clearCollectionForUser("pos_utang_payments", uid),
-		clearCollectionForUser("pos_shifts", uid),
-		clearCollectionForUser("pos_adjustments", uid),
-		clearCollectionForUser("pos_parked_carts", uid)
-	]);
-	await saveSettingsToCloud(uid, state.settings);
-	await Promise.all([
-		...state.products.map((p) => saveProductToCloud(uid, p)),
-		...state.sales.map((s) => saveSaleToCloud(uid, s)),
-		...state.utangPayments.map((u) => saveUtangPaymentToCloud(uid, u)),
-		...state.shifts.map((sh) => saveShiftToCloud(uid, sh)),
-		...state.adjustments.map((adj) => saveAdjustmentToCloud(uid, adj)),
-		...state.parkedCarts.map((pk) => saveParkedCartToCloud(uid, pk))
-	]);
-}
-function subscribeToCloudStore(uid, callbacks) {
-	let unmounted = false;
-	const unsubs = [];
-	(async () => {
-		const settingsRef = doc(db, "pos_settings", uid);
+		await fetch(scriptUrl, {
+			method: "POST",
+			headers: { "Content-Type": "text/plain;charset=utf-8" },
+			body: payload,
+			redirect: "follow"
+		});
+	} catch {
 		try {
-			const initialSettingsSnap = await getDoc(settingsRef);
-			if (unmounted) return;
-			if (!initialSettingsSnap.exists()) {
-				await callbacks.onEmptyCloudDetected();
-				if (unmounted) return;
-			}
-		} catch (err) {
-			handleFirestoreError(err, OperationType.GET, `pos_settings/${uid}`);
-		}
-		const unsubSettings = onSnapshot(settingsRef, (snap) => {
-			if (snap.exists()) {
-				const d = snap.data();
-				callbacks.onSettings({
-					storeName: d.storeName || "FOUR GIFTS STORE",
-					subtitle: d.subtitle || "",
-					address: d.address || "",
-					contactNumber: d.contactPhone || "",
-					footerMessage: d.footerMessage || "",
-					paperSize: d.paperSize === "80mm" ? "80mm" : "58mm",
-					autoPrint: Boolean(d.autoPrint)
-				});
-				callbacks.onSyncActivity();
-			}
-		}, (err) => handleFirestoreError(err, OperationType.GET, `pos_settings/${uid}`));
-		unsubs.push(unsubSettings);
-		const unsubProducts = onSnapshot(query(collection(db, "pos_products"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			await fetch(scriptUrl, {
+				method: "POST",
+				mode: "no-cors",
+				headers: { "Content-Type": "text/plain;charset=utf-8" },
+				body: payload
+			});
+		} catch {}
+	}
+}
+/**
+* Write Pipeline: saveAllToCloud (syncFullStoreStateToCloud)
+* Reconciles the complete L1 store state into the L2 Cloud Store:
+* - Removes any deleted/orphan documents in Firestore that are no longer in `state`
+* - Upserts all current documents
+* - Touches `pos_settings/{uid}.updatedAt` last to notify all other connected devices
+*/
+var activeSaveChain = Promise.resolve();
+function syncFullStoreStateToCloud(uid, state, _replaceExisting = false) {
+	const runSave = async () => {
+		const [existingProductsSnap, existingSalesSnap, existingUtangSnap, existingShiftsSnap, existingAdjustmentsSnap, existingParkedSnap] = await Promise.all([
+			getDocs(query(collection(db, "pos_products"), where("ownerId", "==", uid))),
+			getDocs(query(collection(db, "pos_sales"), where("ownerId", "==", uid))),
+			getDocs(query(collection(db, "pos_utang_payments"), where("ownerId", "==", uid))),
+			getDocs(query(collection(db, "pos_shifts"), where("ownerId", "==", uid))),
+			getDocs(query(collection(db, "pos_adjustments"), where("ownerId", "==", uid))),
+			getDocs(query(collection(db, "pos_parked_carts"), where("ownerId", "==", uid)))
+		]);
+		const wantedProductDocIds = new Set(state.products.map((p) => makeCloudDocId(uid, sanitizeSafeId(p.id, 100))));
+		const wantedSaleDocIds = new Set(state.sales.map((s) => makeCloudDocId(uid, sanitizeSafeId(s.id, 100))));
+		const wantedUtangDocIds = new Set(state.utangPayments.map((u) => makeCloudDocId(uid, sanitizeSafeId(u.id, 100))));
+		const wantedShiftDocIds = new Set(state.shifts.map((sh) => makeCloudDocId(uid, normalizeDayKeyString(sh.dateKey))));
+		const wantedAdjDocIds = new Set(state.adjustments.map((a) => makeCloudDocId(uid, sanitizeSafeId(a.id, 100))));
+		const wantedParkedDocIds = new Set(state.parkedCarts.map((pk) => makeCloudDocId(uid, sanitizeSafeId(pk.id, 100))));
+		const orphanDeletes = [];
+		existingProductsSnap.docs.forEach((d) => {
+			if (!wantedProductDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		existingSalesSnap.docs.forEach((d) => {
+			if (!wantedSaleDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		existingUtangSnap.docs.forEach((d) => {
+			if (!wantedUtangDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		existingShiftsSnap.docs.forEach((d) => {
+			if (!wantedShiftDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		existingAdjustmentsSnap.docs.forEach((d) => {
+			if (!wantedAdjDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		existingParkedSnap.docs.forEach((d) => {
+			if (!wantedParkedDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+		});
+		if (orphanDeletes.length > 0) await Promise.all(orphanDeletes);
+		const existingProductsMap = new Map(existingProductsSnap.docs.map((d) => [d.id, d.data()]));
+		const productWrites = state.products.map(async (p) => {
+			const safeId = sanitizeSafeId(p.id, 100);
+			const docId = makeCloudDocId(uid, safeId);
+			const existing = existingProductsMap.get(docId);
+			const barcode = clampString(p.barcode, 64, safeId) || safeId;
+			const name = clampString(p.name, 160, "Unnamed Product") || "Unnamed Product";
+			const category = clampString(p.category, 80, "General") || "General";
+			const costPrice = clampNumber(p.capitalPrice, 0, 1e7);
+			const sellingPrice = clampNumber(p.sellingPrice, 0, 1e7);
+			const stock = clampNumber(p.stock, -1e5, 1e6);
+			if (existing && existing.barcode === barcode && existing.name === name && existing.category === category && Number(existing.costPrice) === costPrice && Number(existing.sellingPrice) === sellingPrice && Number(existing.stock) === stock) return;
+			await saveProductToCloud(uid, p);
+		});
+		const existingSalesMap = new Map(existingSalesSnap.docs.map((d) => [d.id, d.data()]));
+		const saleWrites = state.sales.map(async (s) => {
+			const docId = makeCloudDocId(uid, sanitizeSafeId(s.id, 100));
+			const existing = existingSalesMap.get(docId);
+			const wantedStatus = s.voided ? "VOIDED" : "COMPLETED";
+			if (existing && existing.status === wantedStatus) return;
+			if (existing && existing.status === "VOIDED" && wantedStatus === "COMPLETED") await deleteDoc(doc(db, "pos_sales", docId));
+			await saveSaleToCloud(uid, s);
+		});
+		const existingUtangMap = new Map(existingUtangSnap.docs.map((d) => [d.id, d.data()]));
+		const utangWrites = state.utangPayments.map(async (u) => {
+			const docId = makeCloudDocId(uid, sanitizeSafeId(u.id, 100));
+			const existing = existingUtangMap.get(docId);
+			if (existing && Number(existing.amountPaid) === clampNumber(u.amountPaid, .01, 1e7) && String(existing.note || "") === clampString(u.note, 200)) return;
+			await saveUtangPaymentToCloud(uid, u);
+		});
+		const existingShiftsMap = new Map(existingShiftsSnap.docs.map((d) => [d.id, d.data()]));
+		const shiftWrites = state.shifts.map(async (sh) => {
+			const docId = makeCloudDocId(uid, normalizeDayKeyString(sh.dateKey));
+			const existing = existingShiftsMap.get(docId);
+			const status = sh.actualClosingCashCounted !== void 0 ? "CLOSED" : "OPEN";
+			const openingFloat = clampNumber(sh.openingFloat, 0, 1e7);
+			const closingCountedCash = clampNumber(sh.actualClosingCashCounted ?? 0, 0, 1e7);
+			if (existing && Number(existing.openingFloat) === openingFloat && existing.status === status && Number(existing.closingCountedCash) === closingCountedCash && String(existing.closingNote || "") === clampString(sh.closingNote, 200)) return;
+			await saveShiftToCloud(uid, sh);
+		});
+		const existingAdjMap = new Map(existingAdjustmentsSnap.docs.map((d) => [d.id, d.data()]));
+		const adjWrites = state.adjustments.map(async (adj) => {
+			const docId = makeCloudDocId(uid, sanitizeSafeId(adj.id, 100));
+			const existing = existingAdjMap.get(docId);
+			const cloudType = adj.type === "CASH_IN" ? "CASH_IN" : "CASH_OUT";
+			if (existing && existing.type === cloudType && Number(existing.amount) === clampNumber(adj.amount, .01, 1e7) && existing.reason === (clampString(adj.reason, 200, "Store adjustment") || "Store adjustment")) return;
+			await saveAdjustmentToCloud(uid, adj);
+		});
+		const parkedWrites = state.parkedCarts.map((pk) => saveParkedCartToCloud(uid, pk));
+		await Promise.all([
+			...productWrites,
+			...saleWrites,
+			...utangWrites,
+			...shiftWrites,
+			...adjWrites,
+			...parkedWrites
+		]);
+		await saveSettingsToCloud(uid, state.settings);
+		await pushToGoogleAppsScriptWebhook(state);
+		const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+		try {
+			localStorage.setItem(CLOUD_STORAGE_KEYS.LAST_SYNC, nowIso);
+		} catch {}
+	};
+	activeSaveChain = activeSaveChain.then(runSave, runSave);
+	return activeSaveChain;
+}
+/**
+* Read & Reconciliation Pipeline: fetchStoreStateFromCloud (GET_ALL equivalent)
+* Pulls fresh authoritative documents directly from the server, normalizes locale dates,
+* and returns `{ isEmpty, state }`.
+*/
+async function fetchStoreStateFromCloud(uid) {
+	const settingsRef = doc(db, "pos_settings", uid);
+	const [settingsSnap, productsSnap, salesSnap, utangSnap, shiftsSnap, adjustmentsSnap, parkedSnap] = await Promise.all([
+		fetchDocFresh(settingsRef),
+		fetchDocsFresh(query(collection(db, "pos_products"), where("ownerId", "==", uid))),
+		fetchDocsFresh(query(collection(db, "pos_sales"), where("ownerId", "==", uid))),
+		fetchDocsFresh(query(collection(db, "pos_utang_payments"), where("ownerId", "==", uid))),
+		fetchDocsFresh(query(collection(db, "pos_shifts"), where("ownerId", "==", uid))),
+		fetchDocsFresh(query(collection(db, "pos_adjustments"), where("ownerId", "==", uid))),
+		fetchDocsFresh(query(collection(db, "pos_parked_carts"), where("ownerId", "==", uid)))
+	]);
+	const isEmpty = !settingsSnap.exists() && productsSnap.empty && salesSnap.empty && utangSnap.empty && shiftsSnap.empty;
+	const sData = settingsSnap.exists() ? settingsSnap.data() : {};
+	return {
+		isEmpty,
+		state: {
+			settings: {
+				storeName: String(sData.storeName || "FOUR GIFTS STORE"),
+				subtitle: String(sData.subtitle ?? "Gifts, Wrappers, Toys & Everyday Essentials"),
+				address: String(sData.address ?? "Poblacion Market Road, Brgy. San Jose"),
+				contactNumber: String(sData.contactPhone ?? "0917-555-0444"),
+				footerMessage: String(sData.footerMessage ?? "Thank you for shopping at Four Gifts Store!"),
+				paperSize: sData.paperSize === "80mm" ? "80mm" : "58mm",
+				autoPrint: sData.autoPrint !== void 0 ? Boolean(sData.autoPrint) : true
+			},
+			products: productsSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
+				const ts = d.updatedAt;
 				return {
-					id: d.id,
-					barcode: d.barcode,
-					name: d.name,
-					category: d.category,
-					capitalPrice: Number(d.costPrice),
-					sellingPrice: Number(d.sellingPrice),
-					stock: Number(d.stock),
+					id: String(d.id || docSnap.id),
+					barcode: String(d.barcode || ""),
+					name: String(d.name || "Unnamed Product"),
+					category: String(d.category || "General"),
+					capitalPrice: Number(d.costPrice ?? 0),
+					sellingPrice: Number(d.sellingPrice ?? 0),
+					stock: Number(d.stock ?? 0),
 					note: "",
-					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+					updatedAt: ts && typeof ts.toDate === "function" ? ts.toDate().toISOString() : "2026-01-01T00:00:00.000Z"
 				};
-			}).sort((a, b) => a.barcode.localeCompare(b.barcode));
-			callbacks.onProducts(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_products"));
-		unsubs.push(unsubProducts);
-		const unsubSales = onSnapshot(query(collection(db, "pos_sales"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			}).sort((a, b) => a.barcode.localeCompare(b.barcode)),
+			sales: salesSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
 				const isSplit = d.paymentType === "SPLIT_CASH_UTANG";
 				const mappedPaymentType = d.paymentType === "GCASH" ? "GCASH" : d.paymentType === "UTANG" ? "UTANG" : "CASH";
-				const grandTotal = Number(d.total);
-				const netProfit = Number(d.totalProfit);
-				const amountTendered = Number(d.amountTendered);
-				const utangAmount = Number(d.utangAmount);
+				const grandTotal = Number(d.total ?? 0);
+				const netProfit = Number(d.totalProfit ?? 0);
+				const amountTendered = Number(d.amountTendered ?? 0);
+				const utangAmount = Number(d.utangAmount ?? 0);
 				const paidPortion = Math.max(0, grandTotal - utangAmount);
 				const cashCollected = mappedPaymentType === "CASH" || mappedPaymentType === "UTANG" && amountTendered > 0 ? paidPortion : 0;
 				const gcashCollected = mappedPaymentType === "GCASH" ? paidPortion : 0;
@@ -54147,13 +54009,13 @@ function subscribeToCloudStore(uid, callbacks) {
 					currentStock: Number(it.currentStock ?? 0)
 				}));
 				return {
-					id: d.id,
-					receiptNo: d.receiptNo,
-					createdAt: d.timestamp,
+					id: String(d.id || docSnap.id),
+					receiptNo: String(d.receiptNo || "#FGS-0001"),
+					createdAt: sanitizeLocaleDateString(String(d.timestamp || "")),
 					items: rawItems,
-					totalItems: Number(d.totalItems),
-					subtotal: Number(d.subtotal),
-					discount: Number(d.discount),
+					totalItems: Number(d.totalItems ?? 1),
+					subtotal: Number(d.subtotal ?? grandTotal),
+					discount: Number(d.discount ?? 0),
 					grandTotal,
 					totalCapital: Math.max(0, grandTotal - netProfit),
 					netProfit,
@@ -54161,73 +54023,53 @@ function subscribeToCloudStore(uid, callbacks) {
 					amountTendered,
 					cashCollected,
 					gcashCollected,
-					changeGiven: Number(d.change),
+					changeGiven: Number(d.change ?? 0),
 					utangAmount,
 					splitToUtang: isSplit,
-					customerName: d.customerName || void 0,
-					gcashRefNo: d.gcashRef || void 0,
-					dueDateOrNote: d.dueDateNote || void 0,
+					customerName: d.customerName ? String(d.customerName) : void 0,
+					gcashRefNo: d.gcashRef ? String(d.gcashRef) : void 0,
+					dueDateOrNote: d.dueDateNote ? String(d.dueDateNote) : void 0,
 					voided: d.status === "VOIDED",
-					voidedAt: d.voidedAt || void 0
+					voidedAt: d.voidedAt ? sanitizeLocaleDateString(String(d.voidedAt)) : void 0
 				};
-			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-			callbacks.onSales(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_sales"));
-		unsubs.push(unsubSales);
-		const unsubUtang = onSnapshot(query(collection(db, "pos_utang_payments"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+			utangPayments: utangSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
 				return {
-					id: d.id,
-					receiptNo: d.receiptNo,
-					createdAt: d.timestamp,
-					customerName: d.customerName,
+					id: String(d.id || docSnap.id),
+					receiptNo: String(d.receiptNo || "#UTG-0001"),
+					createdAt: sanitizeLocaleDateString(String(d.timestamp || "")),
+					customerName: String(d.customerName || "Customer"),
 					paymentMethod: d.paymentMethod === "GCASH" ? "GCASH" : "CASH",
-					gcashRefNo: d.gcashRef || void 0,
-					previousBalance: Number(d.previousBalance),
-					amountPaid: Number(d.amountPaid),
-					remainingBalance: Number(d.remainingBalance),
-					note: d.note || void 0
+					gcashRefNo: d.gcashRef ? String(d.gcashRef) : void 0,
+					previousBalance: Number(d.previousBalance ?? 0),
+					amountPaid: Number(d.amountPaid ?? 0),
+					remainingBalance: Number(d.remainingBalance ?? 0),
+					note: d.note ? String(d.note) : void 0
 				};
-			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-			callbacks.onUtangPayments(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_utang_payments"));
-		unsubs.push(unsubUtang);
-		const unsubShifts = onSnapshot(query(collection(db, "pos_shifts"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+			shifts: shiftsSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
 				return {
-					dateKey: d.dayKey,
-					openingFloat: Number(d.openingFloat),
-					openedAt: d.openedAt,
-					closedAt: d.closedAt || void 0,
-					actualClosingCashCounted: d.status === "CLOSED" ? Number(d.closingCountedCash) : void 0,
-					closingNote: d.closingNote || void 0
+					dateKey: normalizeDayKeyString(String(d.dayKey || "")),
+					openingFloat: Number(d.openingFloat ?? 0),
+					openedAt: sanitizeLocaleDateString(String(d.openedAt || "")),
+					closedAt: d.closedAt ? sanitizeLocaleDateString(String(d.closedAt)) : void 0,
+					actualClosingCashCounted: d.status === "CLOSED" ? Number(d.closingCountedCash ?? 0) : void 0,
+					closingNote: d.closingNote ? String(d.closingNote) : void 0
 				};
-			}).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-			callbacks.onShifts(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_shifts"));
-		unsubs.push(unsubShifts);
-		const unsubAdjustments = onSnapshot(query(collection(db, "pos_adjustments"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			}).sort((a, b) => a.dateKey.localeCompare(b.dateKey)),
+			adjustments: adjustmentsSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
 				return {
-					id: d.id,
-					createdAt: d.timestamp,
+					id: String(d.id || docSnap.id),
+					createdAt: sanitizeLocaleDateString(String(d.timestamp || "")),
 					type: d.type === "CASH_IN" ? "CASH_IN" : "EXPENSE_OUT",
-					amount: Number(d.amount),
-					reason: d.reason
+					amount: Number(d.amount ?? 0),
+					reason: String(d.reason || "Store adjustment")
 				};
-			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-			callbacks.onAdjustments(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_adjustments"));
-		unsubs.push(unsubAdjustments);
-		const unsubParked = onSnapshot(query(collection(db, "pos_parked_carts"), where("ownerId", "==", uid)), (snap) => {
-			const list = snap.docs.map((docSnap) => {
+			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+			parkedCarts: parkedSnap.docs.map((docSnap) => {
 				const d = docSnap.data();
 				const rawItems = (d.items || []).map((it) => ({
 					productId: String(it.productId || "p_item"),
@@ -54241,25 +54083,420 @@ function subscribeToCloudStore(uid, callbacks) {
 					currentStock: Number(it.currentStock ?? 0)
 				}));
 				return {
-					id: d.id,
-					label: d.label,
-					createdAt: d.parkedAt,
+					id: String(d.id || docSnap.id),
+					label: String(d.label || "Parked Cart"),
+					createdAt: sanitizeLocaleDateString(String(d.parkedAt || "")),
 					items: rawItems,
-					discount: Number(d.discount),
-					customerName: d.note || void 0,
-					note: d.note || void 0
+					discount: Number(d.discount ?? 0),
+					customerName: d.note ? String(d.note) : void 0,
+					note: d.note ? String(d.note) : void 0
 				};
-			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-			callbacks.onParkedCarts(list);
-			callbacks.onSyncActivity();
-		}, (err) => handleFirestoreError(err, OperationType.LIST, "pos_parked_carts"));
-		unsubs.push(unsubParked);
-	})();
-	return () => {
-		unmounted = true;
-		unsubs.forEach((fn) => fn());
+			}).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+		}
 	};
 }
+/**
+* Subscribes to `pos_settings/{uid}` so any remote `saveAllToCloud` call triggers an immediate
+* callback on all other open devices within <1 second.
+*/
+function subscribeToCloudPulse(uid, onPulse) {
+	const settingsRef = doc(db, "pos_settings", uid);
+	let isInitial = true;
+	return onSnapshot(settingsRef, () => {
+		if (isInitial) {
+			isInitial = false;
+			return;
+		}
+		onPulse();
+	}, () => {});
+}
+// src/components/SettingsBackupModal.tsx
+var SettingsBackupModal = ({ isOpen, onClose, settings, onSaveSettings, products, sales, utangPayments, onRestoreBackup, onResetSampleData, cloudSyncState = "CLOUD_SAVED", lastSavedTime, onSyncCloudNow, onPullCloudNow }) => {
+	const [formState, setFormState] = (0, import_react.useState)(settings);
+	const [gasWebhookUrl, setGasWebhookUrl] = (0, import_react.useState)(() => {
+		try {
+			return localStorage.getItem(CLOUD_STORAGE_KEYS.GAS_WEBHOOK_URL) || "";
+		} catch {
+			return "";
+		}
+	});
+	const [statusMessage, setStatusMessage] = (0, import_react.useState)(null);
+	const [confirmReset, setConfirmReset] = (0, import_react.useState)(false);
+	const fileInputRef = (0, import_react.useRef)(null);
+	if (!isOpen) return null;
+	const handleSave = (e) => {
+		e.preventDefault();
+		try {
+			localStorage.setItem(CLOUD_STORAGE_KEYS.GAS_WEBHOOK_URL, gasWebhookUrl.trim());
+		} catch {}
+		onSaveSettings(formState);
+		setStatusMessage("Store & Cloud Auto-Save settings saved and pushed to Cloud.");
+		setTimeout(() => setStatusMessage(null), 3e3);
+	};
+	const handleExportJSON = () => {
+		const payload = {
+			exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+			app: "Four Gifts Store POS",
+			settings: formState,
+			products,
+			sales,
+			utangPayments
+		};
+		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `four-gifts-store-backup-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+		setStatusMessage("JSON backup downloaded.");
+	};
+	const handleExportCSV = () => {
+		const headers = [
+			"Barcode",
+			"Product Name",
+			"Category",
+			"Capital Price (PHP)",
+			"Selling Price (PHP)",
+			"Unit Profit (PHP)",
+			"Current Stock",
+			"Note"
+		];
+		const rows = products.map((p) => [
+			`"${p.barcode.replace(/"/g, "\"\"")}"`,
+			`"${p.name.replace(/"/g, "\"\"")}"`,
+			`"${p.category.replace(/"/g, "\"\"")}"`,
+			p.capitalPrice.toFixed(2),
+			p.sellingPrice.toFixed(2),
+			(p.sellingPrice - p.capitalPrice).toFixed(2),
+			String(p.stock),
+			`"${(p.note || "").replace(/"/g, "\"\"")}"`
+		]);
+		const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `four-gifts-inventory-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.csv`;
+		a.click();
+		URL.revokeObjectURL(url);
+		setStatusMessage("Inventory CSV exported.");
+	};
+	const handleImportFile = (e) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			try {
+				const parsed = JSON.parse(String(reader.result));
+				if (!Array.isArray(parsed.products)) {
+					setStatusMessage("Invalid backup file: missing products list.");
+					return;
+				}
+				onRestoreBackup({
+					products: parsed.products,
+					sales: Array.isArray(parsed.sales) ? parsed.sales : [],
+					utangPayments: Array.isArray(parsed.utangPayments) ? parsed.utangPayments : [],
+					settings: parsed.settings
+				});
+				if (parsed.settings) setFormState(parsed.settings);
+				setStatusMessage("Backup restored and auto-saved to Cloud!");
+			} catch {
+				setStatusMessage("Failed to parse JSON backup file.");
+			}
+		};
+		reader.readAsText(file);
+		e.target.value = "";
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto",
+		role: "dialog",
+		"aria-modal": "true",
+		"aria-labelledby": "settings-modal-title",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "bg-white border border-slate-200 rounded-xl max-w-2xl w-full overflow-hidden shadow-xl",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center gap-2.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Printer, { className: "w-5 h-5 text-slate-700" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+						id: "settings-modal-title",
+						className: "text-base font-bold text-slate-900",
+						children: "Receipt, Thermal Printer & Cloud Auto-Save Settings"
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					onClick: onClose,
+					"aria-label": "Close Settings Modal",
+					className: "p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-200/60 transition-colors",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X$1, { className: "w-5 h-5" })
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "p-6 max-h-[80vh] overflow-y-auto space-y-6",
+				children: [
+					statusMessage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-medium text-emerald-800",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "w-4 h-4 shrink-0 text-emerald-600" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: statusMessage })]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "space-y-1",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Cloud, { className: "w-4 h-4 text-emerald-700 shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+										className: "text-sm font-bold text-slate-900",
+										children: "Dual-Tier L1 + L2 Cloud Auto-Save (Always On)"
+									})]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									className: "text-xs text-slate-700",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "text-emerald-700 font-semibold",
+											children: cloudSyncState === "SYNCING" ? "Syncing with Cloud Store..." : cloudSyncState === "ERROR" ? "Retrying Cloud Sync automatically..." : `Synced to Cloud (${lastSavedTime || "active"})`
+										}),
+										" ",
+										"· Instant L1 Local Cache + Automatic L2 Cloud Push & 4-Trigger Reconciliation across all PCs, phones, and tablets."
+									]
+								})]
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex flex-wrap items-center gap-2 shrink-0",
+								children: [onSyncCloudNow && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => {
+										onSyncCloudNow();
+										setStatusMessage("Pushed this device state to Cloud Store.");
+										setTimeout(() => setStatusMessage(null), 3e3);
+									},
+									className: "inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RefreshCw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Sync Cloud Now" })]
+								}), onPullCloudNow && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => {
+										onPullCloudNow();
+										setStatusMessage("Pulled latest records from Cloud Store.");
+										setTimeout(() => setStatusMessage(null), 3e3);
+									},
+									className: "inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-emerald-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Pull from Cloud" })]
+								})]
+							})]
+						})
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+						onSubmit: handleSave,
+						className: "space-y-4",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+									htmlFor: "store-name-input",
+									className: "block text-xs font-semibold text-slate-700 mb-1",
+									children: "Store Header Name"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									id: "store-name-input",
+									type: "text",
+									required: true,
+									value: formState.storeName,
+									onChange: (e) => setFormState({
+										...formState,
+										storeName: e.target.value
+									}),
+									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+									htmlFor: "store-contact-input",
+									className: "block text-xs font-semibold text-slate-700 mb-1",
+									children: "Contact / Phone #"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									id: "store-contact-input",
+									type: "text",
+									value: formState.contactNumber,
+									onChange: (e) => setFormState({
+										...formState,
+										contactNumber: e.target.value
+									}),
+									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+								})] })]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+									htmlFor: "store-subtitle-input",
+									className: "block text-xs font-semibold text-slate-700 mb-1",
+									children: "Store Tagline / Subtitle"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									id: "store-subtitle-input",
+									type: "text",
+									value: formState.subtitle,
+									onChange: (e) => setFormState({
+										...formState,
+										subtitle: e.target.value
+									}),
+									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+									htmlFor: "store-address-input",
+									className: "block text-xs font-semibold text-slate-700 mb-1",
+									children: "Store Address"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									id: "store-address-input",
+									type: "text",
+									value: formState.address,
+									onChange: (e) => setFormState({
+										...formState,
+										address: e.target.value
+									}),
+									className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+								})] })]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+								htmlFor: "store-footer-input",
+								className: "block text-xs font-semibold text-slate-700 mb-1",
+								children: "Receipt Footer Message"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+								id: "store-footer-input",
+								type: "text",
+								value: formState.footerMessage,
+								onChange: (e) => setFormState({
+									...formState,
+									footerMessage: e.target.value
+								}),
+								className: "w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+							})] }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
+								htmlFor: "gas-webhook-input",
+								className: "block text-xs font-semibold text-slate-700 mb-1",
+								children: "Optional Google Apps Script Web App URL (Secondary Google Sheet L2 Mirror)"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+								id: "gas-webhook-input",
+								type: "url",
+								placeholder: "https://script.google.com/macros/s/.../exec (optional — Firebase Cloud is already active by default)",
+								value: gasWebhookUrl,
+								onChange: (e) => setGasWebhookUrl(e.target.value),
+								className: "w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+							})] }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "block text-xs font-semibold text-slate-700 mb-1.5",
+									children: "Thermal Printer Paper Width"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex items-center gap-2",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										onClick: () => setFormState({
+											...formState,
+											paperSize: "58mm"
+										}),
+										className: `flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-colors ${formState.paperSize === "58mm" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`,
+										children: "58mm Roll (Standard Mini)"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										onClick: () => setFormState({
+											...formState,
+											paperSize: "80mm"
+										}),
+										className: `flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-colors ${formState.paperSize === "80mm" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`,
+										children: "80mm Roll (Wide Desktop)"
+									})]
+								})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "flex items-end pb-1",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", {
+										className: "flex items-center gap-2.5 cursor-pointer select-none",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+											type: "checkbox",
+											checked: formState.autoPrint,
+											onChange: (e) => setFormState({
+												...formState,
+												autoPrint: e.target.checked
+											}),
+											className: "w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "text-xs font-semibold text-slate-800",
+											children: "Auto-trigger browser print dialog after checkout"
+										})]
+									})
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "flex justify-end pt-2",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+									type: "submit",
+									className: "px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors",
+									children: "Save Store & Printer Settings"
+								})
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("hr", { className: "border-slate-200" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-3",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+							className: "text-sm font-bold text-slate-900",
+							children: "Offline Data Backup & Restore"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-slate-600 mt-0.5",
+							children: "Export all products, sales history, and Utang ledger records to a file or restore from a previous backup."
+						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-wrap items-center gap-2.5",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: handleExportJSON,
+									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Export Backup (.json)" })]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: handleExportCSV,
+									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FileSpreadsheet, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Export Inventory (.csv)" })]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+									ref: fileInputRef,
+									type: "file",
+									accept: ".json,application/json",
+									onChange: handleImportFile,
+									className: "hidden"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => fileInputRef.current?.click(),
+									className: "inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, { className: "w-4 h-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Restore Backup (.json)" })]
+								}),
+								!confirmReset ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: () => setConfirmReset(true),
+									className: "inline-flex items-center gap-1.5 px-3 py-2 text-red-700 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ml-auto",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Reset Sample Data" })]
+								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex items-center gap-2 ml-auto",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										onClick: () => {
+											onResetSampleData();
+											setConfirmReset(false);
+											setStatusMessage("Reset to initial 6 sample products.");
+										},
+										className: "px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap",
+										children: "Confirm Reset"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										onClick: () => setConfirmReset(false),
+										className: "px-2.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900",
+										children: "Cancel"
+									})]
+								})
+							]
+						})]
+					})
+				]
+			})]
+		})
+	});
+};
 // src/App.tsx
 /**
 * @license
@@ -54283,6 +54520,20 @@ function loadFromStorage(key, fallback) {
 	} catch {
 		return fallback;
 	}
+}
+function saveToStorage(key, value) {
+	try {
+		localStorage.setItem(key, JSON.stringify(value));
+	} catch {}
+}
+function commitL1CacheSynchronously(state) {
+	saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
+	saveToStorage(STORAGE_KEYS.PRODUCTS, state.products);
+	saveToStorage(STORAGE_KEYS.SALES, state.sales);
+	saveToStorage(STORAGE_KEYS.UTANG_PAYMENTS, state.utangPayments);
+	saveToStorage(STORAGE_KEYS.SHIFTS, state.shifts);
+	saveToStorage(STORAGE_KEYS.ADJUSTMENTS, state.adjustments);
+	saveToStorage(STORAGE_KEYS.PARKED_CARTS, state.parkedCarts);
 }
 function formatCurrentTimeShort() {
 	return (/* @__PURE__ */ new Date()).toLocaleTimeString("en-PH", {
@@ -54343,90 +54594,185 @@ function App() {
 		adjustments,
 		parkedCarts
 	]);
+	const isPushingRef = (0, import_react.useRef)(false);
 	const [cart, setCart] = (0, import_react.useState)([]);
 	const [discount, setDiscount] = (0, import_react.useState)(0);
 	const [focusBarcodeTrigger, setFocusBarcodeTrigger] = (0, import_react.useState)(0);
 	const [activeReceipt, setActiveReceipt] = (0, import_react.useState)(null);
 	const [isSettingsModalOpen, setIsSettingsModalOpen] = (0, import_react.useState)(false);
 	const [bannerNotice, setBannerNotice] = (0, import_react.useState)(null);
-	(0, import_react.useRef)(null);
+	const showQuickNotice = (0, import_react.useCallback)((msg) => {
+		setBannerNotice(msg);
+		setTimeout(() => {
+			setBannerNotice((prev) => prev === msg ? null : prev);
+		}, 3500);
+	}, []);
 	(0, import_react.useEffect)(() => {
 		const unsubAuth = onAuthStateChanged(auth, (user) => {
 			setCloudUser(user);
 		});
 		return () => unsubAuth();
 	}, []);
-	(0, import_react.useEffect)(() => {
+	/**
+	* 2. Write Pipeline: Optimistic UI (0ms L1 Commit) + Immediate Cloud Push (saveAllToCloud)
+	*/
+	const saveAllToCloud = (0, import_react.useCallback)(async (nextPartial) => {
+		const nextState = {
+			...latestStoreRef.current,
+			...nextPartial
+		};
+		latestStoreRef.current = nextState;
+		if (nextPartial.settings !== void 0) setSettings(nextPartial.settings);
+		if (nextPartial.products !== void 0) setProducts(nextPartial.products);
+		if (nextPartial.sales !== void 0) setSales(nextPartial.sales);
+		if (nextPartial.utangPayments !== void 0) setUtangPayments(nextPartial.utangPayments);
+		if (nextPartial.shifts !== void 0) setShifts(nextPartial.shifts);
+		if (nextPartial.adjustments !== void 0) setAdjustments(nextPartial.adjustments);
+		if (nextPartial.parkedCarts !== void 0) setParkedCarts(nextPartial.parkedCarts);
+		commitL1CacheSynchronously(nextState);
+		try {
+			localStorage.setItem(CLOUD_STORAGE_KEYS.LOCAL_CUSTOMIZED, "true");
+		} catch {}
+		isPushingRef.current = true;
 		setCloudSyncState("SYNCING");
-		const unsubCloud = subscribeToCloudStore(SHARED_STORE_OWNER_ID, {
-			onSettings: (cloudSettings) => setSettings(cloudSettings),
-			onProducts: (cloudProducts) => setProducts(cloudProducts),
-			onSales: (cloudSales) => setSales(cloudSales),
-			onUtangPayments: (cloudPayments) => setUtangPayments(cloudPayments),
-			onShifts: (cloudShifts) => setShifts(cloudShifts),
-			onAdjustments: (cloudAdjustments) => setAdjustments(cloudAdjustments),
-			onParkedCarts: (cloudParked) => setParkedCarts(cloudParked),
-			onSyncActivity: () => {
-				setCloudSyncState("CLOUD_SAVED");
-				setLastSavedTime(formatCurrentTimeShort());
-			},
-			onEmptyCloudDetected: async () => {
-				setCloudSyncState("SYNCING");
-				try {
-					await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, latestStoreRef.current, false);
-					setCloudSyncState("CLOUD_SAVED");
-					setLastSavedTime(formatCurrentTimeShort());
-				} catch {
-					setCloudSyncState("ERROR");
-				}
-			}
-		});
-		return () => unsubCloud();
-	}, []);
-	(0, import_react.useEffect)(() => {
 		try {
-			localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-		} catch {}
-	}, [products]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
-		} catch {}
-	}, [sales]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.UTANG_PAYMENTS, JSON.stringify(utangPayments));
-		} catch {}
-	}, [utangPayments]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(shifts));
-		} catch {}
-	}, [shifts]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.ADJUSTMENTS, JSON.stringify(adjustments));
-		} catch {}
-	}, [adjustments]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.PARKED_CARTS, JSON.stringify(parkedCarts));
-		} catch {}
-	}, [parkedCarts]);
-	(0, import_react.useEffect)(() => {
-		try {
-			localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-		} catch {}
-	}, [settings]);
-	const triggerCloudSave = (promiseFactory) => {
-		setCloudSyncState("SYNCING");
-		promiseFactory(SHARED_STORE_OWNER_ID).then(() => {
+			await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, nextState, true);
 			setCloudSyncState("CLOUD_SAVED");
 			setLastSavedTime(formatCurrentTimeShort());
-		}).catch(() => {
+		} catch {
 			setCloudSyncState("ERROR");
+		} finally {
+			isPushingRef.current = false;
+		}
+	}, []);
+	/**
+	* 3. Read & Reconciliation Pipeline (syncWithCloud)
+	* Implements:
+	* - Empty-Overwrite Guard (pushes local state UP if remote cloud is empty)
+	* - Unpushed Local Customization Guard (if local PC has customized data while remote only has default sample simulation, pushes local PC state UP)
+	* - Deep-Equality Diffing (JSON.stringify canonical comparison)
+	*/
+	const syncWithCloud = (0, import_react.useCallback)(async (silent = true) => {
+		if (isPushingRef.current) return;
+		if (!silent) setCloudSyncState("SYNCING");
+		try {
+			const remote = await fetchStoreStateFromCloud(SHARED_STORE_OWNER_ID);
+			if (isPushingRef.current) return;
+			const currentLocal = latestStoreRef.current;
+			if (remote.isEmpty || remote.state.products.length === 0 && remote.state.sales.length === 0 && (currentLocal.products.length > 0 || currentLocal.sales.length > 0)) {
+				await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, currentLocal, true);
+				setCloudSyncState("CLOUD_SAVED");
+				setLastSavedTime(formatCurrentTimeShort());
+				return;
+			}
+			const localIsCustomized = !isUntouchedDefaultSimulation(currentLocal);
+			const remoteIsUntouchedDefault = isUntouchedDefaultSimulation(remote.state);
+			if (localIsCustomized && remoteIsUntouchedDefault) {
+				await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, currentLocal, true);
+				setCloudSyncState("CLOUD_SAVED");
+				setLastSavedTime(formatCurrentTimeShort());
+				return;
+			}
+			if (createCanonicalStateSignature(currentLocal) !== createCanonicalStateSignature(remote.state)) {
+				const localNoteById = new Map(currentLocal.products.map((p) => [p.id, p.note || ""]));
+				const mergedProducts = remote.state.products.map((rp) => ({
+					...rp,
+					note: rp.note || localNoteById.get(rp.id) || ""
+				}));
+				const normalizedRemote = {
+					...remote.state,
+					products: mergedProducts
+				};
+				latestStoreRef.current = normalizedRemote;
+				setSettings(normalizedRemote.settings);
+				setProducts(normalizedRemote.products);
+				setSales(normalizedRemote.sales);
+				setUtangPayments(normalizedRemote.utangPayments);
+				setShifts(normalizedRemote.shifts);
+				setAdjustments(normalizedRemote.adjustments);
+				setParkedCarts(normalizedRemote.parkedCarts);
+				commitL1CacheSynchronously(normalizedRemote);
+				try {
+					localStorage.setItem(CLOUD_STORAGE_KEYS.LAST_SYNC, (/* @__PURE__ */ new Date()).toISOString());
+				} catch {}
+				showQuickNotice("Cloud updated automatically");
+			}
+			setCloudSyncState("CLOUD_SAVED");
+			setLastSavedTime(formatCurrentTimeShort());
+		} catch {
+			setCloudSyncState("ERROR");
+		}
+	}, [showQuickNotice]);
+	(0, import_react.useEffect)(() => {
+		syncWithCloud(true);
+		const unsubPulse = subscribeToCloudPulse(SHARED_STORE_OWNER_ID, () => {
+			syncWithCloud(true);
 		});
-	};
+		const pollInterval = window.setInterval(() => {
+			syncWithCloud(true);
+		}, 2e4);
+		const handleFocus = () => {
+			syncWithCloud(true);
+		};
+		const handleVisibilityChange = () => {
+			if (document.visibilityState === "visible") syncWithCloud(true);
+		};
+		window.addEventListener("focus", handleFocus);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		const handleStorageEvent = (e) => {
+			if (!e.key) return;
+			if (e.key === STORAGE_KEYS.PRODUCTS && e.newValue) try {
+				setProducts(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.SALES && e.newValue) try {
+				setSales(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.UTANG_PAYMENTS && e.newValue) try {
+				setUtangPayments(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.SHIFTS && e.newValue) try {
+				setShifts(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.ADJUSTMENTS && e.newValue) try {
+				setAdjustments(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.PARKED_CARTS && e.newValue) try {
+				setParkedCarts(JSON.parse(e.newValue));
+			} catch {}
+			else if (e.key === STORAGE_KEYS.SETTINGS && e.newValue) try {
+				setSettings(JSON.parse(e.newValue));
+			} catch {}
+		};
+		window.addEventListener("storage", handleStorageEvent);
+		return () => {
+			unsubPulse();
+			window.clearInterval(pollInterval);
+			window.removeEventListener("focus", handleFocus);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+			window.removeEventListener("storage", handleStorageEvent);
+		};
+	}, [syncWithCloud]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+	}, [products]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.SALES, sales);
+	}, [sales]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.UTANG_PAYMENTS, utangPayments);
+	}, [utangPayments]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.SHIFTS, shifts);
+	}, [shifts]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.ADJUSTMENTS, adjustments);
+	}, [adjustments]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.PARKED_CARTS, parkedCarts);
+	}, [parkedCarts]);
+	(0, import_react.useEffect)(() => {
+		saveToStorage(STORAGE_KEYS.SETTINGS, settings);
+	}, [settings]);
 	const handleGoogleSignIn = async () => {
 		try {
 			const cred = await signInWithPopup(auth, googleProvider);
@@ -54439,25 +54785,16 @@ function App() {
 		} catch {}
 	};
 	const handleManualCloudSync = async () => {
-		setCloudSyncState("SYNCING");
-		try {
-			await syncFullStoreStateToCloud(SHARED_STORE_OWNER_ID, latestStoreRef.current, true);
-			setCloudSyncState("CLOUD_SAVED");
-			setLastSavedTime(formatCurrentTimeShort());
-			showQuickNotice("All POS records saved to Firebase Cloud!");
-		} catch {
-			setCloudSyncState("ERROR");
-		}
+		await saveAllToCloud({});
+		showQuickNotice("All POS records pushed to Cloud Store!");
+	};
+	const handleManualCloudPull = async () => {
+		await syncWithCloud(false);
+		showQuickNotice("Pulled latest records from Cloud Store!");
 	};
 	const customerSummaries = (0, import_react.useMemo)(() => aggregateCustomerUtang(sales, utangPayments), [sales, utangPayments]);
 	const unpaidUtangCount = (0, import_react.useMemo)(() => customerSummaries.filter((c) => c.currentBalance > .009).length, [customerSummaries]);
 	const lowStockCount = (0, import_react.useMemo)(() => products.filter((p) => p.stock <= 5).length, [products]);
-	const showQuickNotice = (msg) => {
-		setBannerNotice(msg);
-		setTimeout(() => {
-			setBannerNotice((prev) => prev === msg ? null : prev);
-		}, 3800);
-	};
 	const handleAddProductToCart = (product) => {
 		setCart((prev) => {
 			const existingIndex = prev.findIndex((i) => i.productId === product.id);
@@ -54520,8 +54857,8 @@ function App() {
 			discount,
 			customerName: customerLabel
 		};
-		setParkedCarts((prev) => [...prev, newParked]);
-		triggerCloudSave((uid) => saveParkedCartToCloud(uid, newParked));
+		const nextParked = [...parkedCarts, newParked];
+		saveAllToCloud({ parkedCarts: nextParked });
 		setCart([]);
 		setDiscount(0);
 		showQuickNotice(`Parked cart "${newParked.label}". Ready for next customer.`);
@@ -54532,13 +54869,13 @@ function App() {
 		if (!target) return;
 		setCart(target.items);
 		setDiscount(target.discount);
-		setParkedCarts((prev) => prev.filter((p) => p.id !== parkedId));
-		triggerCloudSave((uid) => deleteParkedCartFromCloud(uid, parkedId));
+		const nextParked = parkedCarts.filter((p) => p.id !== parkedId);
+		saveAllToCloud({ parkedCarts: nextParked });
 		showQuickNotice(`Resumed parked cart "${target.label}".`);
 	};
 	const handleDeleteParkedCart = (parkedId) => {
-		setParkedCarts((prev) => prev.filter((p) => p.id !== parkedId));
-		triggerCloudSave((uid) => deleteParkedCartFromCloud(uid, parkedId));
+		const nextParked = parkedCarts.filter((p) => p.id !== parkedId);
+		saveAllToCloud({ parkedCarts: nextParked });
 	};
 	const handleCompleteSale = (payload) => {
 		if (cart.length === 0) return;
@@ -54582,22 +54919,19 @@ function App() {
 			customerCumulativeUtangAfterSale: cumulativeUtangAfterSale,
 			voided: false
 		};
-		const updatedProductsList = [];
-		setProducts((prevProducts) => prevProducts.map((prod) => {
+		const nextProducts = products.map((prod) => {
 			const soldItem = cart.find((c) => c.productId === prod.id);
 			if (!soldItem) return prod;
-			const nextProd = {
+			return {
 				...prod,
 				stock: prod.stock - soldItem.quantity,
 				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 			};
-			updatedProductsList.push(nextProd);
-			return nextProd;
-		}));
-		setSales((prevSales) => [newSale, ...prevSales]);
-		triggerCloudSave(async (uid) => {
-			await saveSaleToCloud(uid, newSale);
-			await Promise.all(updatedProductsList.map((prod) => saveProductToCloud(uid, prod)));
+		});
+		const nextSales = [newSale, ...sales];
+		saveAllToCloud({
+			products: nextProducts,
+			sales: nextSales
 		});
 		setCart([]);
 		setDiscount(0);
@@ -54610,10 +54944,7 @@ function App() {
 		}, 120);
 	};
 	const handleSaveProduct = (savedProduct) => {
-		setProducts((prev) => {
-			if (prev.some((p) => p.id === savedProduct.id)) return prev.map((p) => p.id === savedProduct.id ? savedProduct : p);
-			return [savedProduct, ...prev];
-		});
+		const nextProducts = products.some((p) => p.id === savedProduct.id) ? products.map((p) => p.id === savedProduct.id ? savedProduct : p) : [savedProduct, ...products];
 		setCart((prev) => prev.map((item) => item.productId === savedProduct.id ? {
 			...item,
 			name: savedProduct.name,
@@ -54622,30 +54953,23 @@ function App() {
 			capitalPrice: savedProduct.capitalPrice,
 			currentStock: savedProduct.stock
 		} : item));
-		triggerCloudSave((uid) => saveProductToCloud(uid, savedProduct));
-		showQuickNotice(`Auto-saved product "${savedProduct.name}".`);
+		saveAllToCloud({ products: nextProducts });
+		showQuickNotice(`Auto-saved product "${savedProduct.name}" to Cloud.`);
 	};
 	const handleDeleteProduct = (productId) => {
-		setProducts((prev) => prev.filter((p) => p.id !== productId));
+		const nextProducts = products.filter((p) => p.id !== productId);
 		setCart((prev) => prev.filter((i) => i.productId !== productId));
-		triggerCloudSave((uid) => deleteProductFromCloud(uid, productId));
+		saveAllToCloud({ products: nextProducts });
+		showQuickNotice("Deleted product and updated Cloud Store.");
 	};
 	const handleRestockProduct = (productId, addQty) => {
-		let restockedProd = null;
-		setProducts((prev) => prev.map((p) => {
-			if (p.id !== productId) return p;
-			restockedProd = {
-				...p,
-				stock: p.stock + addQty,
-				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-			};
-			return restockedProd;
-		}));
-		if (restockedProd) {
-			const targetProd = restockedProd;
-			triggerCloudSave((uid) => saveProductToCloud(uid, targetProd));
-		}
-		showQuickNotice(`Added +${addQty} stock (auto-saved).`);
+		const nextProducts = products.map((p) => p.id === productId ? {
+			...p,
+			stock: p.stock + addQty,
+			updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+		} : p);
+		saveAllToCloud({ products: nextProducts });
+		showQuickNotice(`Added +${addQty} stock (auto-saved to Cloud).`);
 	};
 	const handleRecordUtangPayment = (payload) => {
 		const remainingBalance = roundCurrency(Math.max(0, payload.previousBalance - payload.amountPaid));
@@ -54663,8 +54987,8 @@ function App() {
 			remainingBalance,
 			note: payload.note
 		};
-		setUtangPayments((prev) => [newPayment, ...prev]);
-		triggerCloudSave((uid) => saveUtangPaymentToCloud(uid, newPayment));
+		const nextUtangPayments = [newPayment, ...utangPayments];
+		saveAllToCloud({ utangPayments: nextUtangPayments });
 		setActiveReceipt({
 			kind: "UTANG_PAYMENT",
 			payment: newPayment
@@ -54674,25 +54998,21 @@ function App() {
 		}, 120);
 	};
 	const handleUpdateShiftRecord = (record) => {
-		setShifts((prev) => {
-			if (prev.some((s) => s.dateKey === record.dateKey)) return prev.map((s) => s.dateKey === record.dateKey ? record : s);
-			return [...prev, record];
-		});
-		triggerCloudSave((uid) => saveShiftToCloud(uid, record));
+		const nextShifts = shifts.some((s) => s.dateKey === record.dateKey) ? shifts.map((s) => s.dateKey === record.dateKey ? record : s) : [...shifts, record];
+		saveAllToCloud({ shifts: nextShifts });
 		showQuickNotice(`Auto-saved shift cash drawer record for ${record.dateKey}.`);
 	};
 	const handleAddCashAdjustment = (adj) => {
-		const newAdj = {
+		const nextAdjustments = [{
 			...adj,
 			id: `adj-${Date.now()}`
-		};
-		setAdjustments((prev) => [newAdj, ...prev]);
-		triggerCloudSave((uid) => saveAdjustmentToCloud(uid, newAdj));
+		}, ...adjustments];
+		saveAllToCloud({ adjustments: nextAdjustments });
 		showQuickNotice(`Auto-saved drawer entry: ${adj.reason}`);
 	};
 	const handleDeleteCashAdjustment = (adjId) => {
-		setAdjustments((prev) => prev.filter((a) => a.id !== adjId));
-		triggerCloudSave((uid) => deleteAdjustmentFromCloud(uid, adjId));
+		const nextAdjustments = adjustments.filter((a) => a.id !== adjId);
+		saveAllToCloud({ adjustments: nextAdjustments });
 	};
 	const handlePrintZReading = (zReport) => {
 		setActiveReceipt({
@@ -54706,33 +55026,36 @@ function App() {
 	const handleVoidSale = (saleId) => {
 		const targetSale = sales.find((s) => s.id === saleId);
 		if (!targetSale || targetSale.voided) return;
-		const restoredProducts = [];
-		setProducts((prevProducts) => prevProducts.map((prod) => {
+		const nextProducts = products.map((prod) => {
 			const itemInSale = targetSale.items.find((i) => i.productId === prod.id);
 			if (!itemInSale) return prod;
-			const updatedProd = {
+			return {
 				...prod,
 				stock: prod.stock + itemInSale.quantity,
 				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 			};
-			restoredProducts.push(updatedProd);
-			return updatedProd;
-		}));
+		});
 		const voidedSale = {
 			...targetSale,
 			voided: true,
 			voidedAt: (/* @__PURE__ */ new Date()).toISOString()
 		};
-		setSales((prevSales) => prevSales.map((s) => s.id === saleId ? voidedSale : s));
-		triggerCloudSave(async (uid) => {
-			await saveSaleToCloud(uid, voidedSale);
-			await Promise.all(restoredProducts.map((p) => saveProductToCloud(uid, p)));
+		const nextSales = sales.map((s) => s.id === saleId ? voidedSale : s);
+		saveAllToCloud({
+			products: nextProducts,
+			sales: nextSales
 		});
 		showQuickNotice(`Voided sale ${targetSale.receiptNo} and restored ${targetSale.totalItems} items back to inventory.`);
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "min-h-screen flex flex-col bg-slate-100 text-slate-900",
 		children: [
+			bannerNotice && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				role: "status",
+				"aria-live": "polite",
+				className: "no-print fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3.5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-lg border border-slate-700",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: bannerNotice })]
+			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
 				className: "no-print bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-2.5 gap-x-8 sticky top-0 z-30",
 				children: [
@@ -54801,8 +55124,7 @@ function App() {
 								...settings,
 								autoPrint: checked
 							};
-							setSettings(next);
-							triggerCloudSave((uid) => saveSettingsToCloud(uid, next));
+							saveAllToCloud({ settings: next });
 						},
 						onAddProductToCart: handleAddProductToCart,
 						onUpdateCartQuantity: handleUpdateCartQuantity,
@@ -54863,8 +55185,7 @@ function App() {
 						...settings,
 						paperSize
 					};
-					setSettings(next);
-					triggerCloudSave((uid) => saveSettingsToCloud(uid, next));
+					saveAllToCloud({ settings: next });
 				}
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SettingsBackupModal, {
@@ -54872,53 +55193,39 @@ function App() {
 				onClose: () => setIsSettingsModalOpen(false),
 				settings,
 				onSaveSettings: (newSettings) => {
-					setSettings(newSettings);
-					triggerCloudSave((uid) => saveSettingsToCloud(uid, newSettings));
+					saveAllToCloud({ settings: newSettings });
 				},
 				products,
 				sales,
 				utangPayments,
 				onRestoreBackup: (data) => {
 					const nextSettings = data.settings || settings;
-					setProducts(data.products);
-					setSales(data.sales);
-					setUtangPayments(data.utangPayments);
-					if (data.settings) setSettings(data.settings);
-					triggerCloudSave((uid) => syncFullStoreStateToCloud(uid, {
+					saveAllToCloud({
 						settings: nextSettings,
 						products: data.products,
 						sales: data.sales,
-						utangPayments: data.utangPayments,
-						shifts,
-						adjustments,
-						parkedCarts
-					}, true));
+						utangPayments: data.utangPayments
+					});
 				},
 				onResetSampleData: () => {
-					setProducts(INITIAL_PRODUCTS);
-					setSales([]);
-					setUtangPayments([]);
-					setShifts([]);
-					setAdjustments([]);
-					setParkedCarts([]);
 					setCart([]);
 					setDiscount(0);
-					triggerCloudSave((uid) => syncFullStoreStateToCloud(uid, {
-						settings,
+					saveAllToCloud({
 						products: INITIAL_PRODUCTS,
 						sales: [],
 						utangPayments: [],
 						shifts: [],
 						adjustments: [],
 						parkedCarts: []
-					}, true));
+					});
 				},
 				cloudUserEmail: cloudUser?.email,
 				cloudSyncState,
 				lastSavedTime,
 				onSignInCloud: handleGoogleSignIn,
 				onSignOutCloud: handleGoogleSignOut,
-				onSyncCloudNow: handleManualCloudSync
+				onSyncCloudNow: handleManualCloudSync,
+				onPullCloudNow: handleManualCloudPull
 			})
 		]
 	});
