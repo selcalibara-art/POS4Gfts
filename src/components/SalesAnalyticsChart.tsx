@@ -132,16 +132,16 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
       className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden"
     >
       {/* Chart Header & Period Switcher */}
-      <div className="p-4 sm:p-5 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-3 bg-[#F6F6F4]/60">
-        <div className="flex items-center gap-2.5">
+      <div className="p-4 sm:p-6 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-4 bg-[#F6F6F4]/60">
+        <div className="flex items-center gap-3">
           <BarChart3 className="w-4 h-4 text-[#181818] shrink-0" />
           <div>
-            <h3 className="text-sm font-bold text-[#181818]">
+            <h3 className="text-base leading-6 font-semibold text-[#181818]">
               {period === 'DAILY'
                 ? 'Daily Sales & Profit Trend (Last 7 Days)'
                 : 'Weekly Sales & Profit Trend (Last 6 Weeks)'}
             </h3>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs leading-4 font-medium text-neutral-500 mt-1">
               Compare Gross Sales (₱) vs. Realized Net Profit (₱) · Click any day bar to inspect &amp; filter shift reconciliation
             </p>
           </div>
@@ -149,12 +149,12 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
 
         <div className="flex items-center gap-4">
           {/* Legend */}
-          <div className="hidden md:flex items-center gap-4 text-xs font-medium text-neutral-600">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="hidden md:flex items-center gap-4 text-xs leading-4 font-medium text-neutral-600">
+            <span className="inline-flex items-center gap-2">
               <span className="w-3 h-3 rounded-xs bg-[#181818] inline-block" />
               <span>Gross Sales (₱)</span>
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-2">
               <span className="w-3 h-3 rounded-xs bg-emerald-600 inline-block" />
               <span>Net Profit (₱)</span>
             </span>
@@ -172,7 +172,7 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                 setPeriod('DAILY');
                 setSelectedBucketKey(null);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+              className={`px-3 py-2 text-xs leading-4 font-semibold rounded-lg whitespace-nowrap ${
                 period === 'DAILY'
                   ? 'bg-white text-[#181818] shadow-xs'
                   : 'text-neutral-600 hover:text-[#181818]'
@@ -186,7 +186,7 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                 setPeriod('WEEKLY');
                 setSelectedBucketKey(null);
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+              className={`px-3 py-2 text-xs leading-4 font-semibold rounded-lg whitespace-nowrap ${
                 period === 'WEEKLY'
                   ? 'bg-white text-[#181818] shadow-xs'
                   : 'text-neutral-600 hover:text-[#181818]'
@@ -199,14 +199,14 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
       </div>
 
       {/* Main Chart Body: Left Bar Visualization + Right Period & Selected Bucket Inspector */}
-      <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Bar Chart Area (8 cols) */}
         <div className="lg:col-span-8 flex flex-col justify-between">
           <div className="relative flex">
             {/* Y-Axis Labels aligned to the 144px plot height */}
             <div
               style={{ height: `${MAX_BAR_HEIGHT_PX}px` }}
-              className="w-16 pr-2 mt-6 flex flex-col justify-between text-right font-mono text-xs text-neutral-400 select-none"
+              className="w-16 pr-2 mt-6 flex flex-col justify-between text-right font-mono text-xs leading-4 font-medium text-neutral-400 tabular-nums select-none"
             >
               {yTicks.map((tick, idx) => (
                 <span key={idx} className="leading-none">
@@ -263,7 +263,7 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                       aria-label={`Inspect ${bucket.label}: Gross Sales ${formatPHP(
                         bucket.grossSales
                       )}, Net Profit ${formatPHP(bucket.netProfit)}`}
-                      className={`group flex-1 flex flex-col items-center rounded-xl px-1.5 py-1.5 focus:outline-none ${
+                      className={`group flex-1 flex flex-col items-center rounded-xl p-2 focus:outline-none ${
                         isSelected
                           ? 'bg-[#F6F6F4] ring-1 ring-neutral-300'
                           : 'hover:bg-[#F6F6F4]/60'
@@ -275,9 +275,9 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                         className="w-full max-w-[56px] flex flex-col justify-end items-center"
                       >
                         <div
-                          className={`font-mono text-xs mb-1 whitespace-nowrap ${
+                          className={`font-mono text-xs leading-4 mb-1 whitespace-nowrap tabular-nums ${
                             bucket.grossSales > 0
-                              ? 'font-bold text-[#181818]'
+                              ? 'font-semibold text-[#181818]'
                               : 'font-medium text-neutral-400'
                           }`}
                         >
@@ -313,9 +313,9 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
 
                       {/* X-Axis Bucket Label */}
                       <div
-                        className={`mt-2 text-xs whitespace-nowrap truncate max-w-full ${
+                        className={`mt-2 text-xs leading-4 whitespace-nowrap truncate max-w-full ${
                           isSelected
-                            ? 'font-bold text-[#181818]'
+                            ? 'font-semibold text-[#181818]'
                             : 'font-medium text-neutral-600'
                         }`}
                       >
@@ -334,54 +334,58 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
           {inspectedBucket && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#181818]">
-                  <CalendarDays className="w-3.5 h-3.5 text-neutral-700" />
+                <span className="inline-flex items-center gap-2 text-sm leading-5 font-semibold text-[#181818]">
+                  <CalendarDays className="w-4 h-4 text-neutral-700" />
                   <span>{inspectedBucket.label}</span>
                 </span>
-                <span className="text-xs text-neutral-500 font-mono">
+                <span className="text-xs leading-4 font-medium text-neutral-500 font-mono tabular-nums">
                   {inspectedBucket.transactionsCount}{' '}
                   {inspectedBucket.transactionsCount === 1 ? 'sale' : 'sales'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3.5 bg-[#F6F6F4] border border-neutral-200 rounded-xl">
-                  <div className="text-xs text-neutral-500">Gross Sales</div>
-                  <div className="font-mono text-base font-bold text-[#181818] mt-0.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-[#F6F6F4] border border-neutral-200 rounded-xl">
+                  <div className="text-xs leading-4 font-medium text-neutral-500">
+                    Gross Sales
+                  </div>
+                  <div className="font-mono text-xl leading-7 font-semibold text-[#181818] tabular-nums mt-1">
                     {formatPHP(inspectedBucket.grossSales)}
                   </div>
                 </div>
-                <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
-                  <div className="text-xs text-emerald-800">Net Profit</div>
-                  <div className="font-mono text-base font-bold text-emerald-700 mt-0.5">
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                  <div className="text-xs leading-4 font-medium text-emerald-800">
+                    Net Profit
+                  </div>
+                  <div className="font-mono text-xl leading-7 font-semibold text-emerald-700 tabular-nums mt-1">
                     {formatPHP(inspectedBucket.netProfit)}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5 text-xs pt-1">
-                <div className="flex justify-between text-neutral-600">
+              <div className="space-y-2 text-xs leading-4 pt-1">
+                <div className="flex justify-between text-neutral-600 font-medium">
                   <span>Cash Collected (Sales + Utang):</span>
-                  <span className="font-mono font-semibold text-[#181818]">
+                  <span className="font-mono font-semibold text-[#181818] tabular-nums">
                     {formatPHP(inspectedBucket.cashCollected)}
                   </span>
                 </div>
-                <div className="flex justify-between text-neutral-600">
+                <div className="flex justify-between text-neutral-600 font-medium">
                   <span>GCash Collected:</span>
-                  <span className="font-mono font-semibold text-[#181818]">
+                  <span className="font-mono font-semibold text-[#181818] tabular-nums">
                     {formatPHP(inspectedBucket.gcashCollected)}
                   </span>
                 </div>
-                <div className="flex justify-between text-neutral-600">
+                <div className="flex justify-between text-neutral-600 font-medium">
                   <span>New Utang Issued:</span>
-                  <span className="font-mono font-semibold text-amber-700">
+                  <span className="font-mono font-semibold text-amber-700 tabular-nums">
                     {formatPHP(inspectedBucket.utangIssued)}
                   </span>
                 </div>
                 {inspectedBucket.expensesOut > 0 && (
-                  <div className="flex justify-between text-neutral-600">
+                  <div className="flex justify-between text-neutral-600 font-medium">
                     <span>Petty Cash / Expenses Out:</span>
-                    <span className="font-mono font-semibold text-red-600">
+                    <span className="font-mono font-semibold text-red-600 tabular-nums">
                       -{formatPHP(inspectedBucket.expensesOut)}
                     </span>
                   </div>
@@ -391,30 +395,30 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
           )}
 
           {/* Period Summary Footer */}
-          <div className="pt-3 border-t border-neutral-200 space-y-1.5 text-xs">
-            <div className="flex justify-between text-neutral-600">
+          <div className="pt-3 border-t border-neutral-200 space-y-2 text-xs leading-4">
+            <div className="flex justify-between text-neutral-600 font-medium">
               <span>
                 {period === 'DAILY' ? '7-Day Total Sales:' : '6-Week Total Sales:'}
               </span>
-              <span className="font-mono font-bold text-[#181818]">
+              <span className="font-mono font-semibold text-[#181818] tabular-nums">
                 {formatPHP(periodTotals.gross)} ({periodTotals.txCount} sales)
               </span>
             </div>
-            <div className="flex justify-between text-neutral-600">
+            <div className="flex justify-between text-neutral-600 font-medium">
               <span>
                 {period === 'DAILY' ? 'Daily Average:' : 'Weekly Average:'}
               </span>
-              <span className="font-mono font-semibold text-neutral-800">
+              <span className="font-mono font-semibold text-neutral-800 tabular-nums">
                 {formatPHP(periodTotals.avgGross)}
               </span>
             </div>
-            <div className="flex justify-between text-neutral-600">
+            <div className="flex justify-between text-neutral-600 font-medium">
               <span>
                 {period === 'DAILY'
                   ? '7-Day Net Profit (After Exp):'
                   : '6-Week Net Profit (After Exp):'}
               </span>
-              <span className="font-mono font-bold text-emerald-700">
+              <span className="font-mono font-semibold text-emerald-700 tabular-nums">
                 {formatPHP(periodTotals.netAfterExpenses)}
               </span>
             </div>

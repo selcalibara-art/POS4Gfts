@@ -191,9 +191,12 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
     >
       <div className="bg-white border border-neutral-200 rounded-2xl max-w-2xl w-full overflow-hidden shadow-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-[#F6F6F4]/70">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Printer className="w-5 h-5 text-[#181818]" />
-            <h2 id="settings-modal-title" className="text-base font-bold text-[#181818]">
+            <h2
+              id="settings-modal-title"
+              className="text-base leading-6 font-semibold text-[#181818]"
+            >
               Receipt, Thermal Printer &amp; Cloud Auto-Save Settings
             </h2>
           </div>
@@ -201,7 +204,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close Settings Modal"
-            className="p-1.5 text-neutral-500 hover:text-[#181818] rounded-lg hover:bg-neutral-200/60"
+            className="p-2 text-neutral-500 hover:text-[#181818] rounded-lg hover:bg-neutral-200/60"
           >
             <X className="w-5 h-5" />
           </button>
@@ -209,7 +212,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
 
         <div className="p-6 max-h-[80vh] overflow-y-auto space-y-6">
           {statusMessage && (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-medium text-emerald-800">
+            <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs leading-4 font-semibold text-emerald-800">
               <Check className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>{statusMessage}</span>
             </div>
@@ -221,11 +224,11 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <h3 className="text-sm font-bold text-[#181818]">
+                  <h3 className="text-sm leading-5 font-semibold text-[#181818]">
                     Dual-Tier L1 + L2 Cloud Auto-Save (Always On)
                   </h3>
                 </div>
-                <p className="text-xs text-neutral-700 leading-relaxed">
+                <p className="text-xs leading-4 font-medium text-neutral-700">
                   <span className="text-emerald-700 font-semibold">
                     {cloudSyncState === 'SYNCING'
                       ? 'Syncing with Cloud Store...'
@@ -246,7 +249,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                       setStatusMessage('Pushed this device state to Cloud Store.');
                       setTimeout(() => setStatusMessage(null), 3000);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg whitespace-nowrap"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs leading-4 font-semibold rounded-lg whitespace-nowrap"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Sync Cloud Now</span>
@@ -260,7 +263,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                       setStatusMessage('Pulled latest records from Cloud Store.');
                       setTimeout(() => setStatusMessage(null), 3000);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-emerald-300 text-xs font-semibold rounded-lg whitespace-nowrap"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-emerald-300 text-xs leading-4 font-semibold rounded-lg whitespace-nowrap"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Pull from Cloud</span>
@@ -276,13 +279,13 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <Fingerprint className="w-4 h-4 text-[#181818] shrink-0" />
-                  <h3 className="text-sm font-bold text-[#181818]">
+                  <h3 className="text-sm leading-5 font-semibold text-[#181818]">
                     Device Access &amp; Owner Confirmation Gate
                   </h3>
                 </div>
-                <p className="text-xs text-neutral-600 mt-0.5">
+                <p className="text-xs leading-4 font-medium text-neutral-600 mt-1">
                   New devices require store password{' '}
-                  <code className="font-mono font-bold text-[#181818]">
+                  <code className="font-mono font-semibold text-[#181818]">
                     /Calibara0911
                   </code>{' '}
                   + Owner Confirmation before opening the POS.
@@ -295,7 +298,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                     onClose();
                     onLockCurrentDevice();
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-lg whitespace-nowrap shrink-0"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-[#181818] hover:bg-[#272727] text-white text-xs leading-4 font-semibold rounded-lg whitespace-nowrap shrink-0"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span>Lock This Device</span>
@@ -310,20 +313,20 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   return (
                     <div
                       key={dev.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-neutral-200 rounded-lg px-3.5 py-2.5 text-xs"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-neutral-200 rounded-lg px-3 py-2 text-xs leading-4"
                     >
                       <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <Smartphone className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-                        <span className="font-bold text-[#181818] truncate">
+                        <span className="font-semibold text-[#181818] truncate">
                           {dev.deviceName}
                         </span>
                         {isThis && (
-                          <span className="px-2 py-0.5 rounded bg-[#181818] text-white text-xs font-semibold shrink-0">
+                          <span className="px-2 py-0.5 rounded bg-[#181818] text-white text-xs leading-4 font-semibold shrink-0">
                             This Device
                           </span>
                         )}
                         <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold shrink-0 ${
+                          className={`px-2 py-0.5 rounded text-xs leading-4 font-semibold shrink-0 ${
                             dev.status === 'APPROVED'
                               ? 'bg-emerald-100 text-emerald-800'
                               : dev.status === 'PENDING'
@@ -335,12 +338,12 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         {dev.status !== 'APPROVED' && onApproveDevice && (
                           <button
                             type="button"
                             onClick={() => void onApproveDevice(dev)}
-                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-md"
+                            className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-md"
                           >
                             Confirm &amp; Allow
                           </button>
@@ -349,7 +352,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                           <button
                             type="button"
                             onClick={() => void onRejectDevice(dev)}
-                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold rounded-md"
+                            className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold rounded-md"
                           >
                             Revoke Access
                           </button>
@@ -377,7 +380,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <div>
                 <label
                   htmlFor="store-name-input"
-                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                  className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
                 >
                   Store Header Name
                 </label>
@@ -389,14 +392,14 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   onChange={(e) =>
                     setFormState({ ...formState, storeName: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                  className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="store-contact-input"
-                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                  className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
                 >
                   Contact / Phone #
                 </label>
@@ -407,7 +410,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   onChange={(e) =>
                     setFormState({ ...formState, contactNumber: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                  className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
             </div>
@@ -416,7 +419,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <div>
                 <label
                   htmlFor="store-subtitle-input"
-                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                  className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
                 >
                   Store Tagline / Subtitle
                 </label>
@@ -427,14 +430,14 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   onChange={(e) =>
                     setFormState({ ...formState, subtitle: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                  className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="store-address-input"
-                  className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                  className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
                 >
                   Store Address
                 </label>
@@ -445,7 +448,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   onChange={(e) =>
                     setFormState({ ...formState, address: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                  className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
             </div>
@@ -453,7 +456,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
             <div>
               <label
                 htmlFor="store-footer-input"
-                className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
               >
                 Receipt Footer Message
               </label>
@@ -464,14 +467,14 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                 onChange={(e) =>
                   setFormState({ ...formState, footerMessage: e.target.value })
                 }
-                className="w-full px-3.5 py-2 text-sm border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="gas-webhook-input"
-                className="block text-xs font-semibold text-neutral-700 mb-1.5"
+                className="block text-xs leading-4 font-medium text-neutral-700 mb-1"
               >
                 Optional Google Apps Script Web App URL (Secondary Google Sheet L2 Mirror)
               </label>
@@ -481,20 +484,20 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                 placeholder="https://script.google.com/macros/s/.../exec (optional · Firebase Cloud is already active by default)"
                 value={gasWebhookUrl}
                 onChange={(e) => setGasWebhookUrl(e.target.value)}
-                className="w-full px-3.5 py-2 text-xs border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                className="w-full px-3 py-2 text-xs leading-4 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
-                <span className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                <span className="block text-xs leading-4 font-medium text-neutral-700 mb-1">
                   Thermal Printer Paper Width
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setFormState({ ...formState, paperSize: '58mm' })}
-                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold border ${
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs leading-4 font-semibold border ${
                       formState.paperSize === '58mm'
                         ? 'bg-[#181818] text-white border-[#181818]'
                         : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
@@ -505,7 +508,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setFormState({ ...formState, paperSize: '80mm' })}
-                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold border ${
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs leading-4 font-semibold border ${
                       formState.paperSize === '80mm'
                         ? 'bg-[#181818] text-white border-[#181818]'
                         : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
@@ -517,7 +520,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               </div>
 
               <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formState.autoPrint}
@@ -526,7 +529,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                     }
                     className="w-4 h-4 rounded border-neutral-300 text-[#181818] focus:ring-[#181818]"
                   />
-                  <span className="text-xs font-semibold text-neutral-800">
+                  <span className="text-xs leading-4 font-semibold text-neutral-800">
                     Auto-trigger browser print dialog after checkout
                   </span>
                 </label>
@@ -536,7 +539,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl"
+                className="px-4 py-2 bg-[#181818] hover:bg-[#272727] text-white text-sm leading-5 font-semibold rounded-xl"
               >
                 Save Store &amp; Printer Settings
               </button>
@@ -548,19 +551,19 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
           {/* LocalStorage Backup & Restore Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-bold text-[#181818]">
+              <h3 className="text-sm leading-5 font-semibold text-[#181818]">
                 Offline Data Backup &amp; Restore
               </h3>
-              <p className="text-xs text-neutral-600 mt-0.5">
+              <p className="text-xs leading-4 font-medium text-neutral-600 mt-1">
                 Export all products, sales history, and Utang ledger records to a file or restore from a previous backup.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleExportJSON}
-                className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#181818] hover:bg-[#272727] text-white text-xs font-semibold rounded-xl whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-[#181818] hover:bg-[#272727] text-white text-xs leading-4 font-semibold rounded-xl whitespace-nowrap"
               >
                 <Download className="w-4 h-4" />
                 <span>Export Backup (.json)</span>
@@ -569,7 +572,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <button
                 type="button"
                 onClick={handleExportCSV}
-                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-neutral-300 text-xs font-semibold rounded-xl whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-neutral-300 text-xs leading-4 font-semibold rounded-xl whitespace-nowrap"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Export Inventory (.csv)</span>
@@ -585,7 +588,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-neutral-300 text-xs font-semibold rounded-xl whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-[#181818] border border-neutral-300 text-xs leading-4 font-semibold rounded-xl whitespace-nowrap"
               >
                 <Upload className="w-4 h-4" />
                 <span>Restore Backup (.json)</span>
@@ -595,7 +598,7 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setConfirmReset(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-red-700 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-xl whitespace-nowrap ml-auto"
+                  className="inline-flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-50 border border-red-200 text-xs leading-4 font-semibold rounded-xl whitespace-nowrap ml-auto"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Sample Data</span>
@@ -609,14 +612,14 @@ export const SettingsBackupModal: React.FC<SettingsBackupModalProps> = ({
                       setConfirmReset(false);
                       setStatusMessage('Reset to initial 6 sample products.');
                     }}
-                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl whitespace-nowrap"
+                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs leading-4 font-semibold rounded-xl whitespace-nowrap"
                   >
                     Confirm Reset
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmReset(false)}
-                    className="px-2.5 py-2 text-xs font-medium text-neutral-600 hover:text-[#181818]"
+                    className="px-3 py-2 text-xs leading-4 font-medium text-neutral-600 hover:text-[#181818]"
                   >
                     Cancel
                   </button>
