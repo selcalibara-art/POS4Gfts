@@ -10,9 +10,14 @@ import {
   UtangPaymentTransaction,
 } from '../types/pos';
 
+import {
+  CIGARETTE_CATALOG_PRODUCTS,
+  PAST_POS_INVENTORY_PRODUCTS,
+} from '../data/pastPosInventory';
+
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   storeName: 'FOUR GIFTS STORE',
-  subtitle: 'Gifts, Wrappers, Toys & Everyday Essentials',
+  subtitle: 'J&S Calibara · Groceries, Cigarettes & Everyday Essentials',
   address: 'Poblacion Market Road, Brgy. San Jose',
   contactNumber: '0917-555-0444',
   footerMessage: 'Thank you for shopping at Four Gifts Store!',
@@ -21,73 +26,71 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 'prod-1001',
-    barcode: '1001',
-    name: 'Metallic Hologram Gift Wrapper (Roll)',
-    category: 'Wrappers',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 45,
-    note: 'Rack A1 - Assorted gold, red, and silver floral patterns',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
-  {
-    id: 'prod-1002',
-    barcode: '1002',
-    name: 'Satin Pull Ribbon Bow (Medium)',
-    category: 'Gift Items',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 60,
-    note: 'Hook B2 - Divisoria supplier bundle of 12',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
-  {
-    id: 'prod-1003',
-    barcode: '1003',
-    name: 'Kraft Gift Bag with Rope Handle (Small)',
-    category: 'Wrappers',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 30,
-    note: 'Shelf A3 - Fits mugs and small perfume boxes',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
-  {
-    id: 'prod-1004',
-    barcode: '1004',
-    name: 'Mini Pull-Back Diecast Toy Car',
-    category: 'Toys',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 4, // Low stock <= 5 to demonstrate red low-stock indicator
-    note: 'Counter Display Bin - High turnover party loot bag filler',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
-  {
-    id: 'prod-1005',
-    barcode: '1005',
-    name: 'Gel Ink Pen 0.5mm (Black / Blue)',
-    category: 'School Supplies',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 80,
-    note: 'Counter Tray 1 - Box of 24 pcs wholesale',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
-  {
-    id: 'prod-1006',
-    barcode: '1006',
-    name: 'Greeting Card with Envelope (All Occasion)',
-    category: 'Gift Items',
-    capitalPrice: 10.0,
-    sellingPrice: 15.0,
-    stock: 25,
-    note: 'Spinner Rack - Birthday, Anniversary & Thank You designs',
-    updatedAt: '2026-11-01T08:00:00.000Z',
-  },
+  ...CIGARETTE_CATALOG_PRODUCTS,
+  ...PAST_POS_INVENTORY_PRODUCTS,
 ];
+
+const LEGACY_PLACEHOLDER_IDS = new Set([
+  'prod-1001',
+  'prod-1002',
+  'prod-1003',
+  'prod-1004',
+  'prod-1005',
+  'prod-1006',
+]);
+
+export function isCigaretteProduct(
+  product: Pick<Product, 'category' | 'name' | 'barcode'>
+): boolean {
+  const cat = (product.category || '').trim().toLowerCase();
+  if (cat === 'cigarettes' || cat === 'cigarette') return true;
+  if ((product.barcode || '').toUpperCase().startsWith('CIG-')) return true;
+  return /\b(camel|marlboro|winston|mighty|fortune|philip morris|hope|chesterfield|jackpot|marvels|more red|more menthol)\b/i.test(
+    product.name || ''
+  );
+}
+
+/**
+ * Merges existing store products (preserving store-edited prices/stocks like Camel Yellow, Wilkins, Sumo)
+ * with imported Past POS Inventory + Cigarette Catalog while dropping untouched legacy dummy placeholders.
+ */
+export function mergeStoreCatalogWithImports(
+  existingProducts: Product[],
+  importedCatalog: Product[] = INITIAL_PRODUCTS
+): Product[] {
+  const cleanedExisting = existingProducts.filter((p) => {
+    const isUntouchedLegacyDummy =
+      LEGACY_PLACEHOLDER_IDS.has(p.id) &&
+      Number(p.capitalPrice) === 10 &&
+      Number(p.sellingPrice) === 15;
+    return !isUntouchedLegacyDummy;
+  });
+
+  const merged: Product[] = cleanedExisting.map((p) => ({
+    ...p,
+    category: isCigaretteProduct(p) ? 'Cigarettes' : p.category,
+  }));
+
+  const seenIds = new Set(merged.map((p) => p.id.toLowerCase()));
+  const seenBarcodes = new Set(
+    merged
+      .map((p) => (p.barcode || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  for (const item of importedCatalog) {
+    const idKey = item.id.toLowerCase();
+    const barcodeKey = (item.barcode || '').trim().toLowerCase();
+    if (seenIds.has(idKey) || (barcodeKey && seenBarcodes.has(barcodeKey))) {
+      continue;
+    }
+    seenIds.add(idKey);
+    if (barcodeKey) seenBarcodes.add(barcodeKey);
+    merged.push({ ...item, capitalPrice: 0 });
+  }
+
+  return merged;
+}
 
 export function formatPHP(amount: number): string {
   const safe = Number.isFinite(amount) ? amount : 0;
@@ -804,6 +807,74 @@ export function generateSevenDayStoreSimulation(
   referenceDate = new Date()
 ): SevenDaySimulationResult {
   const products: Product[] = INITIAL_PRODUCTS.map((p) => ({ ...p }));
+  const simSampleCatalog: Product[] = [
+    {
+      id: 'sim-item-1',
+      barcode: '1001',
+      name: 'Sample Store Item A',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 45,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'sim-item-2',
+      barcode: '1002',
+      name: 'Sample Store Item B',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 60,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'sim-item-3',
+      barcode: '1003',
+      name: 'Sample Store Item C',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 30,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'sim-item-4',
+      barcode: '1004',
+      name: 'Sample Store Item D',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 4,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'sim-item-5',
+      barcode: '1005',
+      name: 'Sample Store Item E',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 80,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'sim-item-6',
+      barcode: '1006',
+      name: 'Sample Store Item F',
+      category: 'General',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 25,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+  ];
   const sales: SaleTransaction[] = [];
   const utangPayments: UtangPaymentTransaction[] = [];
   const shifts: DailyShiftRecord[] = [];
@@ -823,7 +894,7 @@ export function generateSevenDayStoreSimulation(
   };
 
   const makeCartItem = (prodIndex: number, qty: number, customPrice?: number): CartItem => {
-    const p = products[prodIndex];
+    const p = simSampleCatalog[prodIndex % simSampleCatalog.length];
     return {
       productId: p.id,
       barcode: p.barcode,

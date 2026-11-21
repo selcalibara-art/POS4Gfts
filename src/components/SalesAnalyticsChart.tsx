@@ -138,11 +138,11 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
           <div>
             <h3 className="text-base leading-6 font-semibold text-[#181818]">
               {period === 'DAILY'
-                ? 'Daily Sales & Profit Trend (Last 7 Days)'
-                : 'Weekly Sales & Profit Trend (Last 6 Weeks)'}
+                ? 'Daily Sales & Collection Trend (Last 7 Days)'
+                : 'Weekly Sales & Collection Trend (Last 6 Weeks)'}
             </h3>
             <p className="text-xs leading-4 font-medium text-neutral-500 mt-1">
-              Compare Gross Sales (₱) vs. Realized Net Profit (₱) · Click any day bar to inspect &amp; filter shift reconciliation
+              Compare Gross Sales (₱) vs. Cash &amp; GCash Collected (₱) · Click any day bar to inspect shift reconciliation
             </p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
             </span>
             <span className="inline-flex items-center gap-2">
               <span className="w-3 h-3 rounded-xs bg-emerald-600 inline-block" />
-              <span>Net Profit (₱)</span>
+              <span>Cash + GCash Collected (₱)</span>
             </span>
           </div>
 
@@ -243,12 +243,15 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                           )
                         )
                       : 2;
-                  const profitHeightPx =
-                    bucket.netProfit > 0
+                  const collectedTotal = roundCurrency(
+                    bucket.cashCollected + bucket.gcashCollected
+                  );
+                  const collectedHeightPx =
+                    collectedTotal > 0
                       ? Math.max(
                           6,
                           Math.round(
-                            (bucket.netProfit / maxMetricValue) *
+                            (collectedTotal / maxMetricValue) *
                               MAX_BAR_HEIGHT_PX
                           )
                         )
@@ -262,7 +265,7 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                       onClick={() => handleBarClick(bucket.key)}
                       aria-label={`Inspect ${bucket.label}: Gross Sales ${formatPHP(
                         bucket.grossSales
-                      )}, Net Profit ${formatPHP(bucket.netProfit)}`}
+                      )}, Collected ${formatPHP(collectedTotal)}`}
                       className={`group flex-1 flex flex-col items-center rounded-xl p-2 focus:outline-none ${
                         isSelected
                           ? 'bg-[#F6F6F4] ring-1 ring-neutral-300'
@@ -298,15 +301,15 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                             title={`Gross Sales: ${formatPHP(bucket.grossSales)}`}
                           />
 
-                          {/* Net Profit Bar */}
+                          {/* Cash + GCash Collected Bar */}
                           <div
-                            style={{ height: `${profitHeightPx}px` }}
+                            style={{ height: `${collectedHeightPx}px` }}
                             className={`w-1/2 rounded-t-sm ${
-                              bucket.netProfit > 0
+                              collectedTotal > 0
                                 ? 'bg-emerald-600'
                                 : 'bg-neutral-200'
                             }`}
-                            title={`Net Profit: ${formatPHP(bucket.netProfit)}`}
+                            title={`Collected (Cash + GCash): ${formatPHP(collectedTotal)}`}
                           />
                         </div>
                       </div>
@@ -355,10 +358,13 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
                 </div>
                 <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
                   <div className="text-xs leading-4 font-medium text-emerald-800">
-                    Net Profit
+                    Total Collected
                   </div>
                   <div className="font-mono text-xl leading-7 font-semibold text-emerald-700 tabular-nums mt-1">
-                    {formatPHP(inspectedBucket.netProfit)}
+                    {formatPHP(
+                      inspectedBucket.cashCollected +
+                        inspectedBucket.gcashCollected
+                    )}
                   </div>
                 </div>
               </div>
@@ -415,11 +421,11 @@ export const SalesAnalyticsChart: React.FC<SalesAnalyticsChartProps> = ({
             <div className="flex justify-between text-neutral-600 font-medium">
               <span>
                 {period === 'DAILY'
-                  ? '7-Day Net Profit (After Exp):'
-                  : '6-Week Net Profit (After Exp):'}
+                  ? '7-Day Total Collected:'
+                  : '6-Week Total Collected:'}
               </span>
               <span className="font-mono font-semibold text-emerald-700 tabular-nums">
-                {formatPHP(periodTotals.netAfterExpenses)}
+                {formatPHP(periodTotals.cash + periodTotals.gcash)}
               </span>
             </div>
           </div>

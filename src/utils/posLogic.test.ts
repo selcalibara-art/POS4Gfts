@@ -15,17 +15,82 @@ import {
   generateNextSku,
   generateReceiptNumber,
   generateSevenDayStoreSimulation,
+  isCigaretteProduct,
+  mergeStoreCatalogWithImports,
 } from './posLogic';
-import { CartItem, SaleTransaction, UtangPaymentTransaction } from '../types/pos';
+import { CartItem, Product, SaleTransaction, UtangPaymentTransaction } from '../types/pos';
 
-test('INITIAL_PRODUCTS contains 6 pre-loaded Four Gifts Store items with barcodes 1001-1006', () => {
-  assert.equal(INITIAL_PRODUCTS.length, 6);
-  const barcodes = INITIAL_PRODUCTS.map((p) => p.barcode);
-  assert.deepEqual(barcodes, ['1001', '1002', '1003', '1004', '1005', '1006']);
+test('INITIAL_PRODUCTS contains imported Past POS inventory (111 real items) plus Cigarette catalog (25 items) with 0 capital cost', () => {
+  assert.equal(INITIAL_PRODUCTS.length, 136);
+  const cigs = INITIAL_PRODUCTS.filter((p) => isCigaretteProduct(p));
+  assert.equal(cigs.length, 25);
+
+  // Every item must have a non-empty unique barcode <= 64 chars and capitalPrice defaulted to 0
+  const seenBarcodes = new Set<string>();
   for (const prod of INITIAL_PRODUCTS) {
-    assert.equal(prod.capitalPrice, 10.0);
-    assert.equal(prod.sellingPrice, 15.0);
+    assert.ok(prod.barcode.length >= 1 && prod.barcode.length <= 64);
+    assert.equal(prod.capitalPrice, 0);
+    const key = prod.barcode.toLowerCase();
+    assert.equal(seenBarcodes.has(key), false, `Duplicate barcode found: ${prod.barcode}`);
+    seenBarcodes.add(key);
   }
+
+  // Spot-check real J&S CALIBARA items & cigarette items
+  const bearBrand = INITIAL_PRODUCTS.find((p) => p.barcode === '4800361395397');
+  assert.equal(bearBrand?.name, 'BEAR BRAND MILK W/IRON 13+1/33G-P');
+  assert.equal(bearBrand?.sellingPrice, 151.45);
+
+  const camelStick = INITIAL_PRODUCTS.find((p) => p.barcode === '40329055');
+  assert.equal(camelStick?.category, 'Cigarettes');
+  assert.equal(camelStick?.sellingPrice, 8);
+});
+
+test('mergeStoreCatalogWithImports preserves custom existing items while removing untouched placeholders', () => {
+  const existingStoreProducts: Product[] = [
+    {
+      id: 'prod-1001',
+      barcode: '1001',
+      name: 'Metallic Hologram Gift Wrapper (Roll)',
+      category: 'Wrappers',
+      capitalPrice: 10,
+      sellingPrice: 15,
+      stock: 45,
+      note: '',
+      updatedAt: '2026-11-01T08:00:00.000Z',
+    },
+    {
+      id: 'custom-camel',
+      barcode: '40329055',
+      name: 'Camel Yellow',
+      category: 'Snacks',
+      capitalPrice: 0,
+      sellingPrice: 9,
+      stock: 40,
+      note: '',
+      updatedAt: '2026-11-10T08:00:00.000Z',
+    },
+    {
+      id: 'custom-wilkins',
+      barcode: '4801981126866',
+      name: 'wilkins pure 330 ml',
+      category: 'Beverages',
+      capitalPrice: 0,
+      sellingPrice: 15,
+      stock: 20,
+      note: '',
+      updatedAt: '2026-11-10T08:00:00.000Z',
+    },
+  ];
+
+  const merged = mergeStoreCatalogWithImports(existingStoreProducts, INITIAL_PRODUCTS);
+  // Legacy prod-1001 dropped, custom Camel & Wilkins kept, plus remaining 135 imported items
+  assert.equal(merged.some((p) => p.id === 'prod-1001'), false);
+  const keptCamel = merged.find((p) => p.barcode === '40329055');
+  assert.equal(keptCamel?.id, 'custom-camel');
+  assert.equal(keptCamel?.sellingPrice, 9);
+  assert.equal(keptCamel?.category, 'Cigarettes');
+  assert.equal(merged.some((p) => p.barcode === '4801981126866'), true);
+  assert.equal(merged.length, 137);
 });
 
 test('calculateCartTotals computes subtotal, discount, grand total, and net profit accurately', () => {
@@ -130,11 +195,11 @@ test('calculateProductProfit and findDuplicateBarcode work properly', () => {
   const loss = calculateProductProfit(8, 10);
   assert.equal(loss.isBelowCapital, true);
 
-  const dup = findDuplicateBarcode(INITIAL_PRODUCTS, '1003');
-  assert.equal(dup?.id, 'prod-1003');
+  const dup = findDuplicateBarcode(INITIAL_PRODUCTS, '40329055');
+  assert.equal(dup?.id, 'cig-camel-yellow-stk');
 
   const nextSku = generateNextSku(INITIAL_PRODUCTS);
-  assert.equal(nextSku, '1007');
+  assert.equal(nextSku, '9876');
 });
 
 test('aggregateCustomerUtang and computeDailyDrawerMetrics reconcile sales, opening float, expenses, and payments', () => {

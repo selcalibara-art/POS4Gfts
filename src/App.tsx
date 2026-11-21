@@ -34,6 +34,7 @@ import {
   computeCheckoutSettlement,
   generateReceiptNumber,
   generateSevenDayStoreSimulation,
+  mergeStoreCatalogWithImports,
   normalizeCustomerName,
   roundCurrency,
 } from './utils/posLogic';
@@ -63,6 +64,7 @@ import {
   PosDeviceRecord,
   getOrCreateLocalDeviceIdentity,
   createCanonicalStateSignature,
+  hasImportedCatalogBaseline,
   isUntouchedDefaultSimulation,
   syncFullStoreStateToCloud,
   fetchStoreStateFromCloud,
@@ -147,9 +149,18 @@ export default function App() {
   }, []);
 
   // 1. L1 Local Cache State (Optimistic 0ms Latency)
-  const [products, setProducts] = useState<Product[]>(() =>
-    loadFromStorage<Product[]>(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS)
-  );
+  const [products, setProducts] = useState<Product[]>(() => {
+    const loaded = loadFromStorage<Product[]>(
+      STORAGE_KEYS.PRODUCTS,
+      INITIAL_PRODUCTS
+    );
+    if (!hasImportedCatalogBaseline(loaded)) {
+      const merged = mergeStoreCatalogWithImports(loaded, INITIAL_PRODUCTS);
+      saveToStorage(STORAGE_KEYS.PRODUCTS, merged);
+      return merged;
+    }
+    return loaded;
+  });
   const [sales, setSales] = useState<SaleTransaction[]>(() =>
     initialSim
       ? initialSim.sales
@@ -599,6 +610,44 @@ export default function App() {
           );
           setCloudSyncState('CLOUD_SAVED');
           setLastSavedTime(formatCurrentTimeShort());
+          return;
+        }
+
+        // Guard 3: First-time Past POS & Cigarettes Catalog Migration into Cloud Store
+        // Preserves existing live store products (e.g. Camel Yellow, Wilkins, Sumo) and all sales/utang,
+        // while merging all imported Past POS items + Cigarette stick/pack buttons once across all devices.
+        if (!hasImportedCatalogBaseline(remote.state.products)) {
+          const upgradedProducts = mergeStoreCatalogWithImports(
+            remote.state.products,
+            INITIAL_PRODUCTS
+          );
+          const upgradedRemote: FullStoreState = {
+            ...remote.state,
+            products: upgradedProducts,
+          };
+          latestStoreRef.current = upgradedRemote;
+          setSettings(upgradedRemote.settings);
+          setProducts(upgradedRemote.products);
+          setSales(upgradedRemote.sales);
+          setUtangPayments(upgradedRemote.utangPayments);
+          setShifts(upgradedRemote.shifts);
+          setAdjustments(upgradedRemote.adjustments);
+          setParkedCarts(upgradedRemote.parkedCarts);
+          commitL1CacheSynchronously(upgradedRemote);
+
+          isPushingRef.current = true;
+          try {
+            await syncFullStoreStateToCloud(
+              SHARED_STORE_OWNER_ID,
+              upgradedRemote,
+              true
+            );
+          } finally {
+            isPushingRef.current = false;
+          }
+          setCloudSyncState('CLOUD_SAVED');
+          setLastSavedTime(formatCurrentTimeShort());
+          showQuickNotice('Imported Past POS Inventory & Cigarettes to Cloud');
           return;
         }
 

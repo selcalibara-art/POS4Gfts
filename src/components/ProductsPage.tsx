@@ -2,8 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Plus,
   Search,
-  Eye,
-  EyeOff,
   Edit2,
   Trash2,
   PackagePlus,
@@ -13,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Product } from '../types/pos';
 import {
-  calculateProductProfit,
   findDuplicateBarcode,
   formatPHP,
   generateNextSku,
@@ -34,19 +31,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
-  const [showCapitalAndProfit, setShowCapitalAndProfit] = useState(false);
 
   // Add / Edit Product Modal State
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [barcode, setBarcode] = useState('');
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('Gift Items');
+  const [category, setCategory] = useState('Cigarettes');
   const [customCategory, setCustomCategory] = useState('');
   const [isCustomCategory, setIsCustomCategory] = useState(false);
-  const [sellingPriceStr, setSellingPriceStr] = useState('15.00');
-  const [capitalPriceStr, setCapitalPriceStr] = useState('10.00');
-  const [stockStr, setStockStr] = useState('20');
+  const [sellingPriceStr, setSellingPriceStr] = useState('0.00');
+  const [stockStr, setStockStr] = useState('10');
   const [note, setNote] = useState('');
 
   // Quick Restock Modal State
@@ -55,11 +50,15 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
   const categories = useMemo(() => {
     const base = [
-      'Gift Items',
-      'Wrappers',
-      'Toys',
-      'Snacks',
-      'School Supplies',
+      'Cigarettes',
+      'Beverages',
+      'Snacks & Sweets',
+      'Rice & Frozen',
+      'Groceries & Canned',
+      'Diapers & Baby',
+      'Personal Care',
+      'Household',
+      'General Merchandise',
     ];
     for (const p of products) {
       if (p.category && !base.includes(p.category)) {
@@ -89,12 +88,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     setEditingProductId(null);
     setBarcode('');
     setName('');
-    setCategory('Gift Items');
+    setCategory('Cigarettes');
     setCustomCategory('');
     setIsCustomCategory(false);
-    setSellingPriceStr('15.00');
-    setCapitalPriceStr('10.00');
-    setStockStr('25');
+    setSellingPriceStr('0.00');
+    setStockStr('10');
     setNote('');
     setIsProductModalOpen(true);
   };
@@ -107,7 +105,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     setIsCustomCategory(false);
     setCustomCategory('');
     setSellingPriceStr(String(product.sellingPrice));
-    setCapitalPriceStr(String(product.capitalPrice));
     setStockStr(String(product.stock));
     setNote(product.note || '');
     setIsProductModalOpen(true);
@@ -118,21 +115,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     [products, barcode, editingProductId]
   );
 
-  const liveProfit = useMemo(
-    () =>
-      calculateProductProfit(
-        parseFloat(sellingPriceStr) || 0,
-        parseFloat(capitalPriceStr) || 0
-      ),
-    [sellingPriceStr, capitalPriceStr]
-  );
-
   const handleProductFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (duplicateProduct) return; // Guarded by Duplicate Barcode Guard
 
     const finalCategory = isCustomCategory
-      ? customCategory.trim() || 'Uncategorized'
+      ? customCategory.trim() || 'General Merchandise'
       : category;
 
     const productPayload: Product = {
@@ -141,7 +129,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       name: name.trim(),
       category: finalCategory,
       sellingPrice: Math.max(0, parseFloat(sellingPriceStr) || 0),
-      capitalPrice: Math.max(0, parseFloat(capitalPriceStr) || 0),
+      capitalPrice: 0,
       stock: Math.floor(parseFloat(stockStr) || 0),
       note: note.trim(),
       updatedAt: new Date().toISOString(),
@@ -204,24 +192,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           </select>
         </div>
 
-        {/* Privacy Eye Toggle for Capital Price & Profit */}
-        <button
-          type="button"
-          onClick={() => setShowCapitalAndProfit((prev) => !prev)}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm leading-5 font-semibold text-neutral-700 bg-[#F6F6F4] hover:bg-neutral-200/80 border border-neutral-300 rounded-xl whitespace-nowrap"
-        >
-          {showCapitalAndProfit ? (
-            <>
-              <EyeOff className="w-4 h-4 text-neutral-700" />
-              <span>Hide Capital &amp; Profit</span>
-            </>
-          ) : (
-            <>
-              <Eye className="w-4 h-4 text-neutral-700" />
-              <span>Show Capital &amp; Profit</span>
-            </>
-          )}
-        </button>
+        <div className="text-xs leading-4 font-medium text-neutral-500 font-mono tabular-nums">
+          Showing {filteredProducts.length} of {products.length} items
+        </div>
       </div>
 
       {/* Product List Table */}
@@ -231,11 +204,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             <thead>
               <tr className="border-b border-neutral-200 bg-[#F6F6F4]/70 text-xs leading-4 font-medium text-neutral-500">
                 <th className="py-3 px-4 sm:px-6">Product Name</th>
-                <th className="py-3 px-3">Barcode</th>
+                <th className="py-3 px-3">Barcode / SKU</th>
                 <th className="py-3 px-3">Type</th>
                 <th className="py-3 px-4 text-right">Selling Price</th>
-                <th className="py-3 px-3 text-right">Capital Price</th>
-                <th className="py-3 px-3 text-right">Profit</th>
                 <th className="py-3 px-3 text-right">Stock Left</th>
                 <th className="py-3 px-4">Note</th>
                 <th className="py-3 px-4 sm:px-6 text-right">Actions</th>
@@ -245,7 +216,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={7}
                     className="py-12 px-6 text-center text-sm leading-5 font-normal text-neutral-500"
                   >
                     No products match your current filter. Click "(+) Add Product" to add inventory.
@@ -253,10 +224,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                 </tr>
               ) : (
                 filteredProducts.map((product) => {
-                  const profitInfo = calculateProductProfit(
-                    product.sellingPrice,
-                    product.capitalPrice
-                  );
                   const isLowStock = product.stock <= 5;
                   return (
                     <tr
@@ -274,16 +241,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                       </td>
                       <td className="py-4 px-4 text-right font-mono text-base leading-6 font-semibold tabular-nums text-[#181818]">
                         {formatPHP(product.sellingPrice)}
-                      </td>
-                      <td className="py-4 px-3 text-right font-mono text-sm leading-5 font-medium tabular-nums text-neutral-600">
-                        {showCapitalAndProfit
-                          ? formatPHP(product.capitalPrice)
-                          : '••••'}
-                      </td>
-                      <td className="py-4 px-3 text-right font-mono text-sm leading-5 font-semibold tabular-nums text-emerald-700">
-                        {showCapitalAndProfit
-                          ? `${formatPHP(profitInfo.unitProfit)} (${profitInfo.marginPercent}%)`
-                          : '••••'}
                       </td>
                       <td className="py-4 px-3 text-right font-mono text-base leading-6 tabular-nums">
                         <span
@@ -434,7 +391,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Satin Ribbon Gift Bow (Large)"
+                  placeholder="e.g. Marlboro Red (Stick) or Bear Brand Milk"
                   className="w-full px-3 py-2 text-base leading-6 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>
@@ -477,26 +434,26 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                     required
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
-                    placeholder="Enter new custom category (e.g. Party Balloons)..."
+                    placeholder="Enter new custom category..."
                     className="w-full px-3 py-2 text-sm leading-5 font-medium border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                   />
                 )}
               </div>
 
-              {/* 4 & 5. Selling Price & Capital Price */}
+              {/* 4 & 5. Selling Price & Stock Quantity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
                     htmlFor="product-selling-price"
                     className="block text-sm leading-5 font-semibold text-neutral-800 mb-2"
                   >
-                    4. Selling Price (`price - selling` ₱) *
+                    4. Selling Price (₱) *
                   </label>
                   <input
                     id="product-selling-price"
                     type="number"
                     min="0"
-                    step="0.25"
+                    step="0.05"
                     required
                     value={sellingPriceStr}
                     onChange={(e) => setSellingPriceStr(e.target.value)}
@@ -506,76 +463,37 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
                 <div>
                   <label
-                    htmlFor="product-capital-price"
+                    htmlFor="product-stock-input"
                     className="block text-sm leading-5 font-semibold text-neutral-800 mb-2"
                   >
-                    5. Capital Price (`capital price` ₱) *
+                    5. Current Stock Quantity *
                   </label>
                   <input
-                    id="product-capital-price"
+                    id="product-stock-input"
                     type="number"
-                    min="0"
-                    step="0.25"
+                    step="1"
                     required
-                    value={capitalPriceStr}
-                    onChange={(e) => setCapitalPriceStr(e.target.value)}
-                    className="w-full px-3 py-2 font-mono text-base leading-6 font-medium tabular-nums border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
+                    value={stockStr}
+                    onChange={(e) => setStockStr(e.target.value)}
+                    className="w-full px-3 py-2 font-mono text-base leading-6 font-semibold tabular-nums border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                   />
                 </div>
               </div>
 
-              {/* Validation warning if Selling Price < Capital Price & 6. Live Profit Summary */}
-              {liveProfit.isBelowCapital ? (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs leading-4 font-semibold text-red-800">
-                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span>
-                    Warning: Selling Price is lower than Capital Price. Loss per unit:{' '}
-                    {formatPHP(liveProfit.unitProfit)}
-                  </span>
-                </div>
-              ) : (
-                <div className="px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs leading-4 font-semibold text-emerald-900">
-                  <span>Live Profit Calculation:</span>
-                  <span className="font-mono text-sm leading-5 font-semibold tabular-nums">
-                    Unit Profit: {formatPHP(liveProfit.unitProfit)} (
-                    {liveProfit.marginPercent}% margin)
-                  </span>
-                </div>
-              )}
-
-              {/* 7. Current Stock Quantity */}
-              <div>
-                <label
-                  htmlFor="product-stock-input"
-                  className="block text-sm leading-5 font-semibold text-neutral-800 mb-2"
-                >
-                  7. Current Stock Quantity *
-                </label>
-                <input
-                  id="product-stock-input"
-                  type="number"
-                  step="1"
-                  required
-                  value={stockStr}
-                  onChange={(e) => setStockStr(e.target.value)}
-                  className="w-full px-3 py-2 font-mono text-base leading-6 font-semibold tabular-nums border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
-                />
-              </div>
-
-              {/* 8. Note */}
+              {/* 6. Note */}
               <div>
                 <label
                   htmlFor="product-note-input"
                   className="block text-sm leading-5 font-semibold text-neutral-800 mb-2"
                 >
-                  8. Note (`note:`)
+                  6. Note (Optional)
                 </label>
                 <textarea
                   id="product-note-input"
                   rows={2}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Supplier name, shelf location, or wholesale bundle details..."
+                  placeholder="Shelf location, Stock No., or packaging notes..."
                   className="w-full px-3 py-2 text-sm leading-5 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
               </div>

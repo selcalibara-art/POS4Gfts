@@ -22,6 +22,7 @@ import {
   calculateCartTotals,
   computeCheckoutSettlement,
   formatPHP,
+  isCigaretteProduct,
   roundCurrency,
 } from '../utils/posLogic';
 
@@ -79,6 +80,9 @@ export const CartPage: React.FC<CartPageProps> = ({
     null
   );
   const [warningToast, setWarningToast] = useState<string | null>(null);
+  const [cigTapFilter, setCigTapFilter] = useState<'ALL' | 'STICK' | 'PACK'>(
+    'ALL'
+  );
 
   // Checkout state
   const [paymentType, setPaymentType] = useState<PaymentType>('CASH');
@@ -209,6 +213,15 @@ export const CartPage: React.FC<CartPageProps> = ({
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   });
+
+  const cigaretteProducts = useMemo(() => {
+    const allCigs = products.filter((p) => isCigaretteProduct(p));
+    return allCigs.filter((p) => {
+      if (cigTapFilter === 'ALL') return true;
+      const isPack = /\bpack\b|20s|\(pk\)/i.test(p.name);
+      return cigTapFilter === 'PACK' ? isPack : !isPack;
+    });
+  }, [products, cigTapFilter]);
 
   const matchingProducts = useMemo(() => {
     const q = skuQuery.trim().toLowerCase();
@@ -348,7 +361,7 @@ export const CartPage: React.FC<CartPageProps> = ({
               <span>SKU / Barcode Insert</span>
             </label>
             <span className="text-xs leading-4 font-medium text-neutral-500">
-              USB &amp; Bluetooth Scanner Ready · Type SKU (1001 to 1006) or Product Name
+              USB &amp; Bluetooth Scanner Ready · Scan Barcode or Type Product Name
             </span>
           </div>
 
@@ -366,7 +379,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                     setSkuQuery(e.target.value);
                     setShowDropdown(true);
                   }}
-                  placeholder="Scan barcode or type SKU / product name (e.g. 1001, Wrapper, Ribbon)..."
+                  placeholder="Scan barcode or search product name (e.g. Bear Brand, Piattos, Angelica)..."
                   className="w-full pl-4 pr-10 py-3 text-base leading-6 font-medium bg-[#F6F6F4] border border-neutral-300 rounded-xl text-[#181818] placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#181818]"
                 />
                 {skuQuery && (
@@ -440,29 +453,72 @@ export const CartPage: React.FC<CartPageProps> = ({
             )}
           </form>
 
-          {/* Quick Sample Barcode Tap Strip: Product Name primary, Price & SKU clearly legible */}
-          <div className="mt-4 pt-3 border-t border-neutral-100 flex flex-wrap items-center gap-2">
-            <span className="text-xs leading-4 font-medium text-neutral-500 whitespace-nowrap mr-1">
-              Quick Tap Items:
-            </span>
-            {products.slice(0, 6).map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSelectOrScanProduct(p)}
-                className="px-3 py-2 text-sm leading-5 bg-[#F6F6F4] hover:bg-neutral-200/80 text-[#181818] border border-neutral-200/90 rounded-lg inline-flex items-center gap-2 whitespace-nowrap shrink-0"
+          {/* Dedicated Quick-Tap Cigarettes Section (No barcode needed; 1-tap per stick or pack) */}
+          <div
+            data-testid="quick-tap-cigarettes"
+            className="mt-4 pt-4 border-t border-neutral-100 space-y-3"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs leading-4 font-semibold text-[#181818]">
+                  Quick Tap — Cigarettes
+                </span>
+                <span className="text-xs leading-4 font-normal text-neutral-500">
+                  No barcode needed · Tap once per stick or pack
+                </span>
+              </div>
+
+              <div
+                role="group"
+                aria-label="Filter cigarette quick taps"
+                className="flex items-center gap-1 p-1 bg-[#F6F6F4] border border-neutral-200 rounded-lg text-xs leading-4"
               >
-                <span className="font-semibold text-[#181818]">
-                  {p.name.split(' (')[0]}
-                </span>
-                <span className="font-mono text-xs leading-4 font-semibold text-emerald-800">
-                  {formatPHP(p.sellingPrice)}
-                </span>
-                <span className="font-mono text-xs leading-4 font-normal text-neutral-500">
-                  #{p.barcode}
-                </span>
-              </button>
-            ))}
+                {(
+                  [
+                    { key: 'ALL', label: 'All' },
+                    { key: 'STICK', label: 'Sticks' },
+                    { key: 'PACK', label: 'Packs' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setCigTapFilter(opt.key)}
+                    className={`px-2 py-1 rounded font-semibold whitespace-nowrap ${
+                      cigTapFilter === opt.key
+                        ? 'bg-white text-[#181818] shadow-xs'
+                        : 'text-neutral-500 hover:text-[#181818]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {cigaretteProducts.length === 0 ? (
+              <p className="text-xs leading-4 text-neutral-500">
+                No cigarette items found in inventory. Add one under List of Products with category "Cigarettes".
+              </p>
+            ) : (
+              <div className="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                {cigaretteProducts.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSelectOrScanProduct(p)}
+                    className="px-3 py-2 text-left bg-[#F6F6F4] hover:bg-neutral-200/80 text-[#181818] border border-neutral-200/90 rounded-lg flex items-center justify-between gap-2 transition-colors"
+                  >
+                    <span className="text-xs leading-4 font-semibold text-[#181818] truncate">
+                      {p.name}
+                    </span>
+                    <span className="font-mono text-xs leading-4 font-semibold tabular-nums text-emerald-800 shrink-0">
+                      {formatPHP(p.sellingPrice)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -564,7 +620,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                 Cart is empty · ready for next customer
               </p>
               <p className="text-sm leading-5 font-normal text-neutral-500 mt-2 max-w-md mx-auto">
-                Scan any item with your USB or Bluetooth barcode scanner, type a barcode (1001 to 1006) in the insert bar above, or tap a quick item button.
+                Scan any item with your USB or Bluetooth barcode scanner, search by product name above, or tap any Cigarette button for instant 1-stick checkout.
               </p>
             </div>
           ) : (

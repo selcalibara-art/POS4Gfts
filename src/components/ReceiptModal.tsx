@@ -455,7 +455,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         <div className="my-1 text-center">{divider}</div>
 
         <div className="space-y-0.5">
-          <div className="font-bold">NON-CASH & PROFIT SUMMARY</div>
+          <div className="font-bold">SALES &amp; COLLECTIONS SUMMARY</div>
           <div className="flex justify-between">
             <span>GCash Collected:</span>
             <span>{formatPHP(zReport.totalGcashCollected)}</span>
@@ -464,17 +464,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span>New Utang Issued:</span>
             <span>{formatPHP(zReport.newUtangIssued)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Gross Sales:</span>
-            <span>{formatPHP(zReport.grossSales)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Item Margin Profit:</span>
-            <span>{formatPHP(zReport.grossProfit)}</span>
-          </div>
           <div className="flex justify-between font-bold pt-0.5">
-            <span>NET PROFIT (After Exp):</span>
-            <span>{formatPHP(zReport.netProfitAfterExpenses)}</span>
+            <span>GROSS SALES:</span>
+            <span>{formatPHP(zReport.grossSales)}</span>
           </div>
         </div>
 

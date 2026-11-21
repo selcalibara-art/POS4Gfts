@@ -184,10 +184,10 @@ export interface FullStoreState {
 export function isUntouchedDefaultSimulation(state: FullStoreState): boolean {
   if (state.parkedCarts.length > 0) return false;
 
-  // Check if products match INITIAL_PRODUCTS (same 6 barcodes and names/prices)
+  // Check if products match INITIAL_PRODUCTS (same barcodes and names/prices)
   if (state.products.length !== INITIAL_PRODUCTS.length) return false;
-  const sortedLocal = [...state.products].sort((a, b) => a.barcode.localeCompare(b.barcode));
-  const sortedInit = [...INITIAL_PRODUCTS].sort((a, b) => a.barcode.localeCompare(b.barcode));
+  const sortedLocal = [...state.products].sort((a, b) => a.id.localeCompare(b.id));
+  const sortedInit = [...INITIAL_PRODUCTS].sort((a, b) => a.id.localeCompare(b.id));
   for (let i = 0; i < sortedInit.length; i++) {
     if (
       sortedLocal[i].barcode !== sortedInit[i].barcode ||
@@ -203,7 +203,6 @@ export function isUntouchedDefaultSimulation(state: FullStoreState): boolean {
   // Check if any sale was created by the user (non-simulation ID) or if sales count differs from default 15
   if (state.sales.length !== 15) return false;
   if (state.sales.some((s) => !String(s.id).startsWith('sim-sale-'))) return false;
-  // In default simulation, only sim-sale-8 is voided
   const voidedIds = state.sales.filter((s) => s.voided).map((s) => s.id);
   if (voidedIds.length !== 1 || voidedIds[0] !== 'sim-sale-8') return false;
 
@@ -214,6 +213,10 @@ export function isUntouchedDefaultSimulation(state: FullStoreState): boolean {
   if (state.adjustments.some((a) => !String(a.id).startsWith('sim-adj-'))) return false;
 
   return true;
+}
+
+export function hasImportedCatalogBaseline(products: Product[]): boolean {
+  return products.some((p) => p.id.startsWith('pos-') || p.id.startsWith('cig-'));
 }
 
 /**
@@ -338,7 +341,8 @@ export async function saveSettingsToCloud(
 
 export async function saveProductToCloud(
   uid: string,
-  product: Product
+  product: Product,
+  knownExists?: boolean
 ): Promise<void> {
   const safeId = sanitizeSafeId(product.id, 100);
   const docId = makeCloudDocId(uid, safeId);
@@ -354,8 +358,9 @@ export async function saveProductToCloud(
   };
 
   try {
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
+    const exists =
+      knownExists !== undefined ? knownExists : (await getDoc(ref)).exists();
+    if (exists) {
       await updateDoc(ref, {
         ...editableFields,
         updatedAt: serverTimestamp(),
@@ -838,7 +843,7 @@ export function syncFullStoreStateToCloud(
       ) {
         return;
       }
-      await saveProductToCloud(uid, p);
+      await saveProductToCloud(uid, p, Boolean(existing));
     });
 
     // Upsert only new or newly-voided sales
@@ -1018,7 +1023,7 @@ export async function fetchStoreStateFromCloud(
     .map((docSnap) => {
       const d = docSnap.data() as Record<string, unknown>;
       const isSplit = d.paymentType === 'SPLIT_CASH_UTANG';
-      const mappedPaymentType =
+      const mappedPaymentType: 'CASH' | 'GCASH' | 'UTANG' =
         d.paymentType === 'GCASH'
           ? 'GCASH'
           : d.paymentType === 'UTANG'
@@ -1080,12 +1085,14 @@ export async function fetchStoreStateFromCloud(
   const utangPayments: UtangPaymentTransaction[] = utangSnap.docs
     .map((docSnap) => {
       const d = docSnap.data() as Record<string, unknown>;
+      const method: 'CASH' | 'GCASH' =
+        d.paymentMethod === 'GCASH' ? 'GCASH' : 'CASH';
       return {
         id: String(d.id || docSnap.id),
         receiptNo: String(d.receiptNo || '#UTG-0001'),
         createdAt: sanitizeLocaleDateString(String(d.timestamp || '')),
         customerName: String(d.customerName || 'Customer'),
-        paymentMethod: d.paymentMethod === 'GCASH' ? 'GCASH' : 'CASH',
+        paymentMethod: method,
         gcashRefNo: d.gcashRef ? String(d.gcashRef) : undefined,
         previousBalance: Number(d.previousBalance ?? 0),
         amountPaid: Number(d.amountPaid ?? 0),
@@ -1113,10 +1120,12 @@ export async function fetchStoreStateFromCloud(
   const adjustments: CashDrawerAdjustment[] = adjustmentsSnap.docs
     .map((docSnap) => {
       const d = docSnap.data() as Record<string, unknown>;
+      const adjType: 'CASH_IN' | 'EXPENSE_OUT' =
+        d.type === 'CASH_IN' ? 'CASH_IN' : 'EXPENSE_OUT';
       return {
         id: String(d.id || docSnap.id),
         createdAt: sanitizeLocaleDateString(String(d.timestamp || '')),
-        type: d.type === 'CASH_IN' ? 'CASH_IN' : 'EXPENSE_OUT',
+        type: adjType,
         amount: Number(d.amount ?? 0),
         reason: String(d.reason || 'Store adjustment'),
       };

@@ -258,7 +258,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl leading-7 font-semibold text-[#181818]">
-            Daily Cash Drawer, Shift Register &amp; Profit Reconciliation
+            Daily Cash Drawer, Shift Register &amp; Sales Summary
           </h2>
           <p className="text-sm leading-5 font-normal text-neutral-500 mt-1">
             Track store opening float (Panukli), sales, petty cash expenses, and closing Z-Reading cash count
@@ -445,21 +445,21 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
           </div>
         </div>
 
-        {/* 4. Realized Net Profit */}
+        {/* 4. Gross Sales Today */}
         <div className="bg-white border border-neutral-200/90 rounded-2xl p-6 space-y-2">
           <div className="flex items-center justify-between text-xs leading-4 font-medium text-neutral-600">
-            <span>4. Realized Net Profit (₱)</span>
+            <span>4. Gross Sales (₱)</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
           <div
-            data-testid="metric-net-profit"
+            data-testid="metric-gross-sales"
             className="font-mono text-3xl leading-9 font-semibold tabular-nums text-emerald-700"
           >
-            {formatPHP(metrics.netProfitAfterExpenses)}
+            {formatPHP(metrics.grossSalesToday)}
           </div>
           <div className="text-xs leading-4 font-normal text-neutral-500">
-            Gross Sales: {formatPHP(metrics.grossSalesToday)} · Item Profit:{' '}
-            {formatPHP(metrics.realizedNetProfit)}
+            Active Sales: {metrics.activeTransactionsCount} · Exp Out:{' '}
+            {formatPHP(metrics.expenseOutAdjustments)}
           </div>
         </div>
       </div>
@@ -559,7 +559,6 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                 <th className="py-3 px-3">Payment / Customer</th>
                 <th className="py-3 px-4 text-right">Total (₱)</th>
                 <th className="py-3 px-3 text-right">Paid / Utang</th>
-                <th className="py-3 px-3 text-right">Net Profit</th>
                 <th className="py-3 px-4 sm:px-6 text-right">Actions</th>
               </tr>
             </thead>
@@ -567,7 +566,7 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
               {filteredSales.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={7}
                     className="py-12 px-6 text-center text-sm leading-5 font-normal text-neutral-500"
                   >
                     No transactions recorded for this date filter. Switch to "All Recorded Sessions" or complete a sale on the Cart Page.
@@ -638,9 +637,6 @@ export const TransactionsReportPage: React.FC<TransactionsReportPageProps> = ({
                             Utang: {formatPHP(sale.utangAmount)}
                           </div>
                         )}
-                      </td>
-                      <td className="py-4 px-3 text-right font-mono text-sm leading-5 font-semibold tabular-nums text-emerald-700">
-                        {sale.voided ? '₱0.00' : formatPHP(sale.netProfit)}
                       </td>
                       <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-2">
