@@ -37,6 +37,7 @@ export const CLOUD_STORAGE_KEYS = {
   LAST_SYNC: 'fgs_pos_last_sync_v1',
   LOCAL_CUSTOMIZED: 'fgs_pos_local_customized_v1',
   GAS_WEBHOOK_URL: 'fgs_pos_gas_webhook_url_v1',
+  CATALOG_BASELINE_V2: 'fgs_pos_catalog_csv122_v2_done',
 };
 
 export const DEVICE_STORAGE_KEYS = {
@@ -216,7 +217,20 @@ export function isUntouchedDefaultSimulation(state: FullStoreState): boolean {
 }
 
 export function hasImportedCatalogBaseline(products: Product[]): boolean {
-  return products.some((p) => p.id.startsWith('pos-') || p.id.startsWith('cig-'));
+  if (!products.some((p) => p.id.startsWith('cig-'))) {
+    return false;
+  }
+  const existingIds = new Set(products.map((p) => p.id.toLowerCase()));
+  const existingBarcodes = new Set(
+    products
+      .map((p) => (p.barcode || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  return INITIAL_PRODUCTS.every(
+    (item) =>
+      existingIds.has(item.id.toLowerCase()) ||
+      (item.barcode && existingBarcodes.has(item.barcode.trim().toLowerCase()))
+  );
 }
 
 /**

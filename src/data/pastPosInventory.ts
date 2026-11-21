@@ -1,8 +1,9 @@
 import { Product } from "../types/pos";
 
 /**
- * Past POS Inventory imported from J&S CALIBARA (JSCALIBARA_17001-17500.csv)
- * Excludes dummy/template test rows. All capitalPrice values default to 0 (00).
+ * Complete Past POS Inventory imported from J&S CALIBARA (JSCALIBARA_17001-17500.csv)
+ * Includes all 122 spreadsheet rows with exact Barcode (or Stock_No SKU when Barcode is blank).
+ * All capitalPrice values default to 0 (00).
  */
 export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
   {
@@ -1040,6 +1041,17 @@ export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
     "updatedAt": "2026-11-20T00:00:00.000Z"
   },
   {
+    "id": "pos-renew01",
+    "barcode": "renew01",
+    "name": "Lucky Grocers Card Renewal",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 0,
+    "stock": 0,
+    "note": "",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
     "id": "pos-sister_night_plus",
     "barcode": "Sister Night Plus",
     "name": "Sister Night Plus",
@@ -1076,7 +1088,7 @@ export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
     "id": "pos-sliced_ham_with_pineapple",
     "barcode": "sliced ham with pineapple",
     "name": "sliced ham with pineapple juice",
-    "category": "Rice & Frozen",
+    "category": "Beverages",
     "capitalPrice": 0,
     "sellingPrice": 75,
     "stock": 0,
@@ -1092,6 +1104,17 @@ export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
     "sellingPrice": 65,
     "stock": 0,
     "note": "",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-stock_no",
+    "barcode": "BARCODES",
+    "name": "CARD",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 0,
+    "stock": 0,
+    "note": "Stock No: STOCK_NO",
     "updatedAt": "2026-11-20T00:00:00.000Z"
   },
   {
@@ -1114,6 +1137,105 @@ export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
     "sellingPrice": 105,
     "stock": -1,
     "note": "",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-tc2",
+    "barcode": "TC2",
+    "name": "Test C2",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 55,
+    "stock": 0,
+    "note": "Spreadsheet Test Item",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test00001",
+    "barcode": "41234567890",
+    "name": "Test Item 2016",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 15,
+    "stock": 0,
+    "note": "Stock No: TEST00001 · Spreadsheet Test Item",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test01",
+    "barcode": "123456ASD",
+    "name": "Test Item 01",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 115,
+    "stock": 0,
+    "note": "Stock No: TEST01 · Spreadsheet Test Item",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test02",
+    "barcode": "10000000000002",
+    "name": "Test Item 02x",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 215,
+    "stock": 0,
+    "note": "Stock No: TEST02 · Spreadsheet Test Item",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test03",
+    "barcode": "10000000000003x",
+    "name": "Test Item 03",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 160,
+    "stock": 0,
+    "note": "Stock No: TEST03 · Spreadsheet Test Item",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test6666",
+    "barcode": "1234567891",
+    "name": "Test Item 1 - 2025",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 50,
+    "stock": 0,
+    "note": "Stock No: TEST6666",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test7777",
+    "barcode": "1234567892",
+    "name": "Test Item 2 - 2025",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 100,
+    "stock": 0,
+    "note": "Stock No: TEST7777",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test8888",
+    "barcode": "1234567893",
+    "name": "Test Item 3 - 2025",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 150,
+    "stock": 0,
+    "note": "Stock No: TEST8888",
+    "updatedAt": "2026-11-20T00:00:00.000Z"
+  },
+  {
+    "id": "pos-test9999",
+    "barcode": "1234567894",
+    "name": "Test Item 4 - 2025",
+    "category": "General Merchandise",
+    "capitalPrice": 0,
+    "sellingPrice": 200,
+    "stock": 0,
+    "note": "Stock No: TEST9999",
     "updatedAt": "2026-11-20T00:00:00.000Z"
   },
   {
@@ -1228,10 +1350,6 @@ export const PAST_POS_INVENTORY_PRODUCTS: Product[] = [
   }
 ];
 
-/**
- * Cigarette Catalog (Stick / Single & Pack) for 1-Tap Quick Checkout on CartPage
- * without needing barcodes or grabbing packs each time.
- */
 export const CIGARETTE_CATALOG_PRODUCTS: Product[] = [
   {
     "id": "cig-camel-yellow-stk",

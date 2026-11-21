@@ -20,8 +20,8 @@ import {
 } from './posLogic';
 import { CartItem, Product, SaleTransaction, UtangPaymentTransaction } from '../types/pos';
 
-test('INITIAL_PRODUCTS contains imported Past POS inventory (111 real items) plus Cigarette catalog (25 items) with 0 capital cost', () => {
-  assert.equal(INITIAL_PRODUCTS.length, 136);
+test('INITIAL_PRODUCTS contains all 122 imported Past POS spreadsheet rows with barcodes plus Cigarette catalog (25 items) with 0 capital cost', () => {
+  assert.equal(INITIAL_PRODUCTS.length, 147);
   const cigs = INITIAL_PRODUCTS.filter((p) => isCigaretteProduct(p));
   assert.equal(cigs.length, 25);
 
@@ -35,10 +35,17 @@ test('INITIAL_PRODUCTS contains imported Past POS inventory (111 real items) plu
     seenBarcodes.add(key);
   }
 
-  // Spot-check real J&S CALIBARA items & cigarette items
+  // Spot-check real J&S CALIBARA items, Stock_No items, test/card rows, & cigarette items
   const bearBrand = INITIAL_PRODUCTS.find((p) => p.barcode === '4800361395397');
   assert.equal(bearBrand?.name, 'BEAR BRAND MILK W/IRON 13+1/33G-P');
   assert.equal(bearBrand?.sellingPrice, 151.45);
+
+  const testItem = INITIAL_PRODUCTS.find((p) => p.barcode === '41234567890');
+  assert.equal(testItem?.name, 'Test Item 2016');
+  assert.equal(testItem?.sellingPrice, 15);
+
+  const renewal = INITIAL_PRODUCTS.find((p) => p.barcode === 'renew01');
+  assert.equal(renewal?.name, 'Lucky Grocers Card Renewal');
 
   const camelStick = INITIAL_PRODUCTS.find((p) => p.barcode === '40329055');
   assert.equal(camelStick?.category, 'Cigarettes');
@@ -83,14 +90,14 @@ test('mergeStoreCatalogWithImports preserves custom existing items while removin
   ];
 
   const merged = mergeStoreCatalogWithImports(existingStoreProducts, INITIAL_PRODUCTS);
-  // Legacy prod-1001 dropped, custom Camel & Wilkins kept, plus remaining 135 imported items
+  // Legacy prod-1001 dropped, custom Camel & Wilkins kept, plus remaining 146 imported items
   assert.equal(merged.some((p) => p.id === 'prod-1001'), false);
   const keptCamel = merged.find((p) => p.barcode === '40329055');
   assert.equal(keptCamel?.id, 'custom-camel');
   assert.equal(keptCamel?.sellingPrice, 9);
   assert.equal(keptCamel?.category, 'Cigarettes');
   assert.equal(merged.some((p) => p.barcode === '4801981126866'), true);
-  assert.equal(merged.length, 137);
+  assert.equal(merged.length, 148);
 });
 
 test('calculateCartTotals computes subtotal, discount, grand total, and net profit accurately', () => {

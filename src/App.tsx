@@ -154,9 +154,21 @@ export default function App() {
       STORAGE_KEYS.PRODUCTS,
       INITIAL_PRODUCTS
     );
-    if (!hasImportedCatalogBaseline(loaded)) {
+    let alreadyMigratedV2 = false;
+    try {
+      alreadyMigratedV2 =
+        localStorage.getItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2) === 'done';
+    } catch {
+      alreadyMigratedV2 = false;
+    }
+    if (!hasImportedCatalogBaseline(loaded) && !alreadyMigratedV2) {
       const merged = mergeStoreCatalogWithImports(loaded, INITIAL_PRODUCTS);
       saveToStorage(STORAGE_KEYS.PRODUCTS, merged);
+      try {
+        localStorage.setItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2, 'done');
+      } catch {
+        // ignore
+      }
       return merged;
     }
     return loaded;
@@ -613,10 +625,23 @@ export default function App() {
           return;
         }
 
-        // Guard 3: First-time Past POS & Cigarettes Catalog Migration into Cloud Store
+        // Guard 3: Complete Past POS & Cigarettes Catalog Migration into Cloud Store
         // Preserves existing live store products (e.g. Camel Yellow, Wilkins, Sumo) and all sales/utang,
-        // while merging all imported Past POS items + Cigarette stick/pack buttons once across all devices.
-        if (!hasImportedCatalogBaseline(remote.state.products)) {
+        // while merging all 122 imported Past POS spreadsheet items + 25 Cigarette stick/pack items once across all devices.
+        let cloudV2Done = false;
+        try {
+          cloudV2Done =
+            localStorage.getItem(
+              `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2}_cloud`
+            ) === 'done';
+        } catch {
+          cloudV2Done = false;
+        }
+        if (
+          !hasImportedCatalogBaseline(remote.state.products) &&
+          (!cloudV2Done ||
+            !remote.state.products.some((p) => p.id.startsWith('pos-')))
+        ) {
           const upgradedProducts = mergeStoreCatalogWithImports(
             remote.state.products,
             INITIAL_PRODUCTS
@@ -642,12 +667,20 @@ export default function App() {
               upgradedRemote,
               true
             );
+            try {
+              localStorage.setItem(
+                `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2}_cloud`,
+                'done'
+              );
+            } catch {
+              // ignore
+            }
           } finally {
             isPushingRef.current = false;
           }
           setCloudSyncState('CLOUD_SAVED');
           setLastSavedTime(formatCurrentTimeShort());
-          showQuickNotice('Imported Past POS Inventory & Cigarettes to Cloud');
+          showQuickNotice('Imported all 122 Past POS items & Cigarettes to Cloud');
           return;
         }
 

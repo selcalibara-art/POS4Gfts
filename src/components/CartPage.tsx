@@ -238,7 +238,8 @@ export const CartPage: React.FC<CartPageProps> = ({
         (p) =>
           p.barcode.toLowerCase().includes(q) ||
           p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+          p.category.toLowerCase().includes(q) ||
+          (p.note || '').toLowerCase().includes(q)
       )
       .slice(0, 8);
   }, [products, skuQuery]);
@@ -262,7 +263,18 @@ export const CartPage: React.FC<CartPageProps> = ({
       return;
     }
 
-    // 2. Otherwise first autocomplete match
+    // 2. Fallback exact Stock No match (for CSV rows that had both Stock_No and Barcode)
+    const exactStockNoMatch = products.find(
+      (p) =>
+        (p.note || '').toLowerCase().includes(`stock no: ${q.toLowerCase()}`) ||
+        p.id.toLowerCase() === `pos-${q.toLowerCase()}`
+    );
+    if (exactStockNoMatch) {
+      handleSelectOrScanProduct(exactStockNoMatch);
+      return;
+    }
+
+    // 3. Otherwise first autocomplete match
     if (matchingProducts.length > 0) {
       handleSelectOrScanProduct(matchingProducts[0]);
       return;
