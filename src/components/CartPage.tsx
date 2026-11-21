@@ -10,6 +10,8 @@ import {
   Printer,
   ShoppingBag,
   X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   CartItem,
@@ -83,6 +85,7 @@ export const CartPage: React.FC<CartPageProps> = ({
   const [cigTapFilter, setCigTapFilter] = useState<'ALL' | 'STICK' | 'PACK'>(
     'ALL'
   );
+  const [isCigarettesOpen, setIsCigarettesOpen] = useState<boolean>(false);
 
   // Checkout state
   const [paymentType, setPaymentType] = useState<PaymentType>('CASH');
@@ -214,14 +217,18 @@ export const CartPage: React.FC<CartPageProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   });
 
+  const allCigaretteProducts = useMemo(
+    () => products.filter((p) => isCigaretteProduct(p)),
+    [products]
+  );
+
   const cigaretteProducts = useMemo(() => {
-    const allCigs = products.filter((p) => isCigaretteProduct(p));
-    return allCigs.filter((p) => {
+    return allCigaretteProducts.filter((p) => {
       if (cigTapFilter === 'ALL') return true;
       const isPack = /\bpack\b|20s|\(pk\)/i.test(p.name);
       return cigTapFilter === 'PACK' ? isPack : !isPack;
     });
-  }, [products, cigTapFilter]);
+  }, [allCigaretteProducts, cigTapFilter]);
 
   const matchingProducts = useMemo(() => {
     const q = skuQuery.trim().toLowerCase();
@@ -453,70 +460,99 @@ export const CartPage: React.FC<CartPageProps> = ({
             )}
           </form>
 
-          {/* Dedicated Quick-Tap Cigarettes Section (No barcode needed; 1-tap per stick or pack) */}
+          {/* Retractable Quick-Tap Cigarettes Section (Collapsed by default; opens on click) */}
           <div
             data-testid="quick-tap-cigarettes"
-            className="mt-4 pt-4 border-t border-neutral-100 space-y-3"
+            className="mt-4 pt-3 border-t border-neutral-100"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            <button
+              type="button"
+              data-testid="toggle-quick-tap-cigarettes"
+              aria-expanded={isCigarettesOpen}
+              aria-controls="quick-tap-cigarettes-panel"
+              onClick={() => setIsCigarettesOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-[#F6F6F4] hover:bg-neutral-200/70 border border-neutral-200/90 text-left transition-colors"
+            >
+              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 min-w-0">
                 <span className="text-xs leading-4 font-semibold text-[#181818]">
                   Quick Tap — Cigarettes
                 </span>
-                <span className="text-xs leading-4 font-normal text-neutral-500">
-                  No barcode needed · Tap once per stick or pack
+                <span className="text-xs leading-4 font-normal text-neutral-500 tabular-nums">
+                  {allCigaretteProducts.length} sticks &amp; packs ·{' '}
+                  {isCigarettesOpen ? 'Tap to hide' : 'Tap to show'}
                 </span>
               </div>
+              <span className="inline-flex items-center gap-1 text-xs leading-4 font-semibold text-neutral-700 shrink-0">
+                <span>{isCigarettesOpen ? 'Hide' : 'Show'}</span>
+                {isCigarettesOpen ? (
+                  <ChevronUp className="w-4 h-4 text-neutral-600" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-neutral-600" />
+                )}
+              </span>
+            </button>
 
+            {isCigarettesOpen && (
               <div
-                role="group"
-                aria-label="Filter cigarette quick taps"
-                className="flex items-center gap-1 p-1 bg-[#F6F6F4] border border-neutral-200 rounded-lg text-xs leading-4"
+                id="quick-tap-cigarettes-panel"
+                className="mt-3 space-y-3"
               >
-                {(
-                  [
-                    { key: 'ALL', label: 'All' },
-                    { key: 'STICK', label: 'Sticks' },
-                    { key: 'PACK', label: 'Packs' },
-                  ] as const
-                ).map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setCigTapFilter(opt.key)}
-                    className={`px-2 py-1 rounded font-semibold whitespace-nowrap ${
-                      cigTapFilter === opt.key
-                        ? 'bg-white text-[#181818] shadow-xs'
-                        : 'text-neutral-500 hover:text-[#181818]'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs leading-4 font-normal text-neutral-500">
+                    No barcode needed · Tap once per stick or pack
+                  </span>
 
-            {cigaretteProducts.length === 0 ? (
-              <p className="text-xs leading-4 text-neutral-500">
-                No cigarette items found in inventory. Add one under List of Products with category "Cigarettes".
-              </p>
-            ) : (
-              <div className="max-h-48 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                {cigaretteProducts.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSelectOrScanProduct(p)}
-                    className="px-3 py-2 text-left bg-[#F6F6F4] hover:bg-neutral-200/80 text-[#181818] border border-neutral-200/90 rounded-lg flex items-center justify-between gap-2 transition-colors"
+                  <div
+                    role="group"
+                    aria-label="Filter cigarette quick taps"
+                    className="flex items-center gap-1 p-1 bg-[#F6F6F4] border border-neutral-200 rounded-lg text-xs leading-4"
                   >
-                    <span className="text-xs leading-4 font-semibold text-[#181818] truncate">
-                      {p.name}
-                    </span>
-                    <span className="font-mono text-xs leading-4 font-semibold tabular-nums text-emerald-800 shrink-0">
-                      {formatPHP(p.sellingPrice)}
-                    </span>
-                  </button>
-                ))}
+                    {(
+                      [
+                        { key: 'ALL', label: 'All' },
+                        { key: 'STICK', label: 'Sticks' },
+                        { key: 'PACK', label: 'Packs' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setCigTapFilter(opt.key)}
+                        className={`px-2 py-1 rounded font-semibold whitespace-nowrap ${
+                          cigTapFilter === opt.key
+                            ? 'bg-white text-[#181818] shadow-xs'
+                            : 'text-neutral-500 hover:text-[#181818]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {cigaretteProducts.length === 0 ? (
+                  <p className="text-xs leading-4 text-neutral-500">
+                    No cigarette items found in inventory. Add one under List of Products with category &quot;Cigarettes&quot;.
+                  </p>
+                ) : (
+                  <div className="max-h-52 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                    {cigaretteProducts.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectOrScanProduct(p)}
+                        className="px-3 py-2 text-left bg-[#F6F6F4] hover:bg-neutral-200/80 text-[#181818] border border-neutral-200/90 rounded-lg flex items-center justify-between gap-2 transition-colors"
+                      >
+                        <span className="text-xs leading-4 font-semibold text-[#181818] truncate">
+                          {p.name}
+                        </span>
+                        <span className="font-mono text-xs leading-4 font-semibold tabular-nums text-emerald-800 shrink-0">
+                          {formatPHP(p.sellingPrice)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
