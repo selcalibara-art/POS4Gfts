@@ -233,15 +233,29 @@ export const CartPage: React.FC<CartPageProps> = ({
   const matchingProducts = useMemo(() => {
     const q = skuQuery.trim().toLowerCase();
     if (!q) return [];
-    return products
-      .filter(
-        (p) =>
-          p.barcode.toLowerCase().includes(q) ||
-          p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          (p.note || '').toLowerCase().includes(q)
-      )
-      .slice(0, 8);
+    const scored: Array<{ product: Product; score: number }> = [];
+    for (const p of products) {
+      const bc = p.barcode.toLowerCase();
+      const nm = p.name.toLowerCase();
+      const cat = p.category.toLowerCase();
+      const note = (p.note || '').toLowerCase();
+
+      if (bc === q) {
+        scored.push({ product: p, score: 0 });
+      } else if (bc.startsWith(q)) {
+        scored.push({ product: p, score: 1 });
+      } else if (nm.startsWith(q)) {
+        scored.push({ product: p, score: 2 });
+      } else if (nm.includes(q)) {
+        scored.push({ product: p, score: 3 });
+      } else if (bc.includes(q) || note.includes(q)) {
+        scored.push({ product: p, score: 4 });
+      } else if (cat.includes(q)) {
+        scored.push({ product: p, score: 5 });
+      }
+    }
+    scored.sort((a, b) => a.score - b.score);
+    return scored.slice(0, 8).map((s) => s.product);
   }, [products, skuQuery]);
 
   const handleSkuFormSubmit = (e: React.FormEvent) => {
@@ -254,21 +268,27 @@ export const CartPage: React.FC<CartPageProps> = ({
       return;
     }
 
+    const qLower = q.toLowerCase();
+
     // 1. Exact barcode match first
     const exactMatch = products.find(
-      (p) => p.barcode.toLowerCase() === q.toLowerCase()
+      (p) => p.barcode.toLowerCase() === qLower
     );
     if (exactMatch) {
       handleSelectOrScanProduct(exactMatch);
       return;
     }
 
-    // 2. Fallback exact Stock No match (for CSV rows that had both Stock_No and Barcode)
-    const exactStockNoMatch = products.find(
-      (p) =>
-        (p.note || '').toLowerCase().includes(`stock no: ${q.toLowerCase()}`) ||
-        p.id.toLowerCase() === `pos-${q.toLowerCase()}`
-    );
+    // 2. Fallback exact Stock No or alternate barcode match (for multi-barcode CSV rows)
+    const exactStockNoMatch = products.find((p) => {
+      const noteLower = (p.note || '').toLowerCase();
+      return (
+        noteLower.includes(`stock no: ${qLower}`) ||
+        noteLower.includes(`alt: ${qLower}`) ||
+        noteLower.includes(`, ${qLower}`) ||
+        p.id.toLowerCase() === `pos-${qLower}`
+      );
+    });
     if (exactStockNoMatch) {
       handleSelectOrScanProduct(exactStockNoMatch);
       return;

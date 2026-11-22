@@ -8,11 +8,13 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  writeBatch,
   onSnapshot,
   query,
   where,
   serverTimestamp,
   type Unsubscribe,
+  type DocumentReference,
 } from 'firebase/firestore';
 import {
   db,
@@ -38,6 +40,7 @@ export const CLOUD_STORAGE_KEYS = {
   LOCAL_CUSTOMIZED: 'fgs_pos_local_customized_v1',
   GAS_WEBHOOK_URL: 'fgs_pos_gas_webhook_url_v1',
   CATALOG_BASELINE_V2: 'fgs_pos_catalog_csv122_v2_done',
+  CATALOG_BASELINE_V3: 'fgs_pos_catalog_part1_1147_v3_done',
 };
 
 export const DEVICE_STORAGE_KEYS = {
@@ -807,35 +810,48 @@ export function syncFullStoreStateToCloud(
       state.parkedCarts.map((pk) => makeCloudDocId(uid, sanitizeSafeId(pk.id, 100)))
     );
 
-    const orphanDeletes: Promise<void>[] = [];
+    const orphanDeleteRefs: DocumentReference[] = [];
     existingProductsSnap.docs.forEach((d) => {
-      if (!wantedProductDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedProductDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
     existingSalesSnap.docs.forEach((d) => {
-      if (!wantedSaleDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedSaleDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
     existingUtangSnap.docs.forEach((d) => {
-      if (!wantedUtangDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedUtangDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
     existingShiftsSnap.docs.forEach((d) => {
-      if (!wantedShiftDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedShiftDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
     existingAdjustmentsSnap.docs.forEach((d) => {
-      if (!wantedAdjDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedAdjDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
     existingParkedSnap.docs.forEach((d) => {
-      if (!wantedParkedDocIds.has(d.id)) orphanDeletes.push(deleteDoc(d.ref));
+      if (!wantedParkedDocIds.has(d.id)) orphanDeleteRefs.push(d.ref);
     });
 
-    if (orphanDeletes.length > 0) {
-      await Promise.all(orphanDeletes);
+    // Commit orphan deletes in Firestore writeBatch chunks (<= 350 ops per batch)
+    const BATCH_LIMIT = 350;
+    for (let i = 0; i < orphanDeleteRefs.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      const slice = orphanDeleteRefs.slice(i, i + BATCH_LIMIT);
+      for (const ref of slice) {
+        batch.delete(ref);
+      }
+      await batch.commit();
     }
 
-    // Upsert only changed or missing products
+    // Upsert only changed or missing products using chunked Firestore writeBatch
     const existingProductsMap = new Map(
       existingProductsSnap.docs.map((d) => [d.id, d.data()])
     );
-    const productWrites = state.products.map(async (p) => {
+    const pendingProductOps: Array<{
+      ref: DocumentReference;
+      isUpdate: boolean;
+      data: Record<string, unknown>;
+    }> = [];
+
+    for (const p of state.products) {
       const safeId = sanitizeSafeId(p.id, 100);
       const docId = makeCloudDocId(uid, safeId);
       const existing = existingProductsMap.get(docId);
@@ -855,10 +871,56 @@ export function syncFullStoreStateToCloud(
         Number(existing.sellingPrice) === sellingPrice &&
         Number(existing.stock) === stock
       ) {
-        return;
+        continue;
       }
-      await saveProductToCloud(uid, p, Boolean(existing));
-    });
+
+      const ref = doc(db, 'pos_products', docId);
+      if (existing) {
+        pendingProductOps.push({
+          ref,
+          isUpdate: true,
+          data: {
+            barcode,
+            name,
+            category,
+            costPrice,
+            sellingPrice,
+            stock,
+            updatedAt: serverTimestamp(),
+          },
+        });
+      } else {
+        pendingProductOps.push({
+          ref,
+          isUpdate: false,
+          data: {
+            ownerId: uid,
+            id: safeId,
+            barcode,
+            name,
+            category,
+            costPrice,
+            sellingPrice,
+            stock,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+        });
+      }
+    }
+
+    for (let i = 0; i < pendingProductOps.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      const slice = pendingProductOps.slice(i, i + BATCH_LIMIT);
+      for (const op of slice) {
+        if (op.isUpdate) {
+          batch.update(op.ref, op.data);
+        } else {
+          batch.set(op.ref, op.data);
+        }
+      }
+      await batch.commit();
+    }
 
     // Upsert only new or newly-voided sales
     const existingSalesMap = new Map(
@@ -944,7 +1006,6 @@ export function syncFullStoreStateToCloud(
     const parkedWrites = state.parkedCarts.map((pk) => saveParkedCartToCloud(uid, pk));
 
     await Promise.all([
-      ...productWrites,
       ...saleWrites,
       ...utangWrites,
       ...shiftWrites,

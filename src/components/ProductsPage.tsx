@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus,
   Search,
@@ -8,12 +8,16 @@ import {
   AlertTriangle,
   Wand2,
   X,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Product } from '../types/pos';
 import {
   findDuplicateBarcode,
   formatPHP,
   generateNextSku,
+  parsePastPosCsv,
 } from '../utils/posLogic';
 
 interface ProductsPageProps {
@@ -21,16 +25,23 @@ interface ProductsPageProps {
   onSaveProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onRestockProduct: (productId: string, addQty: number) => void;
+  onImportProducts?: (importedProducts: Product[]) => void;
 }
+
+const PAGE_SIZE = 50;
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({
   products,
   onSaveProduct,
   onDeleteProduct,
   onRestockProduct,
+  onImportProducts,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [csvImportStatus, setCsvImportStatus] = useState<string | null>(null);
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
 
   // Add / Edit Product Modal State
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -83,6 +94,48 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       );
     });
   }, [products, searchQuery, categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
+    return filteredProducts.slice(start, start + PAGE_SIZE);
+  }, [filteredProducts, safeCurrentPage]);
+
+  const pageRangeStart =
+    filteredProducts.length === 0 ? 0 : (safeCurrentPage - 1) * PAGE_SIZE + 1;
+  const pageRangeEnd = Math.min(
+    filteredProducts.length,
+    safeCurrentPage * PAGE_SIZE
+  );
+
+  const handleCsvFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !onImportProducts) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : '';
+      const parsed = parsePastPosCsv(text, products);
+      if (parsed.length === 0) {
+        setCsvImportStatus(
+          `No new products found in "${file.name}" (all barcodes may already exist).`
+        );
+      } else {
+        onImportProducts(parsed);
+        setCsvImportStatus(
+          `Imported ${parsed.length} new products from "${file.name}" and synced to Cloud.`
+        );
+      }
+      window.setTimeout(() => setCsvImportStatus(null), 6000);
+    };
+    reader.readAsText(file);
+  };
 
   const openAddProductModal = () => {
     setEditingProductId(null);
@@ -163,6 +216,27 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             <span>(+) Add Product</span>
           </button>
 
+          {onImportProducts && (
+            <>
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleCsvFileSelected}
+                className="hidden"
+                aria-label="Import Past POS CSV file"
+              />
+              <button
+                type="button"
+                onClick={() => csvInputRef.current?.click()}
+                className="inline-flex items-center gap-2 px-3 py-2 bg-[#F6F6F4] hover:bg-neutral-200/80 text-[#181818] border border-neutral-300 text-sm leading-5 font-semibold rounded-xl whitespace-nowrap"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Import CSV</span>
+              </button>
+            </>
+          )}
+
           {/* Search Input */}
           <div className="relative min-w-[240px] sm:w-80">
             <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -193,9 +267,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
 
         <div className="text-xs leading-4 font-medium text-neutral-500 font-mono tabular-nums">
-          Showing {filteredProducts.length} of {products.length} items
+          {filteredProducts.length === 0
+            ? `0 of ${products.length} items`
+            : `Showing ${pageRangeStart}–${pageRangeEnd} of ${filteredProducts.length} matching (${products.length} total)`}
         </div>
       </div>
+
+      {csvImportStatus && (
+        <div
+          role="status"
+          className="px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-sm leading-5 font-medium"
+        >
+          {csvImportStatus}
+        </div>
+      )}
 
       {/* Product List Table */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl overflow-hidden">
@@ -223,7 +308,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => {
+                paginatedProducts.map((product) => {
                   const isLowStock = product.stock <= 5;
                   return (
                     <tr
@@ -295,6 +380,38 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {filteredProducts.length > PAGE_SIZE && (
+          <div className="px-4 sm:px-6 py-3 border-t border-neutral-200/90 bg-[#F6F6F4]/60 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs leading-4 font-medium text-neutral-600 font-mono tabular-nums">
+              Page {safeCurrentPage} of {totalPages} · {filteredProducts.length}{' '}
+              items
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs leading-4 font-semibold text-[#181818] bg-white hover:bg-neutral-100 border border-neutral-300 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
+              <button
+                type="button"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs leading-4 font-semibold text-[#181818] bg-white hover:bg-neutral-100 border border-neutral-300 rounded-lg disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add / Edit Product Modal */}

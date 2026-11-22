@@ -17,25 +17,41 @@ import {
   generateSevenDayStoreSimulation,
   isCigaretteProduct,
   mergeStoreCatalogWithImports,
+  parsePastPosCsv,
 } from './posLogic';
 import { CartItem, Product, SaleTransaction, UtangPaymentTransaction } from '../types/pos';
 
-test('INITIAL_PRODUCTS contains all 122 imported Past POS spreadsheet rows with barcodes plus Cigarette catalog (25 items) with 0 capital cost', () => {
-  assert.equal(INITIAL_PRODUCTS.length, 147);
+test('INITIAL_PRODUCTS contains all 1,122 imported Past POS spreadsheet rows (122 + 1,000 Part 1) plus Cigarette catalog (25 items) with Firestore-safe fields', () => {
+  assert.equal(INITIAL_PRODUCTS.length, 1147);
   const cigs = INITIAL_PRODUCTS.filter((p) => isCigaretteProduct(p));
-  assert.equal(cigs.length, 25);
+  assert.equal(cigs.length, 28);
 
-  // Every item must have a non-empty unique barcode <= 64 chars and capitalPrice defaulted to 0
+  // Every item must satisfy Firestore pos_products security rules and have unique ID & barcode
+  const seenIds = new Set<string>();
   const seenBarcodes = new Set<string>();
+  const idRegex = /^[a-zA-Z0-9_-]+$/;
   for (const prod of INITIAL_PRODUCTS) {
+    assert.ok(
+      prod.id.length >= 1 && prod.id.length <= 100 && idRegex.test(prod.id),
+      `Invalid Firestore ID: ${prod.id}`
+    );
     assert.ok(prod.barcode.length >= 1 && prod.barcode.length <= 64);
+    assert.ok(prod.name.length >= 1 && prod.name.length <= 160);
+    assert.ok(prod.category.length >= 1 && prod.category.length <= 80);
     assert.equal(prod.capitalPrice, 0);
-    const key = prod.barcode.toLowerCase();
-    assert.equal(seenBarcodes.has(key), false, `Duplicate barcode found: ${prod.barcode}`);
-    seenBarcodes.add(key);
+    assert.ok(prod.sellingPrice >= 0 && prod.sellingPrice <= 10000000);
+    assert.ok(prod.stock >= -100000 && prod.stock <= 1000000);
+
+    const idKey = prod.id.toLowerCase();
+    assert.equal(seenIds.has(idKey), false, `Duplicate ID found: ${prod.id}`);
+    seenIds.add(idKey);
+
+    const bcKey = prod.barcode.toLowerCase();
+    assert.equal(seenBarcodes.has(bcKey), false, `Duplicate barcode found: ${prod.barcode}`);
+    seenBarcodes.add(bcKey);
   }
 
-  // Spot-check real J&S CALIBARA items, Stock_No items, test/card rows, & cigarette items
+  // Spot-check original J&S CALIBARA items & Cigarette items
   const bearBrand = INITIAL_PRODUCTS.find((p) => p.barcode === '4800361395397');
   assert.equal(bearBrand?.name, 'BEAR BRAND MILK W/IRON 13+1/33G-P');
   assert.equal(bearBrand?.sellingPrice, 151.45);
@@ -50,6 +66,25 @@ test('INITIAL_PRODUCTS contains all 122 imported Past POS spreadsheet rows with 
   const camelStick = INITIAL_PRODUCTS.find((p) => p.barcode === '40329055');
   assert.equal(camelStick?.category, 'Cigarettes');
   assert.equal(camelStick?.sellingPrice, 8);
+
+  // Spot-check newly imported products_part1.csv items (including trailing-dot IDs & multi-barcodes)
+  const kropek = INITIAL_PRODUCTS.find((p) => p.barcode === '000000');
+  assert.equal(kropek?.name, 'kropek');
+  assert.equal(kropek?.sellingPrice, 8);
+
+  const happyRegular = INITIAL_PRODUCTS.find((p) => p.id === 'pos-0145');
+  const happyDot = INITIAL_PRODUCTS.find((p) => p.id === 'pos-0145_dot');
+  assert.ok(happyRegular, 'Expected pos-0145');
+  assert.ok(happyDot, 'Expected pos-0145_dot without ID collision');
+  assert.equal(happyDot?.barcode, '0145.');
+  assert.equal(happyDot?.name, 'happy pants xxl retail');
+
+  const mangTomas = INITIAL_PRODUCTS.find((p) => p.barcode === '4801668100264');
+  assert.equal(mangTomas?.name, 'Mang Tomas All-Around Sarsa 325g');
+  assert.equal(mangTomas?.sellingPrice, 39);
+
+  const multiBarcodeItem = INITIAL_PRODUCTS.find((p) => p.id === 'pos-10472');
+  assert.ok(multiBarcodeItem?.note?.includes('Alt:'));
 });
 
 test('mergeStoreCatalogWithImports preserves custom existing items while removing untouched placeholders', () => {
@@ -90,14 +125,35 @@ test('mergeStoreCatalogWithImports preserves custom existing items while removin
   ];
 
   const merged = mergeStoreCatalogWithImports(existingStoreProducts, INITIAL_PRODUCTS);
-  // Legacy prod-1001 dropped, custom Camel & Wilkins kept, plus remaining 146 imported items
+  // Legacy prod-1001 dropped, custom Camel & Wilkins kept, plus remaining 1,146 imported items
   assert.equal(merged.some((p) => p.id === 'prod-1001'), false);
   const keptCamel = merged.find((p) => p.barcode === '40329055');
   assert.equal(keptCamel?.id, 'custom-camel');
   assert.equal(keptCamel?.sellingPrice, 9);
   assert.equal(keptCamel?.category, 'Cigarettes');
   assert.equal(merged.some((p) => p.barcode === '4801981126866'), true);
-  assert.equal(merged.length, 148);
+  assert.equal(merged.length, 1148);
+});
+
+test('parsePastPosCsv parses standard Past POS CSV rows, preserves alternate barcodes, and avoids collisions', () => {
+  const sampleCsv = [
+    'Stock_No,Name,Cost,Retail_Price,Quantity,Barcodes,Tags,Taxes,Tax_Exempt,Description,Enable_Decimal,Enable_Open_Price,Disable_Discount,Disable_Inventory,Supplier_Name,Supplier_List,Category_Name,Subcategory_Name,Status',
+    '"5001","Lucky Me Pancit Canton Calamansi","12.00","16.50","25","4807770270017,4807770279999","sc/pwd","","","","","","","","","","","","Active"',
+    '"5001.","Special Dot Item","0","10.00","5","","","","","","No","No","No","No","","","","","Active"',
+  ].join('\n');
+
+  const parsed = parsePastPosCsv(sampleCsv, INITIAL_PRODUCTS);
+  assert.equal(parsed.length, 2);
+  assert.equal(parsed[0].id, 'pos-5001');
+  assert.equal(parsed[0].barcode, '4807770270017');
+  assert.equal(parsed[0].sellingPrice, 16.5);
+  assert.equal(parsed[0].capitalPrice, 0);
+  assert.equal(parsed[0].category, 'Groceries & Canned');
+  assert.ok(parsed[0].note?.includes('Alt: 4807770279999'));
+  assert.ok(parsed[0].note?.includes('SC/PWD eligible'));
+
+  assert.equal(parsed[1].id, 'pos-5001_dot');
+  assert.equal(parsed[1].barcode, '5001.');
 });
 
 test('calculateCartTotals computes subtotal, discount, grand total, and net profit accurately', () => {
@@ -206,7 +262,7 @@ test('calculateProductProfit and findDuplicateBarcode work properly', () => {
   assert.equal(dup?.id, 'cig-camel-yellow-stk');
 
   const nextSku = generateNextSku(INITIAL_PRODUCTS);
-  assert.equal(nextSku, '9876');
+  assert.equal(nextSku, '48001');
 });
 
 test('aggregateCustomerUtang and computeDailyDrawerMetrics reconcile sales, opening float, expenses, and payments', () => {

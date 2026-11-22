@@ -154,18 +154,18 @@ export default function App() {
       STORAGE_KEYS.PRODUCTS,
       INITIAL_PRODUCTS
     );
-    let alreadyMigratedV2 = false;
+    let alreadyMigratedV3 = false;
     try {
-      alreadyMigratedV2 =
-        localStorage.getItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2) === 'done';
+      alreadyMigratedV3 =
+        localStorage.getItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V3) === 'done';
     } catch {
-      alreadyMigratedV2 = false;
+      alreadyMigratedV3 = false;
     }
-    if (!hasImportedCatalogBaseline(loaded) && !alreadyMigratedV2) {
+    if (!hasImportedCatalogBaseline(loaded) && !alreadyMigratedV3) {
       const merged = mergeStoreCatalogWithImports(loaded, INITIAL_PRODUCTS);
       saveToStorage(STORAGE_KEYS.PRODUCTS, merged);
       try {
-        localStorage.setItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2, 'done');
+        localStorage.setItem(CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V3, 'done');
       } catch {
         // ignore
       }
@@ -627,20 +627,20 @@ export default function App() {
 
         // Guard 3: Complete Past POS & Cigarettes Catalog Migration into Cloud Store
         // Preserves existing live store products (e.g. Camel Yellow, Wilkins, Sumo) and all sales/utang,
-        // while merging all 122 imported Past POS spreadsheet items + 25 Cigarette stick/pack items once across all devices.
-        let cloudV2Done = false;
+        // while merging all 1,122 imported Past POS spreadsheet items + 25 Cigarette stick/pack items once across all devices.
+        let cloudV3Done = false;
         try {
-          cloudV2Done =
+          cloudV3Done =
             localStorage.getItem(
-              `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2}_cloud`
+              `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V3}_cloud`
             ) === 'done';
         } catch {
-          cloudV2Done = false;
+          cloudV3Done = false;
         }
         if (
           !hasImportedCatalogBaseline(remote.state.products) &&
-          (!cloudV2Done ||
-            !remote.state.products.some((p) => p.id.startsWith('pos-')))
+          (!cloudV3Done ||
+            !remote.state.products.some((p) => p.id === 'pos-000000'))
         ) {
           const upgradedProducts = mergeStoreCatalogWithImports(
             remote.state.products,
@@ -669,7 +669,7 @@ export default function App() {
             );
             try {
               localStorage.setItem(
-                `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V2}_cloud`,
+                `${CLOUD_STORAGE_KEYS.CATALOG_BASELINE_V3}_cloud`,
                 'done'
               );
             } catch {
@@ -680,7 +680,7 @@ export default function App() {
           }
           setCloudSyncState('CLOUD_SAVED');
           setLastSavedTime(formatCurrentTimeShort());
-          showQuickNotice('Imported all 122 Past POS items & Cigarettes to Cloud');
+          showQuickNotice('Imported Past POS Part 1 inventory (1,147 items) to Cloud');
           return;
         }
 
@@ -689,13 +689,20 @@ export default function App() {
         const remoteSig = createCanonicalStateSignature(remote.state);
 
         if (localSig !== remoteSig) {
-          // Preserve local product notes if barcode matches
+          // Preserve local & catalog product notes (Stock No / alternate barcodes)
+          const catalogNoteById = new Map(
+            INITIAL_PRODUCTS.map((p) => [p.id, p.note || ''])
+          );
           const localNoteById = new Map(
             currentLocal.products.map((p) => [p.id, p.note || ''])
           );
           const mergedProducts = remote.state.products.map((rp) => ({
             ...rp,
-            note: rp.note || localNoteById.get(rp.id) || '',
+            note:
+              rp.note ||
+              localNoteById.get(rp.id) ||
+              catalogNoteById.get(rp.id) ||
+              '',
           }));
 
           const normalizedRemote: FullStoreState = {
@@ -1129,6 +1136,18 @@ export default function App() {
     showQuickNotice(`Added +${addQty} stock (auto-saved to Cloud).`);
   };
 
+  const handleImportProducts = (importedProducts: Product[]) => {
+    if (importedProducts.length === 0) return;
+    const nextProducts = mergeStoreCatalogWithImports(products, importedProducts);
+    const addedCount = nextProducts.length - products.length;
+    if (addedCount <= 0) {
+      showQuickNotice('All items in that CSV are already in inventory.');
+      return;
+    }
+    void saveAllToCloud({ products: nextProducts });
+    showQuickNotice(`Imported ${addedCount} new products and synced to Cloud.`);
+  };
+
   // Utang Payment Handler (Write-Through: 0ms L1 + Immediate L2 Push)
   const handleRecordUtangPayment = (payload: {
     customerName: string;
@@ -1432,6 +1451,7 @@ export default function App() {
             onSaveProduct={handleSaveProduct}
             onDeleteProduct={handleDeleteProduct}
             onRestockProduct={handleRestockProduct}
+            onImportProducts={handleImportProducts}
           />
         )}
 
